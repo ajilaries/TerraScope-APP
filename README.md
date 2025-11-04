@@ -1,21 +1,35 @@
-<<<<<<< HEAD
-# terra_scope_apk
+# 🌍 TerraScope
 
-A new Flutter project.
+**TerraScope** is a Flutter-based mobile app that helps users explore and monitor the Earth's climate and environmental data in a clean, intuitive interface.  
+Built with Flutter, it delivers real-time weather insights, location-based environmental stats, and interactive visuals — all wrapped in a smooth, modern UI.
 
-## Getting Started
+---
 
-This project is a starting point for a Flutter application.
+## 🚀 Features
 
-A few resources to get you started if this is your first Flutter project:
+- 🏠 **Home Screen** – Displays key weather and climate info beautifully.
+- 📍 **Location-based data** – Fetches live environmental stats for your current region.
+- ☁️ **API Integration** – Pulls real-time weather and climate data (like temperature, humidity, air quality, etc.).
+- 💡 **Minimal Design** – A sleek and responsive interface built with Flutter.
+- 🌦️ **Future Plans**
+  - Add detailed climate graphs and history data
+  - Implement dark mode
+  - Add user preferences and favorites
+  - Offline mode for saved locations
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+---
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
-=======
-# TerraScope-APP
-Mobile application developed using flutter as the future updation of TerraScope web to application 
->>>>>>> 13ea3ab3f7b87c18ae1069fa9488472131e63a3f
+## 🧠 Tech Stack
+
+- **Framework:** Flutter  
+- **Language:** Dart  
+- **Backend/API:** (e.g., OpenWeatherMap API / other APIs you plan to use)  
+- **IDE:** Visual Studio Code / Android Studio  
+
+---
+
+## ⚙️ Installation
+
+1. Clone the repository  
+   ```bash
+   git clone https://github.com/ajilaries/TerraScope-APP.git

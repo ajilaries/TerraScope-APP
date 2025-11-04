@@ -42,23 +42,27 @@ class _SplashScreenState extends State<SplashScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            
-            const SizedBox(height: 20),
-            const Text(
-              'terrascope',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.5,
-              ),
-            ),
-          ],
+  child: Column(
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+      Image.asset(
+        'lib/assets/logo.jpg',
+        height: 150,
+      ),
+      const SizedBox(height: 20),
+      const Text(
+        'TerraScope',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 28,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 1.5,
         ),
       ),
+    ],
+  ),
+),
+
     );
   }
 }

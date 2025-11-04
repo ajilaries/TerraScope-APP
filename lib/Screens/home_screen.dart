@@ -1,75 +1,134 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart'; // ✅ Correct package for DateFormat
+import '../Services/location_service.dart';
+import '../Services/weather_services.dart';
+import '../Widgets/footer_buttons.dart';
 
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key}); // ✅ Changed "StatelessElement" to "StatelessWidget"
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  String locationName = "Loading...";
+  String temperature = "---°C";
+  String weatherCondition = "Fetching...";
+  String weatherIcon = "☁️";
+  String day = "";
+  String time = "";
+
+  @override
+  void initState() {
+    super.initState();
+    updateDateTime();
+    fetchWeatherData();
+  }
+
+  void updateDateTime() {
+    final now = DateTime.now();
+    day = DateFormat('EEE, MMM d').format(now);
+    time = DateFormat('hh:mm a').format(now);
+  }
+
+  Future<void> fetchWeatherData() async {
+    try {
+      final position = await LocationService().getCurrentLocation();
+      final weatherData = await WeatherService().getWeatherData(
+        position.latitude,
+        position.longitude,
+      );
+
+      setState(() {
+        locationName = weatherData['name'] ?? "Unknown";
+        temperature =
+            "${weatherData['main']['temp'].toStringAsFixed(1)}°C";
+        weatherCondition = weatherData['weather'][0]['description'];
+        weatherIcon = WeatherService().getWeatherIcon(
+          weatherData['weather'][0]['main'],
+        );
+      });
+    } catch (e) {
+      setState(() {
+        locationName = "Location Error";
+        weatherCondition = e.toString();
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.blueGrey.shade100,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text("Terra Scope"),
-        backgroundColor: Colors.black,
+        backgroundColor: Colors.transparent,
         elevation: 0,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center, // ✅ Added alignment for cleaner layout
-          children: [
-            const Text(
-              "Kerala",
-              style: TextStyle(
-                fontSize: 42,
-                fontWeight: FontWeight.bold,
-              ),
+        title: const Text(
+          "TerraScope",
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
+        ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: Image.asset(
+              'lib/assets/logo.jpg', // ✅ Make sure this path matches your asset
+              height: 36,
             ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(color: Colors.black12, blurRadius: 8),
-                ],
-              ),
-              child: const Column(
+          ),
+        ],
+      ),
+      body: Stack(
+        children: [
+          // ✅ Background image based on weather
+          Positioned.fill(
+            child: Image.asset(
+              WeatherService().getBackgroundImage(weatherCondition),
+              fit: BoxFit.cover,
+            ),
+          ),
+          Container(color: Colors.black.withOpacity(0.3)),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
+                  const SizedBox(height: 40),
                   Text(
-                    "☀️ 32°C",
-                    style: TextStyle(
-                      fontSize: 42,
+                    locationName,
+                    style: const TextStyle(
+                      fontSize: 26,
                       fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    "$day · $time",
+                    style: const TextStyle(color: Colors.white70, fontSize: 16),
+                  ),
+                  const SizedBox(height: 40),
+                  Text(weatherIcon, style: const TextStyle(fontSize: 80)),
+                  Text(
+                    temperature,
+                    style: const TextStyle(
+                      fontSize: 60,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
                   ),
                   Text(
-                    "Humidity: 67%",
-                    style: TextStyle(fontSize: 18),
+                    weatherCondition.toUpperCase(),
+                    style: const TextStyle(fontSize: 18, color: Colors.white70),
                   ),
-                  Text(
-                    "Wind: 12 km/h",
-                    style: TextStyle(fontSize: 18),
-                  ),
+                  const Spacer(),
+                  const FooterButtons(),
                 ],
               ),
             ),
-            const SizedBox(height: 30),
-            Card(
-              color: Colors.redAccent,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: const ListTile(
-                leading: Icon(Icons.warning, color: Colors.white),
-                title: Text(
-                  '⚠️ Flood Alert: Heavy rain expected',
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
