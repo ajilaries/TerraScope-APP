@@ -169,9 +169,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       color: Colors.white60,
                     ),
                   ),
-
-                  const Spacer(),
-                  const FooterButtons(),
                 ],
               ),
             ),
