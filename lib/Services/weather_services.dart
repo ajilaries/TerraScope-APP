@@ -43,39 +43,42 @@ class WeatherService {
   }
 
   // Fetch 5-day forecast
-  Future<List<Map<String, dynamic>>> getFiveDayForecast(double lat, double lon) async {
-    final url = Uri.parse(
-      "https://api.openweathermap.org/data/2.5/forecast?lat=$lat&lon=$lon&appid=$apiKey&units=metric"
-    );
+Future<List<Map<String, dynamic>>> getFiveDayForecast(double lat, double lon) async {
+  final url = Uri.parse(
+    "https://api.openweathermap.org/data/2.5/forecast?lat=$lat&lon=$lon&appid=$apiKey&units=metric"
+  );
 
-    final response = await http.get(url);
+  final response = await http.get(url);
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      final List<Map<String, dynamic>> forecastList = [];
-      final List<dynamic> list = data['list'];
-      final Map<String, bool> addedDays = {};
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    final List<Map<String, dynamic>> forecastList = [];
+    final List<dynamic> list = data['list'];
+    final Map<String, bool> addedDays = {};
 
-      for (var item in list) {
-        final dateTime = DateTime.parse(item['dt_txt']);
-        final dayStr = DateFormat('EEE').format(dateTime);
+    for (var item in list) {
+      final dateTime = DateTime.parse(item['dt_txt']);
+      final dayStr = DateFormat('EEE').format(dateTime);
 
-        // pick only one forecast per day (around 12:00 PM)
-        if (!addedDays.containsKey(dayStr) && dateTime.hour == 12) {
-          forecastList.add({
-            'day': dayStr,
-            'temp': item['main']['temp'].toDouble(),
-            'icon': getWeatherIcon(item['weather'][0]['main']),
-          });
-          addedDays[dayStr] = true;
-        }
+      // pick only one forecast per day (around 12:00 PM)
+      if (!addedDays.containsKey(dayStr) && dateTime.hour == 12) {
+        forecastList.add({
+          'day': dayStr,
+          'temp': item['main']['temp'].toDouble(),
+          'humidity': item['main']['humidity'],            // ✅ humidity
+          'wind': item['wind']['speed'].toDouble(),       // ✅ wind speed
+          'icon': getWeatherIcon(item['weather'][0]['main']),
+        });
+        addedDays[dayStr] = true;
       }
-
-      return forecastList;
-    } else {
-      throw Exception("Failed to load 5-day forecast");
     }
+
+    return forecastList;
+  } else {
+    throw Exception("Failed to load 5-day forecast");
   }
+}
+
 
   // Return background image based on condition
   String getBackgroundImage(String condition) {
@@ -94,7 +97,7 @@ class WeatherService {
     } else if (condition.contains('mist') || condition.contains('fog')) {
       return 'lib/assets/images/mist.png';
     } else {
-      return 'lib/assets/images/default.png';
+      return 'lib/assets/images/default.jpg';
     }
   }
 }
