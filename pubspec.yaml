@@ -11,9 +11,11 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
-  http: ^1.2.0
-  geolocator: ^10.1.0
+  http: ^1.5.0
+  geolocator: ^14.0.2
+  geocoding: ^2.1.1
   intl: ^0.19.0   # ✅ Added this for DateFormat
+  weather_icons: ^3.0.0
 
 dev_dependencies:
   flutter_test:
@@ -24,6 +26,10 @@ flutter:
   uses-material-design: true
 
   assets:
-    - lib/assets/logo.jpg  
-    - lib/assets/images/rainy.png
+    - lib/assets/logo.jpg
+    - lib/assets/images/cloudy.jpeg
+    - lib/assets/images/mist.jpg
+    - lib/assets/images/strom.jpg
+    - lib/assets/images/sunny.jpeg  
+    - lib/assets/images/rainy.jpeg
     - lib/assets/images/default.png

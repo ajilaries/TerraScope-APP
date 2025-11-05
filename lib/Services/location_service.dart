@@ -1,8 +1,9 @@
 import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 
 class LocationService {
-  // Request permission and fetch current location
-  Future<Position> getCurrentLocation() async {
+  // Fetches the most accurate and fast location
+  Future<Map<String, dynamic>> getCurrentLocation() async {
     bool serviceEnabled;
     LocationPermission permission;
 
@@ -12,7 +13,7 @@ class LocationService {
       throw Exception('Location services are disabled. Please enable them.');
     }
 
-    // Check permission status
+    // Check and request permission
     permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
@@ -23,14 +24,32 @@ class LocationService {
 
     if (permission == LocationPermission.deniedForever) {
       throw Exception(
-          'Location permissions are permanently denied. Please enable them from app settings.');
+        'Location permissions are permanently denied. Please enable them from settings.',
+      );
     }
 
-    // Get current position
-    Position position = await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.high,
+    // Try to get last known position (faster response)
+    Position? position = await Geolocator.getLastKnownPosition();
+
+    // If no cached position, get precise GPS location
+    position ??= await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.bestForNavigation,
     );
 
-    return position;
+    // Convert coordinates to human-readable place name
+    List<Placemark> placemarks = await placemarkFromCoordinates(
+      position.latitude,
+      position.longitude,
+    );
+
+    String city = placemarks.isNotEmpty ? placemarks[0].locality ?? "Unknown" : "Unknown";
+    String country = placemarks.isNotEmpty ? placemarks[0].country ?? "" : "";
+
+    return {
+      "latitude": position.latitude,
+      "longitude": position.longitude,
+      "city": city,
+      "country": country,
+    };
   }
 }

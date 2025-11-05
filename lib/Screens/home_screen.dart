@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // ✅ Correct package for DateFormat
+import 'package:intl/intl.dart';
+import 'package:weather_icons/weather_icons.dart';
 import '../Services/location_service.dart';
 import '../Services/weather_services.dart';
 import '../Widgets/footer_buttons.dart';
@@ -15,15 +17,20 @@ class _HomeScreenState extends State<HomeScreen> {
   String locationName = "Loading...";
   String temperature = "---°C";
   String weatherCondition = "Fetching...";
-  String weatherIcon = "☁️";
+  IconData weatherIcon = WeatherIcons.cloud;
   String day = "";
   String time = "";
+  String lastUpdated = "—"; // ✅ new variable for last updated time
+  bool isRefreshing = false;
+
+  Timer? _refreshTimer;
 
   @override
   void initState() {
     super.initState();
     updateDateTime();
     fetchWeatherData();
+    startAutoRefresh();
   }
 
   void updateDateTime() {
@@ -32,27 +39,46 @@ class _HomeScreenState extends State<HomeScreen> {
     time = DateFormat('hh:mm a').format(now);
   }
 
+  void startAutoRefresh() {
+    _refreshTimer = Timer.periodic(const Duration(minutes: 5), (timer) {
+      fetchWeatherData();
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
+  }
+
   Future<void> fetchWeatherData() async {
     try {
-      final position = await LocationService().getCurrentLocation();
+      setState(() => isRefreshing = true);
+
+      final locationData = await LocationService().getCurrentLocation();
       final weatherData = await WeatherService().getWeatherData(
-        position.latitude,
-        position.longitude,
+        locationData['latitude'],
+        locationData['longitude'],
       );
 
+      final now = DateTime.now();
+
       setState(() {
-        locationName = weatherData['name'] ?? "Unknown";
-        temperature =
-            "${weatherData['main']['temp'].toStringAsFixed(1)}°C";
+        locationName =
+            "${locationData['city']}, ${locationData['country']}".trim();
+        temperature = "${weatherData['main']['temp'].toStringAsFixed(1)}°C";
         weatherCondition = weatherData['weather'][0]['description'];
-        weatherIcon = WeatherService().getWeatherIcon(
-          weatherData['weather'][0]['main'],
-        );
+        weatherIcon =
+            WeatherService().getWeatherIcon(weatherData['weather'][0]['main']);
+        updateDateTime();
+        lastUpdated = DateFormat('hh:mm a').format(now); // ✅ show last update time
+        isRefreshing = false;
       });
     } catch (e) {
       setState(() {
         locationName = "Location Error";
         weatherCondition = e.toString();
+        isRefreshing = false;
       });
     }
   }
@@ -69,10 +95,23 @@ class _HomeScreenState extends State<HomeScreen> {
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
         ),
         actions: [
+          IconButton(
+            icon: isRefreshing
+                ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : const Icon(Icons.refresh),
+            onPressed: isRefreshing ? null : fetchWeatherData,
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
             child: Image.asset(
-              'lib/assets/logo.jpg', // ✅ Make sure this path matches your asset
+              'lib/assets/logo.jpg',
               height: 36,
             ),
           ),
@@ -80,7 +119,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: Stack(
         children: [
-          // ✅ Background image based on weather
           Positioned.fill(
             child: Image.asset(
               WeatherService().getBackgroundImage(weatherCondition),
@@ -88,6 +126,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           Container(color: Colors.black.withOpacity(0.3)),
+
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
@@ -97,6 +136,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 40),
                   Text(
                     locationName,
+                    textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.bold,
@@ -109,7 +149,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     style: const TextStyle(color: Colors.white70, fontSize: 16),
                   ),
                   const SizedBox(height: 40),
-                  Text(weatherIcon, style: const TextStyle(fontSize: 80)),
+                  Icon(
+                    weatherIcon,
+                    size: 80,
+                    color: Colors.white,
+                  ),
                   Text(
                     temperature,
                     style: const TextStyle(
@@ -122,6 +166,17 @@ class _HomeScreenState extends State<HomeScreen> {
                     weatherCondition.toUpperCase(),
                     style: const TextStyle(fontSize: 18, color: Colors.white70),
                   ),
+                  const SizedBox(height: 12),
+
+                  // ✅ "Last updated" text
+                  Text(
+                    "Last updated: $lastUpdated",
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.white60,
+                    ),
+                  ),
+
                   const Spacer(),
                   const FooterButtons(),
                 ],
