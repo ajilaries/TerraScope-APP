@@ -46,14 +46,14 @@ class _SplashScreenState extends State<SplashScreen> {
     mainAxisAlignment: MainAxisAlignment.center,
     children: [
       Image.asset(
-        'lib/assets/logo.jpg',
+        'lib/assets/logo.png',
         height: 150,
       ),
       const SizedBox(height: 20),
       const Text(
         'TerraScope',
         style: TextStyle(
-          color: Colors.white,
+          color: Color.fromARGB(255, 17, 118, 121),
           fontSize: 28,
           fontWeight: FontWeight.bold,
           letterSpacing: 1.5,

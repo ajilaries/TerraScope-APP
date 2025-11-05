@@ -108,13 +108,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 : const Icon(Icons.refresh),
             onPressed: isRefreshing ? null : fetchWeatherData,
           ),
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: Image.asset(
-              'lib/assets/logo.jpg',
-              height: 36,
-            ),
-          ),
         ],
       ),
       body: Stack(
