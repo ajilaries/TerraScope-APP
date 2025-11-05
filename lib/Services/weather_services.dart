@@ -1,12 +1,13 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 import 'package:weather_icons/weather_icons.dart';
 
 class WeatherService {
   final String apiKey = "a5465304ed7d80bb3a52de825be8e2e7";
 
-  // Fetch weather data from OpenWeather API
+  // Fetch current weather data
   Future<Map<String, dynamic>> getWeatherData(double lat, double lon) async {
     final url = Uri.parse(
       "https://api.openweathermap.org/data/2.5/weather?lat=$lat&lon=$lon&appid=$apiKey&units=metric",
@@ -38,6 +39,41 @@ class WeatherService {
       return WeatherIcons.fog;
     } else {
       return WeatherIcons.na; // fallback if condition doesn't match
+    }
+  }
+
+  // Fetch 5-day forecast
+  Future<List<Map<String, dynamic>>> getFiveDayForecast(double lat, double lon) async {
+    final url = Uri.parse(
+      "https://api.openweathermap.org/data/2.5/forecast?lat=$lat&lon=$lon&appid=$apiKey&units=metric"
+    );
+
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final List<Map<String, dynamic>> forecastList = [];
+      final List<dynamic> list = data['list'];
+      final Map<String, bool> addedDays = {};
+
+      for (var item in list) {
+        final dateTime = DateTime.parse(item['dt_txt']);
+        final dayStr = DateFormat('EEE').format(dateTime);
+
+        // pick only one forecast per day (around 12:00 PM)
+        if (!addedDays.containsKey(dayStr) && dateTime.hour == 12) {
+          forecastList.add({
+            'day': dayStr,
+            'temp': item['main']['temp'].toDouble(),
+            'icon': getWeatherIcon(item['weather'][0]['main']),
+          });
+          addedDays[dayStr] = true;
+        }
+      }
+
+      return forecastList;
+    } else {
+      throw Exception("Failed to load 5-day forecast");
     }
   }
 
