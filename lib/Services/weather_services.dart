@@ -78,6 +78,38 @@ Future<List<Map<String, dynamic>>> getFiveDayForecast(double lat, double lon) as
     throw Exception("Failed to load 5-day forecast");
   }
 }
+//fetch hourly forecast for a specfic day
+Future<List<Map<String ,dynamic>>> getHourlyForecast(double lat,double lon, DateTime day)async {
+  final url=Uri.parse(
+    "https://api.openweathermap.org/data/2.5/forecast?lat=$lat&lon=$lon&appid=$apiKey&units=metric"
+  );
+  final respose=await http.get(url);
+
+  if(respose.statusCode==200){
+    final data=json.decode(respose.body);
+    final List<dynamic> list=data['list'];
+    final List<Map<String,dynamic>> hourlyList=[];
+
+    for(var item in list){
+      final dateTime =DateTime.parse(item['dt_text']);
+      if(dateTime.year==day.year&& dateTime.month==day.month && dateTime.day==day.day){
+        hourlyList.add({
+          'time':DateFormat('HH:mm').format(dateTime),
+          'temp':item['main']['temp'].toDouble(),
+          'humidity': item['main']['humidity'],
+          'wind': item['wind']['speed'].toDouble(),
+          'rain': item['rain'] != null ? item['rain']['3h'] ?? 0.0 : 0.0,
+          'icon': getWeatherIcon(item['weather'][0]['main']),
+
+        });
+      }
+    }
+    return hourlyList;
+  }else{
+    throw Exception("failed to load hourly forecast");
+  }
+  }
+}
 
 
   // Return background image based on condition
@@ -100,4 +132,4 @@ Future<List<Map<String, dynamic>>> getFiveDayForecast(double lat, double lon) as
       return 'lib/assets/images/default.jpg';
     }
   }
-}
+
