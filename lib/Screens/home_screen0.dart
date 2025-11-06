@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import '../Services/weather_services.dart';
 import '../Services/location_service.dart';
+import '../Screens/forecast_dashboard.dart'; // <-- Make sure this path is correct
 import 'package:intl/intl.dart';
-import 'package:fl_chart/fl_chart.dart'; // For simple temperature line chart
+import 'package:fl_chart/fl_chart.dart';
 import 'package:weather_icons/weather_icons.dart';
+import '../utils/background_helper.dart';
 
 class Home0 extends StatefulWidget {
   const Home0({super.key});
@@ -13,10 +15,19 @@ class Home0 extends StatefulWidget {
 }
 
 class _Home0State extends State<Home0> {
+  double lat = 0.0;
+  double lon = 0.0;
+
   List<Map<String, dynamic>> forecast = [];
   bool isLoading = true;
   String lastUpdated = '—';
   String backgroundImage = 'lib/assets/images/default.jpg';
+
+  // Function to calculate date based on forecast index
+  DateTime _getSelectedDate(int index) {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day + index);
+  }
 
   @override
   void initState() {
@@ -26,21 +37,24 @@ class _Home0State extends State<Home0> {
 
   Future<void> fetchForecast() async {
     setState(() => isLoading = true);
+
     try {
       final locationData = await LocationService().getCurrentLocation();
-      final lat = locationData['latitude'];
-      final lon = locationData['longitude'];
+      lat = locationData['latitude'];
+      lon = locationData['longitude'];
 
       final realForecast = await WeatherService().getFiveDayForecast(lat, lon);
 
       setState(() {
         forecast = realForecast;
         lastUpdated = DateFormat('hh:mm a').format(DateTime.now());
+
         backgroundImage = forecast.isNotEmpty
-            ? WeatherService().getBackgroundImage(
-                realForecast[0]['icon'].toString(),
-              ) // first day's icon
+            ? getBackgroundImage(
+                realForecast[0]['condition'] ?? "Clear",
+              )
             : 'lib/assets/images/default.jpg';
+
         isLoading = false;
       });
     } catch (e) {
@@ -59,7 +73,9 @@ class _Home0State extends State<Home0> {
             Positioned.fill(
               child: Image.asset(backgroundImage, fit: BoxFit.cover),
             ),
+
             Container(color: Colors.black.withOpacity(0.3)),
+
             SafeArea(
               child: isLoading
                   ? const Center(
@@ -72,6 +88,7 @@ class _Home0State extends State<Home0> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            // LAST UPDATED
                             Text(
                               "Last updated: $lastUpdated",
                               style: const TextStyle(
@@ -79,7 +96,10 @@ class _Home0State extends State<Home0> {
                                 fontSize: 14,
                               ),
                             ),
+
                             const SizedBox(height: 10),
+
+                            // TITLE
                             const Text(
                               "5-Day Forecast",
                               style: TextStyle(
@@ -88,7 +108,10 @@ class _Home0State extends State<Home0> {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
+
                             const SizedBox(height: 10),
+
+                            // FORECAST SCROLL VIEW
                             SizedBox(
                               height: 150,
                               child: ListView.builder(
@@ -96,66 +119,98 @@ class _Home0State extends State<Home0> {
                                 itemCount: forecast.length,
                                 itemBuilder: (context, index) {
                                   final dayForecast = forecast[index];
-                                  return Container(
-                                    width: 120,
-                                    margin: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                    ),
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white24,
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          dayForecast['day'],
-                                          style: const TextStyle(
-                                            color: Colors.white70,
+
+                                  return GestureDetector(
+                                    onTap: () {
+                                      DateTime selectedDate =
+                                          _getSelectedDate(index);
+
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              ForecastDashboard(
+                                            lat: lat,
+                                            lon: lon,
+                                            selectedDay: selectedDate,
+                                            locationName: "Current Location",
                                           ),
                                         ),
-                                        const SizedBox(height: 6),
-                                        BoxedIcon(
-                                          dayForecast['icon'],
-                                          color: Colors.white,
-                                          size: 32,
-                                        ),
-                                        const SizedBox(height: 6),
-                                        Text(
-                                          "${dayForecast['temp'].toStringAsFixed(1)}°C",
-                                          style: const TextStyle(
+                                      );
+                                    },
+                                    child: Container(
+                                      width: 120,
+                                      margin: const EdgeInsets.symmetric(
+                                          horizontal: 8),
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white24,
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                            color: Colors.white30, width: 1),
+                                      ),
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            dayForecast['day'],
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+
+                                          const SizedBox(height: 6),
+
+                                          BoxedIcon(
+                                            dayForecast['icon'],
                                             color: Colors.white,
-                                            fontWeight: FontWeight.bold,
+                                            size: 32,
                                           ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        // Optional: humidity and wind (if available)
-                                        if (dayForecast.containsKey('humidity'))
+
+                                          const SizedBox(height: 6),
+
                                           Text(
-                                            "💧 ${dayForecast['humidity']}%",
+                                            "${dayForecast['temp'].toStringAsFixed(1)}°C",
                                             style: const TextStyle(
-                                              color: Colors.white70,
-                                              fontSize: 12,
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
                                             ),
                                           ),
-                                        if (dayForecast.containsKey('wind'))
-                                          Text(
-                                            "🌬️ ${dayForecast['wind']} km/h",
-                                            style: const TextStyle(
-                                              color: Colors.white70,
-                                              fontSize: 12,
+
+                                          const SizedBox(height: 8),
+
+                                          if (dayForecast
+                                              .containsKey('humidity'))
+                                            Text(
+                                              "💧 ${dayForecast['humidity']}%",
+                                              style: const TextStyle(
+                                                color: Colors.white70,
+                                                fontSize: 12,
+                                              ),
                                             ),
-                                          ),
-                                      ],
+
+                                          if (dayForecast.containsKey('wind'))
+                                            Text(
+                                              "🌬️ ${dayForecast['wind']} km/h",
+                                              style: const TextStyle(
+                                                color: Colors.white70,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                        ],
+                                      ),
                                     ),
                                   );
                                 },
                               ),
                             ),
+
                             const SizedBox(height: 20),
-                            // Optional temperature trend chart
+
+                            // TEMPERATURE TREND CHART
                             if (forecast.isNotEmpty)
                               SizedBox(
                                 height: 150,
