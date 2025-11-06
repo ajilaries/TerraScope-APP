@@ -7,7 +7,7 @@ import 'package:weather_icons/weather_icons.dart';
 import '../Services/location_service.dart';
 import '../Services/weather_services.dart';
 import '../Widgets/footer_buttons.dart';
-import '../utils/background_helper.dart';
+import '../utils/background_helper.dart'; // ✅ using the correct background helper
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -17,13 +17,16 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  Map<String, dynamic>? weatherData;
+
   String locationName = "Loading...";
   String temperature = "---°C";
   String weatherCondition = "Fetching...";
   IconData weatherIcon = WeatherIcons.cloud;
+
   String day = "";
   String time = "";
-  String lastUpdated = "—"; // ✅ new variable for last updated time
+  String lastUpdated = "—";
   bool isRefreshing = false;
 
   Timer? _refreshTimer;
@@ -43,9 +46,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void startAutoRefresh() {
-    _refreshTimer = Timer.periodic(const Duration(minutes: 5), (timer) {
-      fetchWeatherData();
-    });
+    _refreshTimer = Timer.periodic(
+      const Duration(minutes: 5),
+      (timer) => fetchWeatherData(),
+    );
   }
 
   @override
@@ -59,7 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() => isRefreshing = true);
 
       final locationData = await LocationService().getCurrentLocation();
-      final weatherData = await WeatherService().getWeatherData(
+      final data = await WeatherService().getWeatherData(
         locationData['latitude'],
         locationData['longitude'],
       );
@@ -67,14 +71,21 @@ class _HomeScreenState extends State<HomeScreen> {
       final now = DateTime.now();
 
       setState(() {
+        weatherData = data;
+
         locationName =
             "${locationData['city']}, ${locationData['country']}".trim();
-        temperature = "${weatherData['main']['temp'].toStringAsFixed(1)}°C";
-        weatherCondition = weatherData['weather'][0]['description'];
+
+        temperature = "${data['main']['temp'].toStringAsFixed(1)}°C";
+
+        weatherCondition = data['weather'][0]['main'];
+
         weatherIcon =
-            WeatherService().getWeatherIcon(weatherData['weather'][0]['main']);
+            WeatherService().getWeatherIcon(data['weather'][0]['main']);
+
         updateDateTime();
-        lastUpdated = DateFormat('hh:mm a').format(now); // ✅ show last update time
+        lastUpdated = DateFormat('hh:mm a').format(now);
+
         isRefreshing = false;
       });
     } catch (e) {
@@ -88,6 +99,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ✅ using background_helper.dart instead of WeatherService
+    final bgImage = getBackgroundImage(weatherCondition);
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
@@ -95,7 +109,10 @@ class _HomeScreenState extends State<HomeScreen> {
         elevation: 0,
         title: const Text(
           "TerraScope",
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 22,
+          ),
         ),
         actions: [
           IconButton(
@@ -115,12 +132,14 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: Stack(
         children: [
+          // ✅ Perfect background loading
           Positioned.fill(
             child: Image.asset(
-              WeatherService().getBackgroundImage(weatherCondition),
+              bgImage,
               fit: BoxFit.cover,
             ),
           ),
+
           Container(color: Colors.black.withOpacity(0.3)),
 
           SafeArea(
@@ -130,6 +149,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   const SizedBox(height: 40),
+
                   Text(
                     locationName,
                     textAlign: TextAlign.center,
@@ -139,17 +159,21 @@ class _HomeScreenState extends State<HomeScreen> {
                       color: Colors.white,
                     ),
                   ),
+
                   const SizedBox(height: 10),
+
                   Text(
                     "$day · $time",
-                    style: const TextStyle(color: Colors.white70, fontSize: 16),
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 16,
+                    ),
                   ),
+
                   const SizedBox(height: 40),
-                  Icon(
-                    weatherIcon,
-                    size: 80,
-                    color: Colors.white,
-                  ),
+
+                  Icon(weatherIcon, size: 80, color: Colors.white),
+
                   Text(
                     temperature,
                     style: const TextStyle(
@@ -158,13 +182,17 @@ class _HomeScreenState extends State<HomeScreen> {
                       color: Colors.white,
                     ),
                   ),
+
                   Text(
                     weatherCondition.toUpperCase(),
-                    style: const TextStyle(fontSize: 18, color: Colors.white70),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      color: Colors.white70,
+                    ),
                   ),
+
                   const SizedBox(height: 12),
 
-                  // ✅ "Last updated" text
                   Text(
                     "Last updated: $lastUpdated",
                     style: const TextStyle(
