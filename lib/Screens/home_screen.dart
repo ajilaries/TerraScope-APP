@@ -7,6 +7,7 @@ import 'package:weather_icons/weather_icons.dart';
 import '../Services/location_service.dart';
 import '../Services/weather_services.dart';
 import '../Widgets/footer_buttons.dart';
+import '../utils/background_helper.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
