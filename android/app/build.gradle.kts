@@ -2,10 +2,10 @@ plugins {
     id("com.android.application")
     id("kotlin-android")
 
-    // ✅ Google Services plugin for Firebase
+    // ✅ Apply Google Services plugin for Firebase (correct)
     id("com.google.gms.google-services")
 
-    // ✅ Flutter plugin (must be last)
+    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
@@ -14,14 +14,13 @@ android {
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
-    // ✅ Fix Java warnings (use strings instead of JavaVersion enums)
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
 
     kotlinOptions {
-        jvmTarget = "11"
+        jvmTarget = JavaVersion.VERSION_11.toString()
     }
 
     defaultConfig {
@@ -44,8 +43,11 @@ flutter {
 }
 
 dependencies {
+    // ✅ Firebase BoM (versionless)
     implementation(platform("com.google.firebase:firebase-bom:34.5.0"))
 
+    // ✅ Add Firebase products you are using
     implementation("com.google.firebase:firebase-firestore")
     implementation("com.google.firebase:firebase-messaging")
 }
+

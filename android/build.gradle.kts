@@ -1,6 +1,6 @@
 plugins {
-    // ✅ Make Google Services plugin available for app-module
-    id("com.google.gms.google-services") version "4.4.4" apply false
+    // Remove version number; Flutter handles the version
+    id("com.google.gms.google-services") apply false
 }
 
 allprojects {
