@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "623115432063",
+    "project_id": "terrascope-6468",
+    "storage_bucket": "terrascope-6468.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:623115432063:android:85d80283990faae8298f4a",
+        "android_client_info": {
+          "package_name": "com.example.terra_scope_apk"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAI0xVXVnPmwxUxczh-QRZ1W-RN89t7QHc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

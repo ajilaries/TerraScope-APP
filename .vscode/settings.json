@@ -1,3 +1,4 @@
 {
-  "cmake.sourceDirectory": "C:/Users/ajils/terra_scope_apk/linux"
+  "cmake.sourceDirectory": "C:/Users/ajils/terra_scope_apk/linux",
+  "java.configuration.updateBuildConfiguration": "automatic"
 }

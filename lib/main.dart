@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_options.dart';
 import 'package:terra_scope_apk/Screens/main_page.dart';
 import 'dart:async';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform);
   runApp(const TerraScopeApp());
 }
 
@@ -42,14 +47,11 @@ class _SplashScreenState extends State<SplashScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-       body: Center(
+      body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset(
-              'lib/assets/logo.png',
-              height: 150,
-            ),
+            Image.asset('lib/assets/logo.png', height: 150),
             const SizedBox(height: 20),
             const Text(
               'TerraScope',
@@ -62,6 +64,7 @@ class _SplashScreenState extends State<SplashScreen> {
             ),
           ],
         ),
-       ));
+      ),
+    );
   }
 }
