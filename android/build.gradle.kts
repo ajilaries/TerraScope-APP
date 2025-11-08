@@ -2,14 +2,14 @@ plugins {
     // ✅ Make Google Services plugin available for app-module
     id("com.google.gms.google-services") version "4.4.4" apply false
 }
-allprojects{
-    tasks.withType<JavaCompile>{
-        sourceCompatibility=JavaVersion.VERSION_11
-        targerCompatibility=JavaVersion.VERSION_11
-    }
-}
 
 allprojects {
+    // ✅ Correct Java compatibility settings for Kotlin DSL
+    tasks.withType<JavaCompile> {
+        sourceCompatibility = JavaVersion.VERSION_11.toString()
+        targetCompatibility = JavaVersion.VERSION_11.toString()
+    }
+
     repositories {
         google()
         mavenCentral()
@@ -20,6 +20,7 @@ val newBuildDir: Directory =
     rootProject.layout.buildDirectory
         .dir("../../build")
         .get()
+
 rootProject.layout.buildDirectory.value(newBuildDir)
 
 subprojects {
