@@ -68,8 +68,9 @@ class HomeScreen2 extends StatelessWidget {
                 context,
                 MaterialPageRoute(builder: (context) => const AnomalyScreen()),
               );
-            },
+          },
           ),
+
 
           _featureCard(
             title: "Forecast",
