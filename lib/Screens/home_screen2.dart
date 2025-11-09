@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../Widgets/footer_buttons.dart';
+import '../Screens/anomaly_screen.dart';
 
 class HomeScreen2 extends StatelessWidget {
   const HomeScreen2({super.key});
@@ -62,8 +63,14 @@ class HomeScreen2 extends StatelessWidget {
             title: "Anomaly Alerts",
             icon: Icons.warning_amber_rounded,
             gradient: [Color(0xFFFFA751), Color(0xFFFF5858)],
-            onTap: () {},
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const AnomalyScreen()),
+              );
+            },
           ),
+
           _featureCard(
             title: "Forecast",
             icon: Icons.calendar_today_outlined,
