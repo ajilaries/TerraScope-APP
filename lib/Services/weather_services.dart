@@ -7,21 +7,22 @@ import 'package:weather_icons/weather_icons.dart';
 class WeatherService {
   final String apiKey = "a5465304ed7d80bb3a52de825be8e2e7";
 
-  // Fetch current weather data
-  Future<Map<String, dynamic>> getWeatherData(double lat, double lon) async {
+  // ✅ Fetch current weather from your backend
+  Future<Map<String, dynamic>> getWeatherData() async {
     final url = Uri.parse(
-      "https://api.openweathermap.org/data/2.5/weather?lat=$lat&lon=$lon&appid=$apiKey&units=metric",
+      "http://192.168.168.189:8000/weather/latest",
     );
 
     final response = await http.get(url);
+
     if (response.statusCode == 200) {
       return json.decode(response.body);
     } else {
-      throw Exception("Failed to load weather data");
+      throw Exception("Failed to load weather data from backend");
     }
   }
 
-  // Return proper weather icon based on condition
+  // ✅ Weather icons
   IconData getWeatherIcon(String condition) {
     condition = condition.toLowerCase();
 
@@ -42,7 +43,7 @@ class WeatherService {
     }
   }
 
-  // Fetch 5-day forecast
+  // ✅ Fetch 5-day forecast from OpenWeather
   Future<List<Map<String, dynamic>>> getFiveDayForecast(double lat, double lon) async {
     final url = Uri.parse(
       "https://api.openweathermap.org/data/2.5/forecast?lat=$lat&lon=$lon&appid=$apiKey&units=metric",
@@ -66,6 +67,8 @@ class WeatherService {
             'temp': item['main']['temp'].toDouble(),
             'humidity': item['main']['humidity'],
             'wind': item['wind']['speed'].toDouble(),
+
+            // ✅ Correct key
             'icon': getWeatherIcon(item['weather'][0]['main']),
           });
           addedDays[dayStr] = true;
@@ -78,7 +81,7 @@ class WeatherService {
     }
   }
 
-  // Fetch hourly forecast for a specific day
+  // ✅ Fetch hourly forecast
   Future<List<Map<String, dynamic>>> getHourlyForecast(double lat, double lon, DateTime day) async {
     final url = Uri.parse(
       "https://api.openweathermap.org/data/2.5/forecast?lat=$lat&lon=$lon&appid=$apiKey&units=metric",
@@ -92,7 +95,7 @@ class WeatherService {
       final List<Map<String, dynamic>> hourlyList = [];
 
       for (var item in list) {
-        final dateTime = DateTime.parse(item['dt_txt']); // ✅ FIXED KEY
+        final dateTime = DateTime.parse(item['dt_txt']);
 
         if (dateTime.year == day.year &&
             dateTime.month == day.month &&
@@ -103,10 +106,13 @@ class WeatherService {
             'humidity': item['main']['humidity'],
             'wind': item['wind']['speed'].toDouble(),
             'rain': item['rain'] != null ? (item['rain']['3h'] ?? 0.0) : 0.0,
+
+            // ✅ Correct key
             'icon': getWeatherIcon(item['weather'][0]['main']),
           });
         }
       }
+
       return hourlyList;
     } else {
       throw Exception("Failed to load hourly forecast");
