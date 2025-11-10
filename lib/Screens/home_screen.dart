@@ -58,44 +58,48 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  Future<void> fetchWeatherData() async {
-    try {
-      setState(() => isRefreshing = true);
+Future<void> fetchWeatherData() async {
+  try {
+    setState(() => isRefreshing = true);
 
-      final locationData = await LocationService().getCurrentLocation();
-      final data = await WeatherService().getWeatherData(
-        locationData['latitude'],
-        locationData['longitude'],
-      );
+    final locationData = await LocationService().getCurrentLocation();
+    final rawData = await WeatherService().getWeatherData(); // List from backend
 
-      final now = DateTime.now();
+    final latest = rawData[0];  // ✅ Your backend returns a List
 
-      setState(() {
-        weatherData = data;
+    final now = DateTime.now();
 
-        locationName =
-            "${locationData['city']}, ${locationData['country']}".trim();
+    setState(() {
+      // ✅ Assign returned map
+      weatherData = latest;
 
-        temperature = "${data['main']['temp'].toStringAsFixed(1)}°C";
+      locationName =
+          "${locationData['city']}, ${locationData['country']}".trim();
 
-        weatherCondition = data['weather'][0]['main'];
+      // ✅ Backend temperature key
+      temperature = "${latest['temperature']}°C";
 
-        weatherIcon =
-            WeatherService().getWeatherIcon(data['weather'][0]['main']);
+      // ✅ Detect condition based on backend data
+      weatherCondition =
+          latest['rainfall'] > 0 ? "Rain" : "Clear"; // temporary logic
 
-        updateDateTime();
-        lastUpdated = DateFormat('hh:mm a').format(now);
+      // ✅ Choose icon
+      weatherIcon = WeatherService().getWeatherIcon(weatherCondition);
 
-        isRefreshing = false;
-      });
-    } catch (e) {
-      setState(() {
-        locationName = "Location Error";
-        weatherCondition = e.toString();
-        isRefreshing = false;
-      });
-    }
+      updateDateTime();
+      lastUpdated = DateFormat('hh:mm a').format(now);
+
+      isRefreshing = false;
+    });
+  } catch (e) {
+    setState(() {
+      locationName = "Location Error";
+      weatherCondition = e.toString();
+      isRefreshing = false;
+    });
   }
+}
+
 
   @override
   Widget build(BuildContext context) {
