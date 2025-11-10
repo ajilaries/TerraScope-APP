@@ -8,19 +8,18 @@ class WeatherService {
   final String apiKey = "a5465304ed7d80bb3a52de825be8e2e7";
 
   // ✅ Fetch current weather from your backend
-  Future<Map<String, dynamic>> getWeatherData() async {
-    final url = Uri.parse(
-      "http://192.168.168.189:8000/weather/latest",
-    );
+Future<List<dynamic>> getWeatherData() async {
+  final url = Uri.parse("http://192.168.168.189:8000/weather");
 
-    final response = await http.get(url);
+  final response = await http.get(url);
 
-    if (response.statusCode == 200) {
-      return json.decode(response.body);
-    } else {
-      throw Exception("Failed to load weather data from backend");
-    }
+  if (response.statusCode == 200) {
+    return json.decode(response.body);
+  } else {
+    throw Exception("Failed to load weather data");
   }
+}
+
 
   // ✅ Weather icons
   IconData getWeatherIcon(String condition) {
