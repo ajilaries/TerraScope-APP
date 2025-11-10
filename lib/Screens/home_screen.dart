@@ -1,13 +1,9 @@
-// ignore_for_file: unused_import
-
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:weather_icons/weather_icons.dart';
 import '../Services/location_service.dart';
 import '../Services/weather_services.dart';
-import '../Widgets/footer_buttons.dart';
-import '../utils/background_helper.dart'; // ✅ using the correct background helper
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -17,12 +13,13 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  Map<String, dynamic>? weatherData;
-
   String locationName = "Loading...";
   String temperature = "---°C";
   String weatherCondition = "Fetching...";
   IconData weatherIcon = WeatherIcons.cloud;
+
+  String latitude = "--";
+  String longitude = "--";
 
   String day = "";
   String time = "";
@@ -34,21 +31,21 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    updateDateTime();
-    fetchWeatherData();
-    startAutoRefresh();
+    _updateDateTime();
+    _fetchWeatherData();
+    _startAutoRefresh();
   }
 
-  void updateDateTime() {
+  void _updateDateTime() {
     final now = DateTime.now();
     day = DateFormat('EEE, MMM d').format(now);
     time = DateFormat('hh:mm a').format(now);
   }
 
-  void startAutoRefresh() {
+  void _startAutoRefresh() {
     _refreshTimer = Timer.periodic(
       const Duration(minutes: 5),
-      (timer) => fetchWeatherData(),
+      (_) => _fetchWeatherData(),
     );
   }
 
@@ -58,150 +55,120 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-Future<void> fetchWeatherData() async {
-  try {
+  Future<void> _fetchWeatherData() async {
     setState(() => isRefreshing = true);
 
-    final locationData = await LocationService().getCurrentLocation();
-    final rawData = await WeatherService().getWeatherData(); // List from backend
+    try {
+      // 1️⃣ Get location
+      final loc = await LocationService().getCurrentLocation();
+      final lat = loc["latitude"];
+      final lon = loc["longitude"];
+      locationName = "${loc['city'] ?? 'Unknown City'}, ${loc['country'] ?? 'Unknown'}";
+      latitude = lat.toStringAsFixed(4);
+      longitude = lon.toStringAsFixed(4);
 
-    final latest = rawData[0];  // ✅ Your backend returns a List
+      // 2️⃣ Get weather from backend
+      final latest = await WeatherService().getWeatherData(lat: lat, lon: lon);
 
-    final now = DateTime.now();
+      // 3️⃣ Decide condition from backend JSON
+      final temp = latest['temperature'] ?? 0;
+      final rainfall = latest['rainfall'] ?? 0;
+      final condition = rainfall > 0 ? "Rain" : "Clear";
 
-    setState(() {
-      // ✅ Assign returned map
-      weatherData = latest;
-
-      locationName =
-          "${locationData['city']}, ${locationData['country']}".trim();
-
-      // ✅ Backend temperature key
-      temperature = "${latest['temperature']}°C";
-
-      // ✅ Detect condition based on backend data
-      weatherCondition =
-          latest['rainfall'] > 0 ? "Rain" : "Clear"; // temporary logic
-
-      // ✅ Choose icon
-      weatherIcon = WeatherService().getWeatherIcon(weatherCondition);
-
-      updateDateTime();
-      lastUpdated = DateFormat('hh:mm a').format(now);
-
-      isRefreshing = false;
-    });
-  } catch (e) {
-    setState(() {
-      locationName = "Location Error";
-      weatherCondition = e.toString();
-      isRefreshing = false;
-    });
+      setState(() {
+        temperature = "${temp.toStringAsFixed(1)}°C";
+        weatherCondition = condition;
+        weatherIcon = WeatherService().getWeatherIcon(condition);
+        lastUpdated = DateFormat('hh:mm a').format(DateTime.now());
+      });
+    } catch (e) {
+      debugPrint("❌ ERROR: $e");
+      setState(() {
+        locationName = "Location / Weather Error";
+        latitude = "--";
+        longitude = "--";
+        temperature = "---°C";
+        weatherCondition = "Unknown";
+        weatherIcon = WeatherIcons.na;
+        lastUpdated = "—";
+      });
+    } finally {
+      setState(() => isRefreshing = false);
+    }
   }
-}
-
 
   @override
   Widget build(BuildContext context) {
-    // ✅ using background_helper.dart instead of WeatherService
-    final bgImage = getBackgroundImage(weatherCondition);
+    final bgImage = WeatherService().getBackgroundImage(weatherCondition);
 
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text(
-          "TerraScope",
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 22,
-          ),
-        ),
+        title: const Text("TerraScope", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22)),
         actions: [
           IconButton(
             icon: isRefreshing
                 ? const SizedBox(
                     width: 22,
                     height: 22,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
-                    ),
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                   )
                 : const Icon(Icons.refresh),
-            onPressed: isRefreshing ? null : fetchWeatherData,
+            onPressed: isRefreshing ? null : _fetchWeatherData,
           ),
         ],
       ),
       body: Stack(
         children: [
-          // ✅ Perfect background loading
-          Positioned.fill(
-            child: Image.asset(
-              bgImage,
-              fit: BoxFit.cover,
-            ),
-          ),
-
+          Positioned.fill(child: Image.asset(bgImage, fit: BoxFit.cover)),
           Container(color: Colors.black.withOpacity(0.3)),
-
           SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
+            child: RefreshIndicator(
+              color: Colors.white,
+              onRefresh: _fetchWeatherData,
+              child: ListView(
+                padding: const EdgeInsets.all(16),
                 children: [
                   const SizedBox(height: 40),
-
                   Text(
                     locationName,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
+                    style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.white),
                   ),
-
+                  const SizedBox(height: 6),
+                  Text(
+                    "Lat: $latitude   |   Lon: $longitude",
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.white70, fontSize: 14),
+                  ),
                   const SizedBox(height: 10),
-
                   Text(
                     "$day · $time",
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 16,
-                    ),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.white70, fontSize: 16),
                   ),
-
                   const SizedBox(height: 40),
-
-                  Icon(weatherIcon, size: 80, color: Colors.white),
-
-                  Text(
-                    temperature,
-                    style: const TextStyle(
-                      fontSize: 60,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-
-                  Text(
-                    weatherCondition.toUpperCase(),
-                    style: const TextStyle(
-                      fontSize: 18,
-                      color: Colors.white70,
-                    ),
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  Text(
-                    "Last updated: $lastUpdated",
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Colors.white60,
+                  Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min, // ⚡ Prevent overflow
+                      children: [
+                        Icon(weatherIcon, size: 80, color: Colors.white),
+                        Text(
+                          temperature,
+                          style: const TextStyle(fontSize: 60, fontWeight: FontWeight.bold, color: Colors.white),
+                        ),
+                        Text(
+                          weatherCondition.toUpperCase(),
+                          style: const TextStyle(fontSize: 18, color: Colors.white70),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          "Last updated: $lastUpdated",
+                          style: const TextStyle(fontSize: 14, color: Colors.white60),
+                        ),
+                      ],
                     ),
                   ),
                 ],

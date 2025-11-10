@@ -54,7 +54,7 @@ class _SplashScreenState extends State<SplashScreen> {
             Image.asset('lib/assets/logo.png', height: 150),
             const SizedBox(height: 20),
             const Text(
-              'TerraScope',
+              'TERRASCOPE',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 30,
