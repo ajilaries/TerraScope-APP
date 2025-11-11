@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../Services/weather_services.dart'; // your updated weather_services.dart
 import '../Services/device_service.dart'; // for token handling
-import 'package:intl/intl.dart';
-
 class ForecastDashboard extends StatefulWidget {
   final double lat;
   final double lon;
