@@ -1,13 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import  'firebase_options.dart';
+import 'package:terra_scope_apk/Services/notification_service.dart';
+import 'firebase_options.dart';
 import 'package:terra_scope_apk/Screens/main_page.dart';
 import 'dart:async';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform);
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  // ✅ Get device FCM token BEFORE runApp()
+  String? token = await NotificationService.getDeviceToken();
+  print("✅ FCM Device Token: $token");
+
   runApp(const TerraScopeApp());
 }
 
@@ -34,7 +42,8 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    //navigate to the main page (swipe wrapper) after 3 seconds
+
+    // ✅ Navigate after 3 seconds
     Timer(const Duration(seconds: 3), () {
       Navigator.pushReplacement(
         context,
@@ -68,4 +77,3 @@ class _SplashScreenState extends State<SplashScreen> {
     );
   }
 }
-
