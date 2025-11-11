@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:weather_icons/weather_icons.dart';
 
 class WeatherService {
-  final String apiKey = "a5465304ed7d80bb3a52de825be8e7"; // Only needed if fetching forecasts
+  final String apiKey = "a5465304ed7d80bb3a52de825be8e7";
 
   /// Fetch current weather from backend
   Future<Map<String, dynamic>> getWeatherData({
@@ -13,7 +13,7 @@ class WeatherService {
     double? lon,
   }) async {
     try {
-      String urlString = "http://192.168.43.7:8000/weather";
+      String urlString = "http://10.16.183.189:8000/weather";
       if (lat != null && lon != null) {
         urlString += "?lat=$lat&lon=$lon";
       }
@@ -21,27 +21,23 @@ class WeatherService {
       final response = await http.get(Uri.parse(urlString));
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
-        if (data.isNotEmpty) {
-          final entry = data[0];
-          final temperature = entry['temperature'] ?? 0.0;
-          final rainfall = entry['rainfall'] ?? 0.0;
-          String condition;
-          if (rainfall > 0) {
-            condition = "Rain";
-          } else if (temperature >= 30) {
-            condition = "Clear";
-          } else {
-            condition = "Cloudy";
-          }
-
-          return {
-            "temperature": temperature,
-            "rainfall": rainfall,
-            "condition": condition,
-          };
+        final Map<String, dynamic> data = json.decode(response.body); // <-- fixed
+        final temperature = data['temperature'] ?? 0.0;
+        final rainfall = data['rainfall'] ?? 0.0;
+        String condition;
+        if (rainfall > 0) {
+          condition = "Rain";
+        } else if (temperature >= 30) {
+          condition = "Clear";
+        } else {
+          condition = "Cloudy";
         }
-        throw Exception("Backend returned empty weather data");
+
+        return {
+          "temperature": temperature,
+          "rainfall": rainfall,
+          "condition": condition,
+        };
       } else {
         throw Exception("Failed to fetch weather data");
       }
@@ -74,16 +70,15 @@ class WeatherService {
     return "lib/assets/images/default.jpg";
   }
 
-  /// Fetch 5-day forecast (only works if OpenWeather API key is valid)
+  /// Fetch 5-day forecast from OpenWeather API
   Future<List<Map<String, dynamic>>> getFiveDayForecast(double lat, double lon) async {
     if (apiKey.isEmpty) {
-      // If no API key, simulate 5-day forecast from current temperature
       final current = await getWeatherData(lat: lat, lon: lon);
       final temp = current['temperature'] ?? 25.0;
       return List.generate(5, (i) {
         return {
           "day": DateFormat('EEE').format(DateTime.now().add(Duration(days: i + 1))),
-          "temp": temp + i, // simple simulation
+          "temp": temp + i,
           "humidity": 50,
           "wind": 5.0,
           "icon": getWeatherIcon(current['condition']),
@@ -91,7 +86,6 @@ class WeatherService {
       });
     }
 
-    // Fetch from OpenWeather if API key is valid
     final url = Uri.parse(
       "https://api.openweathermap.org/data/2.5/forecast?lat=$lat&lon=$lon&appid=$apiKey&units=metric",
     );
@@ -121,24 +115,8 @@ class WeatherService {
     return forecastList;
   }
 
-  /// Fetch hourly forecast for a day (simulated if API key is empty)
+  /// Fetch hourly forecast for a day
   Future<List<Map<String, dynamic>>> getHourlyForecast(double lat, double lon, DateTime day) async {
-    if (apiKey.isEmpty) {
-      final current = await getWeatherData(lat: lat, lon: lon);
-      final temp = current['temperature'] ?? 25.0;
-      return List.generate(24, (i) {
-        return {
-          "time": "${i.toString().padLeft(2, '0')}:00",
-          "temp": temp,
-          "humidity": 50,
-          "wind": 5.0,
-          "rain": 0.0,
-          "icon": getWeatherIcon(current['condition']),
-        };
-      });
-    }
-
-    // Fetch from OpenWeather
     final url = Uri.parse(
       "https://api.openweathermap.org/data/2.5/forecast?lat=$lat&lon=$lon&appid=$apiKey&units=metric",
     );
