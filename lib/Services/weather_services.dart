@@ -70,53 +70,64 @@ class WeatherService {
   }
 
   /// ✅ 5-Day Forecast (Simulated if no API key)
-  Future<List<Map<String, dynamic>>> getFiveDayForecast(double lat, double lon) async {
-    if (apiKey.isEmpty) {
-      final current = await getWeatherData(lat: lat, lon: lon);
-      final temp = current['temperature'];
+Future<List<Map<String, dynamic>>> getFiveDayForecast(double lat, double lon) async {
+  if (apiKey.isEmpty) {
+    final current = await getWeatherData(lat: lat, lon: lon);
+    final temp = current['temperature'];
 
-      return List.generate(5, (i) {
-        return {
-          "day": DateFormat('EEE').format(DateTime.now().add(Duration(days: i + 1))),
-          "temp": temp + i,
-          "humidity": 55,
-          "wind": 4.0,
-          "icon": getWeatherIcon(current['condition']),
-        };
-      });
-    }
+    return List.generate(5, (i) {
+      final randomTemp = temp + (i - 2).abs(); // small variation for graph
+      final randomMin = randomTemp - 2;
+      final randomMax = randomTemp + 2;
 
-    // ✅ REAL OpenWeather forecast
-    final url = Uri.parse(
-      "https://api.openweathermap.org/data/2.5/forecast?lat=$lat&lon=$lon&appid=$apiKey&units=metric",
-    );
-
-    final res = await http.get(url);
-    if (res.statusCode != 200) throw Exception("Failed to load forecast");
-
-    final data = json.decode(res.body);
-    final List<dynamic> list = data["list"];
-    final List<Map<String, dynamic>> forecast = [];
-    final added = {};
-
-    for (var item in list) {
-      final dt = DateTime.parse(item["dt_txt"]);
-      final day = DateFormat("EEE").format(dt);
-
-      if (!added.containsKey(day) && dt.hour == 12) {
-        forecast.add({
-          "day": day,
-          "temp": item["main"]["temp"].toDouble(),
-          "humidity": item["main"]["humidity"],
-          "wind": item["wind"]["speed"].toDouble(),
-          "icon": getWeatherIcon(item["weather"][0]["main"]),
-        });
-        added[day] = true;
-      }
-    }
-
-    return forecast;
+      return {
+        "day": DateFormat('EEE').format(DateTime.now().add(Duration(days: i + 1))),
+        "temp": randomTemp,
+        "min": randomMin,
+        "max": randomMax,
+        "humidity": 55,
+        "wind": 4.0,
+        "description": current["condition"],
+        "icon": getWeatherIcon(current["condition"]),
+      };
+    });
   }
+
+  // REAL OpenWeather below (unchanged)
+  final url = Uri.parse(
+    "https://api.openweathermap.org/data/2.5/forecast?lat=$lat&lon=$lon&appid=$apiKey&units=metric",
+  );
+
+  final res = await http.get(url);
+  if (res.statusCode != 200) throw Exception("Failed to load forecast");
+
+  final data = json.decode(res.body);
+  final List<dynamic> list = data["list"];
+  final List<Map<String, dynamic>> forecast = [];
+  final added = {};
+
+  for (var item in list) {
+    final dt = DateTime.parse(item["dt_txt"]);
+    final day = DateFormat("EEE").format(dt);
+
+    if (!added.containsKey(day) && dt.hour == 12) {
+      forecast.add({
+        "day": day,
+        "temp": item["main"]["temp"].toDouble(),
+        "min": item["main"]["temp_min"].toDouble(),
+        "max": item["main"]["temp_max"].toDouble(),
+        "humidity": item["main"]["humidity"],
+        "wind": item["wind"]["speed"].toDouble(),
+        "description": item["weather"][0]["description"],
+        "icon": getWeatherIcon(item["weather"][0]["main"]),
+      });
+      added[day] = true;
+    }
+  }
+
+  return forecast;
+}
+
 
   /// ✅ Hourly Forecast (Simulated if no API key)
   Future<List<Map<String, dynamic>>> getHourlyForecast(
