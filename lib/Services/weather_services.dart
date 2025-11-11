@@ -5,141 +5,166 @@ import 'package:intl/intl.dart';
 import 'package:weather_icons/weather_icons.dart';
 
 class WeatherService {
-  final String apiKey = "a5465304ed7d80bb3a52de825be8e7";
+  final String apiKey = ""; // leave empty if you don’t use OpenWeather
 
-  /// Fetch current weather from backend
+  /// ✅ Fetch current weather from your backend
   Future<Map<String, dynamic>> getWeatherData({
     double? lat,
     double? lon,
   }) async {
     try {
-      String urlString = "http://10.16.183.189:8000/weather";
+      String url = "http://10.16.183.189:8000/weather";
       if (lat != null && lon != null) {
-        urlString += "?lat=$lat&lon=$lon";
+        url += "?lat=$lat&lon=$lon";
       }
 
-      final response = await http.get(Uri.parse(urlString));
+      final response = await http.get(Uri.parse(url));
 
       if (response.statusCode == 200) {
-        final Map<String, dynamic> data = json.decode(response.body); // <-- fixed
-        final temperature = data['temperature'] ?? 0.0;
-        final rainfall = data['rainfall'] ?? 0.0;
+        final data = json.decode(response.body);
+
+        if (data is! Map) throw Exception("Backend did not return a Map");
+
+        final temp = (data['temperature'] ?? 0).toDouble();
+        final rain = (data['rainfall'] ?? 0).toDouble();
+
         String condition;
-        if (rainfall > 0) {
+        if (rain > 0) {
           condition = "Rain";
-        } else if (temperature >= 30) {
+        } else if (temp >= 30) {
           condition = "Clear";
         } else {
           condition = "Cloudy";
         }
 
         return {
-          "temperature": temperature,
-          "rainfall": rainfall,
+          "temperature": temp,
+          "rainfall": rain,
           "condition": condition,
         };
-      } else {
-        throw Exception("Failed to fetch weather data");
       }
+
+      throw Exception("Failed to fetch weather");
     } catch (e) {
       debugPrint("WeatherService Error: $e");
       rethrow;
     }
   }
 
-  /// Map weather condition to icon
+  /// ✅ Weather icon mapping
   IconData getWeatherIcon(String condition) {
     final c = condition.toLowerCase();
-    if (c.contains('rain') || c.contains('drizzle')) return WeatherIcons.rain;
-    if (c.contains('cloud')) return WeatherIcons.cloudy;
-    if (c.contains('clear') || c.contains('sun')) return WeatherIcons.day_sunny;
-    if (c.contains('thunder') || c.contains('storm')) return WeatherIcons.thunderstorm;
-    if (c.contains('snow')) return WeatherIcons.snow;
-    if (c.contains('fog') || c.contains('mist')) return WeatherIcons.fog;
+    if (c.contains("rain")) return WeatherIcons.rain;
+    if (c.contains("cloud")) return WeatherIcons.cloudy;
+    if (c.contains("clear")) return WeatherIcons.day_sunny;
     return WeatherIcons.na;
   }
 
-  /// Background image based on condition
+  /// ✅ Background image
   String getBackgroundImage(String condition) {
     final c = condition.toLowerCase();
-    if (c.contains("rain") || c.contains("drizzle")) return "lib/assets/images/rainy.jpeg";
+    if (c.contains("rain")) return "lib/assets/images/rainy.jpeg";
     if (c.contains("cloud")) return "lib/assets/images/cloudy.jpeg";
-    if (c.contains("clear") || c.contains("sun")) return "lib/assets/images/sunny.jpeg";
-    if (c.contains("storm") || c.contains("thunder")) return "lib/assets/images/storm.jpg";
-    if (c.contains("fog") || c.contains("mist")) return "lib/assets/images/mist.jpg";
+    if (c.contains("clear")) return "lib/assets/images/sunny.jpeg";
     return "lib/assets/images/default.jpg";
   }
 
-  /// Fetch 5-day forecast from OpenWeather API
+  /// ✅ 5-Day Forecast (Simulated if no API key)
   Future<List<Map<String, dynamic>>> getFiveDayForecast(double lat, double lon) async {
     if (apiKey.isEmpty) {
       final current = await getWeatherData(lat: lat, lon: lon);
-      final temp = current['temperature'] ?? 25.0;
+      final temp = current['temperature'];
+
       return List.generate(5, (i) {
         return {
           "day": DateFormat('EEE').format(DateTime.now().add(Duration(days: i + 1))),
           "temp": temp + i,
-          "humidity": 50,
-          "wind": 5.0,
+          "humidity": 55,
+          "wind": 4.0,
           "icon": getWeatherIcon(current['condition']),
         };
       });
     }
 
+    // ✅ REAL OpenWeather forecast
     final url = Uri.parse(
       "https://api.openweathermap.org/data/2.5/forecast?lat=$lat&lon=$lon&appid=$apiKey&units=metric",
     );
-    final response = await http.get(url);
-    if (response.statusCode != 200) throw Exception("Failed to load 5-day forecast");
 
-    final data = json.decode(response.body);
-    final List<dynamic> list = data['list'];
-    final List<Map<String, dynamic>> forecastList = [];
-    final Map<String, bool> addedDays = {};
+    final res = await http.get(url);
+    if (res.statusCode != 200) throw Exception("Failed to load forecast");
+
+    final data = json.decode(res.body);
+    final List<dynamic> list = data["list"];
+    final List<Map<String, dynamic>> forecast = [];
+    final added = {};
 
     for (var item in list) {
-      final dateTime = DateTime.parse(item['dt_txt']);
-      final dayStr = DateFormat('EEE').format(dateTime);
+      final dt = DateTime.parse(item["dt_txt"]);
+      final day = DateFormat("EEE").format(dt);
 
-      if (!addedDays.containsKey(dayStr) && dateTime.hour == 12) {
-        forecastList.add({
-          'day': dayStr,
-          'temp': item['main']['temp'].toDouble(),
-          'humidity': item['main']['humidity'],
-          'wind': item['wind']['speed'].toDouble(),
-          'icon': getWeatherIcon(item['weather'][0]['main']),
+      if (!added.containsKey(day) && dt.hour == 12) {
+        forecast.add({
+          "day": day,
+          "temp": item["main"]["temp"].toDouble(),
+          "humidity": item["main"]["humidity"],
+          "wind": item["wind"]["speed"].toDouble(),
+          "icon": getWeatherIcon(item["weather"][0]["main"]),
         });
-        addedDays[dayStr] = true;
+        added[day] = true;
       }
     }
-    return forecastList;
+
+    return forecast;
   }
 
-  /// Fetch hourly forecast for a day
-  Future<List<Map<String, dynamic>>> getHourlyForecast(double lat, double lon, DateTime day) async {
+  /// ✅ Hourly Forecast (Simulated if no API key)
+  Future<List<Map<String, dynamic>>> getHourlyForecast(
+      double lat, double lon, DateTime day) async {
+    if (apiKey.isEmpty) {
+      final current = await getWeatherData(lat: lat, lon: lon);
+      final temp = current['temperature'];
+
+      return List.generate(24, (i) {
+        return {
+          "time": "${i.toString().padLeft(2, '0')}:00",
+          "temp": temp,
+          "humidity": 50,
+          "wind": 3.5,
+          "rain": 0,
+          "icon": getWeatherIcon(current['condition']),
+        };
+      });
+    }
+
+    // ✅ REAL OpenWeather hourly
     final url = Uri.parse(
       "https://api.openweathermap.org/data/2.5/forecast?lat=$lat&lon=$lon&appid=$apiKey&units=metric",
     );
-    final response = await http.get(url);
-    if (response.statusCode != 200) throw Exception("Failed to load hourly forecast");
 
-    final data = json.decode(response.body);
-    final List<dynamic> list = data['list'];
-    final List<Map<String, dynamic>> hourlyList = [];
+    final res = await http.get(url);
+    if (res.statusCode != 200) throw Exception("Failed to load hourly forecast");
+
+    final data = json.decode(res.body);
+    final List<dynamic> list = data["list"];
+    final List<Map<String, dynamic>> hourly = [];
 
     for (var item in list) {
-      final dateTime = DateTime.parse(item['dt_txt']);
-      if (dateTime.year == day.year && dateTime.month == day.month && dateTime.day == day.day) {
-        hourlyList.add({
-          'time': DateFormat('HH:mm').format(dateTime),
-          'temp': item['main']['temp'].toDouble(),
-          'humidity': item['main']['humidity'],
-          'wind': item['wind']['speed'].toDouble(),
-          'rain': item['rain'] != null ? (item['rain']['3h'] ?? 0.0) : 0.0,
-          'icon': getWeatherIcon(item['weather'][0]['main']),
+      final dt = DateTime.parse(item["dt_txt"]);
+      if (dt.year == day.year &&
+          dt.month == day.month &&
+          dt.day == day.day) {
+        hourly.add({
+          "time": DateFormat("HH:mm").format(dt),
+          "temp": item["main"]["temp"].toDouble(),
+          "humidity": item["main"]["humidity"],
+          "wind": item["wind"]["speed"].toDouble(),
+          "rain": item["rain"]?["3h"] ?? 0.0,
+          "icon": getWeatherIcon(item["weather"][0]["main"]),
         });
       }
     }
-    return hourlyList;
+
+    return hourly;
   }
 }
