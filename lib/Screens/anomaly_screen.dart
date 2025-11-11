@@ -86,9 +86,7 @@ class AnomalyScreen extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: anomalyDetected
-              ? [Colors.redAccent, Colors.deepOrange]
-              : [Colors.greenAccent, Colors.teal],
+          colors: [Colors.greenAccent, Colors.teal],
         ),
         borderRadius: BorderRadius.circular(22),
         boxShadow: [
@@ -102,18 +100,14 @@ class AnomalyScreen extends StatelessWidget {
       child: Row(
         children: [
           Icon(
-            anomalyDetected
-                ? Icons.warning_amber_rounded
-                : Icons.verified_rounded,
+            Icons.verified_rounded,
             color: Colors.white,
             size: 48,
           ),
           const SizedBox(width: 18),
           Expanded(
             child: Text(
-              anomalyDetected
-                  ? "Anomaly Detected!\nHigh rainfall expected"
-                  : "All Clear ✅\nNo anomalies in your area",
+              "All Clear ✅\nNo anomalies in your area",
               style: const TextStyle(
                 fontSize: 17,
                 color: Colors.white,
