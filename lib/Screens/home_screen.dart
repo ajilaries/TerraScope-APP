@@ -37,6 +37,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _fetchWeatherData(initial: true);
     _startAutoRefresh();
     _listenToLiveLocation();
+    LocationService().updateDeviceLocationToBackend();
   }
 
   @override
@@ -63,23 +64,25 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // ✅ Listen to real-time GPS updates
   void _listenToLiveLocation() {
-    positionStream = Geolocator.getPositionStream(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.high,
-        distanceFilter: 10, // update only if moved 10 meters
-      ),
-    ).listen((Position pos) async {
-      print("📍 Live GPS: ${pos.latitude}, ${pos.longitude}");
+    positionStream =
+        Geolocator.getPositionStream(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.high,
+            distanceFilter: 10, // update only if moved 10 meters
+          ),
+        ).listen((Position pos) async {
+          print("📍 Live GPS: ${pos.latitude}, ${pos.longitude}");
 
-      await _fetchWeatherData(
-        lat: pos.latitude,
-        lon: pos.longitude,
-      );
-    });
+          await _fetchWeatherData(lat: pos.latitude, lon: pos.longitude);
+        });
   }
 
   // ✅ Fetch weather (initial or GPS-triggered)
-  Future<void> _fetchWeatherData({bool initial = false, double? lat, double? lon}) async {
+  Future<void> _fetchWeatherData({
+    bool initial = false,
+    double? lat,
+    double? lon,
+  }) async {
     setState(() => isRefreshing = true);
 
     try {
@@ -108,7 +111,6 @@ class _HomeScreenState extends State<HomeScreen> {
         weatherIcon = WeatherService().getWeatherIcon(condition);
         lastUpdated = DateFormat('hh:mm a').format(DateTime.now());
       });
-
     } catch (e) {
       debugPrint("❌ ERROR: $e");
 
@@ -118,7 +120,6 @@ class _HomeScreenState extends State<HomeScreen> {
         weatherCondition = "Unknown";
         weatherIcon = WeatherIcons.na;
       });
-
     } finally {
       setState(() => isRefreshing = false);
     }
@@ -143,7 +144,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 ? const SizedBox(
                     width: 22,
                     height: 22,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
                   )
                 : const Icon(Icons.refresh),
             onPressed: isRefreshing ? null : () => _fetchWeatherData(),
@@ -162,7 +166,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 Text(
                   locationName,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.white),
+                  style: const TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 Text(
@@ -183,16 +191,26 @@ class _HomeScreenState extends State<HomeScreen> {
                       Icon(weatherIcon, size: 80, color: Colors.white),
                       Text(
                         temperature,
-                        style: const TextStyle(fontSize: 60, fontWeight: FontWeight.bold, color: Colors.white),
+                        style: const TextStyle(
+                          fontSize: 60,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
                       Text(
                         weatherCondition.toUpperCase(),
-                        style: const TextStyle(fontSize: 18, color: Colors.white70),
+                        style: const TextStyle(
+                          fontSize: 18,
+                          color: Colors.white70,
+                        ),
                       ),
                       const SizedBox(height: 12),
                       Text(
                         "Last updated: $lastUpdated",
-                        style: const TextStyle(fontSize: 14, color: Colors.white60),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.white60,
+                        ),
                       ),
                     ],
                   ),
