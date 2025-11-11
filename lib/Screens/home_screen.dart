@@ -78,52 +78,58 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // ✅ Fetch weather (initial or GPS-triggered)
-  Future<void> _fetchWeatherData({
-    bool initial = false,
-    double? lat,
-    double? lon,
-  }) async {
-    setState(() => isRefreshing = true);
+Future<void> _fetchWeatherData({
+  bool initial = false,
+  double? lat,
+  double? lon,
+}) async {
+  setState(() => isRefreshing = true);
 
-    try {
-      // ✅ If GPS passed from stream, use it
-      if (lat == null || lon == null) {
-        final loc = await LocationService().getCurrentLocation();
-        lat = loc["latitude"];
-        lon = loc["longitude"];
-      }
+  const String token = "YOUR_DEVICE_TOKEN"; // <-- Replace with real device/user token
 
-      final locInfo = await LocationService().getCurrentLocation();
-      locationName = "${locInfo["city"]}, ${locInfo["country"]}";
-      latitude = lat!.toStringAsFixed(4);
-      longitude = lon!.toStringAsFixed(4);
-
-      // ✅ Fetch weather from backend
-      final latest = await WeatherService().getWeatherData(lat: lat, lon: lon);
-
-      final temp = latest["temperature"] ?? 0;
-      final rainfall = latest["rainfall"] ?? 0;
-      final condition = rainfall > 0 ? "Rain" : "Clear";
-
-      setState(() {
-        temperature = "${temp.toStringAsFixed(1)}°C";
-        weatherCondition = condition;
-        weatherIcon = WeatherService().getWeatherIcon(condition);
-        lastUpdated = DateFormat('hh:mm a').format(DateTime.now());
-      });
-    } catch (e) {
-      debugPrint("❌ ERROR: $e");
-
-      setState(() {
-        locationName = "Location / Weather Error";
-        temperature = "---°C";
-        weatherCondition = "Unknown";
-        weatherIcon = WeatherIcons.na;
-      });
-    } finally {
-      setState(() => isRefreshing = false);
+  try {
+    // ✅ If GPS not passed from stream, get current location
+    if (lat == null || lon == null) {
+      final loc = await LocationService().getCurrentLocation();
+      lat = loc["latitude"];
+      lon = loc["longitude"];
     }
+
+    final locInfo = await LocationService().getCurrentLocation();
+    locationName = "${locInfo["city"]}, ${locInfo["country"]}";
+    latitude = lat!.toStringAsFixed(4);
+    longitude = lon!.toStringAsFixed(4);
+
+    // ✅ Fetch weather from backend (pass token!)
+    final latest = await WeatherService().getWeatherData(
+      token: token,
+      lat: lat,
+      lon: lon,
+    );
+
+    final temp = latest["temperature"] ?? 0;
+    final rainfall = latest["rainfall"] ?? 0;
+    final condition = latest["condition"] ?? (rainfall > 0 ? "Rain" : "Clear");
+
+    setState(() {
+      temperature = "${temp.toStringAsFixed(1)}°C";
+      weatherCondition = condition;
+      weatherIcon = WeatherService().getWeatherIcon(condition);
+      lastUpdated = DateFormat('hh:mm a').format(DateTime.now());
+    });
+  } catch (e) {
+    debugPrint("❌ ERROR: $e");
+
+    setState(() {
+      locationName = "Location / Weather Error";
+      temperature = "---°C";
+      weatherCondition = "Unknown";
+      weatherIcon = WeatherIcons.na;
+    });
+  } finally {
+    setState(() => isRefreshing = false);
   }
+}
 
   @override
   Widget build(BuildContext context) {
