@@ -4,18 +4,20 @@ import 'package:terra_scope_apk/Services/notification_service.dart';
 import 'package:terra_scope_apk/Services/device_service.dart';
 
 class LocationService {
-  // Fetches the most accurate and fast location
+  String? deviceToken; // ✅ Store device token here for reuse
+
+  /// Fetches the most accurate and fast location
   Future<Map<String, dynamic>> getCurrentLocation() async {
     bool serviceEnabled;
     LocationPermission permission;
 
-    // Check if location service is enabled
+    // Check if location services are enabled
     serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       throw Exception('Location services are disabled. Please enable them.');
     }
 
-    // Check and request permission
+    // Check and request permissions
     permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
@@ -30,19 +32,15 @@ class LocationService {
       );
     }
 
-    // Try to get last known position (faster response)
+    // Get last known position (fast) or current position (accurate)
     Position? position = await Geolocator.getLastKnownPosition();
-
-    // If no cached position, get precise GPS location
     position ??= await Geolocator.getCurrentPosition(
       desiredAccuracy: LocationAccuracy.bestForNavigation,
     );
 
-    // Convert coordinates to human-readable place name
-    List<Placemark> placemarks = await placemarkFromCoordinates(
-      position.latitude,
-      position.longitude,
-    );
+    // Convert coordinates to human-readable place
+    List<Placemark> placemarks =
+        await placemarkFromCoordinates(position.latitude, position.longitude);
 
     String city = placemarks.isNotEmpty
         ? placemarks[0].locality ?? "Unknown"
@@ -57,23 +55,25 @@ class LocationService {
     };
   }
 
+  /// Updates device location to backend (includes token handling)
   Future<void> updateDeviceLocationToBackend() async {
-    //get device location
-    final data = await getCurrentLocation();
+    try {
+      // 1️⃣ Get current location
+      final locData = await getCurrentLocation();
+      double lat = locData["latitude"];
+      double lon = locData["longitude"];
 
-    double lat = data["latitude"];
-    double lon = data["longitude"];
+      // 2️⃣ Get FCM token
+      String? token = await NotificationService.getDeviceToken();
 
-    //get FCM token
-    String? token = await NotificationService.getDeviceToken();
+      // 3️⃣ Fallback to DeviceService token if FCM token unavailable
+      token ??= DeviceService.getDeviceToken();
 
-    if (token == null) {
-      print("FCM token not found");
-      return;
+      // 4️⃣ Register device to backend
+      await DeviceService.registerDevice(lat: lat, lon: lon);
+      print("✅ Device location updated to backend (token: $token)");
+    } catch (e) {
+      print("❌ Failed to update device location: $e");
     }
-    // send to backend
-
-    await DeviceService.registerDevice(token, lat, lon);
-    print("Device location updated to backend");
   }
 }
