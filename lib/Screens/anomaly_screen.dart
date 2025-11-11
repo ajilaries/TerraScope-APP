@@ -79,7 +79,7 @@ class AnomalyScreen extends StatelessWidget {
 
   // ✅ Current anomaly status card
   Widget _currentStatusCard() {
-    bool anomalyDetected = false; // TEMP: later we replace with backend data
+// TEMP: later we replace with backend data
 
     return Container(
       width: double.infinity,
