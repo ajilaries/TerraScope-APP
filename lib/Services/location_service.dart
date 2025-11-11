@@ -1,5 +1,7 @@
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:terra_scope_apk/Services/notification_service.dart';
+import 'package:terra_scope_apk/Services/device_service.dart';
 
 class LocationService {
   // Fetches the most accurate and fast location
@@ -42,7 +44,9 @@ class LocationService {
       position.longitude,
     );
 
-    String city = placemarks.isNotEmpty ? placemarks[0].locality ?? "Unknown" : "Unknown";
+    String city = placemarks.isNotEmpty
+        ? placemarks[0].locality ?? "Unknown"
+        : "Unknown";
     String country = placemarks.isNotEmpty ? placemarks[0].country ?? "" : "";
 
     return {
@@ -51,5 +55,25 @@ class LocationService {
       "city": city,
       "country": country,
     };
+  }
+
+  Future<void> updateDeviceLocationToBackend() async {
+    //get device location
+    final data = await getCurrentLocation();
+
+    double lat = data["latitude"];
+    double lon = data["longitude"];
+
+    //get FCM token
+    String? token = await NotificationService.getDeviceToken();
+
+    if (token == null) {
+      print("FCM token not found");
+      return;
+    }
+    // send to backend
+
+    await DeviceService.registerDevice(token, lat, lon);
+    print("Device location updated to backend");
   }
 }
