@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import '../Services/weather_services.dart'; // your weather_services.dart
-// ignore: unused_import
+import '../Services/weather_services.dart'; // your updated weather_services.dart
+import '../Services/device_service.dart'; // for token handling
 import 'package:intl/intl.dart';
 
 class ForecastDashboard extends StatefulWidget {
@@ -30,11 +30,15 @@ class _ForecastDashboardState extends State<ForecastDashboard> {
 
   List<String> favoriteLocations = ["New York", "Tokyo", "Paris"];
   late String selectedLocation;
+  double lat = 0.0;
+  double lon = 0.0;
 
   @override
   void initState() {
     super.initState();
     selectedLocation = widget.locationName;
+    lat = widget.lat;
+    lon = widget.lon;
     fetchHourly();
   }
 
@@ -43,11 +47,16 @@ class _ForecastDashboardState extends State<ForecastDashboard> {
       isLoading = true;
     });
     try {
+      // Get device token
+      String token = DeviceService.getDeviceToken();
+
       final data = await weatherService.getHourlyForecast(
-        widget.lat,
-        widget.lon,
-        widget.selectedDay,
+        token: token,
+        lat: lat,
+        lon: lon,
+        day: widget.selectedDay,
       );
+
       setState(() {
         hourlyData = data;
         isLoading = false;
@@ -88,12 +97,15 @@ class _ForecastDashboardState extends State<ForecastDashboard> {
       appBar: AppBar(
         title: Text("Hourly Forecast - $selectedLocation"),
         actions: [
-          IconButton(icon: const Icon(Icons.location_city), onPressed: _showLocationSelector),
+          IconButton(
+            icon: const Icon(Icons.location_city),
+            onPressed: _showLocationSelector,
+          ),
         ],
       ),
       body: Column(
         children: [
-          // ===== Favorite Location Toggle =====
+          // Favorite Location Toggle
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: Row(
@@ -124,7 +136,7 @@ class _ForecastDashboardState extends State<ForecastDashboard> {
             ),
           ),
 
-          // ===== Metric Selector =====
+          // Metric Selector
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: ['temperature', 'wind', 'precipitation'].map((metric) {
@@ -140,58 +152,60 @@ class _ForecastDashboardState extends State<ForecastDashboard> {
                     backgroundColor:
                         selectedMetric == metric ? Colors.blue : Colors.grey,
                   ),
-                  child: Text(
-                      metric[0].toUpperCase() + metric.substring(1)),
+                  child: Text(metric[0].toUpperCase() + metric.substring(1)),
                 ),
               );
             }).toList(),
           ),
 
-          // ===== Current Value =====
+          // Current Value
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Text(
-              selectedMetric == 'temperature'
-                  ? "Current Temp: ${hourlyData[0]['temp']}°C"
-                  : selectedMetric == 'wind'
-                      ? "Current Wind: ${hourlyData[0]['wind']} m/s"
-                      : "Current Rain: ${hourlyData[0]['rain']} mm",
-              style:
-                  const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              hourlyData.isNotEmpty
+                  ? selectedMetric == 'temperature'
+                      ? "Current Temp: ${hourlyData[0]['temp']}°C"
+                      : selectedMetric == 'wind'
+                          ? "Current Wind: ${hourlyData[0]['wind']} m/s"
+                          : "Current Rain: ${hourlyData[0]['rain']} mm"
+                  : "No data",
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
           ),
 
-          // ===== Hourly Graph =====
+          // Hourly Graph
           Expanded(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
-              child: LineChart(
-                LineChartData(
-                  lineBarsData: [
-                    LineChartBarData(
-                      spots: spots,
-                      isCurved: true,
-                      barWidth: 3,
-                      color: Colors.blue,
-                      dotData: FlDotData(show: true),
-                    )
-                  ],
-                  titlesData: FlTitlesData(
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (value, meta) {
-                          int idx = value.toInt();
-                          if (idx >= 0 && idx < hourlyData.length) {
-                            return Text(hourlyData[idx]['time']);
-                          }
-                          return const Text('');
-                        },
+              child: hourlyData.isNotEmpty
+                  ? LineChart(
+                      LineChartData(
+                        lineBarsData: [
+                          LineChartBarData(
+                            spots: spots,
+                            isCurved: true,
+                            barWidth: 3,
+                            color: Colors.blue,
+                            dotData: FlDotData(show: true),
+                          ),
+                        ],
+                        titlesData: FlTitlesData(
+                          bottomTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              getTitlesWidget: (value, meta) {
+                                int idx = value.toInt();
+                                if (idx >= 0 && idx < hourlyData.length) {
+                                  return Text(hourlyData[idx]['time']);
+                                }
+                                return const Text('');
+                              },
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                ),
-              ),
+                    )
+                  : const Center(child: Text("No hourly data available")),
             ),
           ),
         ],
@@ -199,7 +213,7 @@ class _ForecastDashboardState extends State<ForecastDashboard> {
     );
   }
 
-  // ===== Location Selector =====
+  // Location Selector
   void _showLocationSelector() {
     showModalBottomSheet(
       context: context,
@@ -220,11 +234,22 @@ class _ForecastDashboardState extends State<ForecastDashboard> {
                   children: favoriteLocations.map((loc) {
                     return ListTile(
                       title: Text(loc),
-                      onTap: () {
+                      onTap: () async {
                         setState(() {
                           selectedLocation = loc;
-                          // TODO: Fetch lat/lon for this location and call fetchHourly()
                         });
+
+                        // TODO: Replace with actual lat/lon for selected location
+                        // Example: call your API or lookup table
+                        double newLat = lat; // placeholder
+                        double newLon = lon; // placeholder
+
+                        setState(() {
+                          lat = newLat;
+                          lon = newLon;
+                        });
+
+                        await fetchHourly();
                         Navigator.pop(context);
                       },
                     );
