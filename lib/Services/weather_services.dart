@@ -63,7 +63,7 @@ class WeatherService {
     double? lat,
     double? lon,
   }) async {
-    String url = "http://10.16.183.189:8000/weather";
+    String url = "http://10.0.2.2:8000/weather";
     if (lat != null && lon != null) {
       url += "?lat=$lat&lon=$lon";
     }
