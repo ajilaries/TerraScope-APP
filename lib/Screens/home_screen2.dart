@@ -1,182 +1,255 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
-import '../Widgets/footer_buttons.dart';
-import '../Screens/anomaly_screen.dart';
-import '../Screens/settings_screen.dart';
+import 'package:intl/intl.dart';
+import 'package:weather_icons/weather_icons.dart';
+import '../Services/weather_services.dart';
+import '../Services/location_service.dart';
+import '../Screens/forecast_dashboard.dart';
+import '../Screens/radar_screen.dart';
+import '../Screens/anomalies_screen.dart';
+import '../Screens/panic_screen.dart';
+import '../utils/background_helper.dart';
 
-class HomeScreen2 extends StatelessWidget {
+class HomeScreen2 extends StatefulWidget {
   const HomeScreen2({super.key});
+
+  @override
+  State<HomeScreen2> createState() => _HomeScreen2State();
+}
+
+class _HomeScreen2State extends State<HomeScreen2> {
+  double lat = 0.0;
+  double lon = 0.0;
+
+  String locationName = "Loading...";
+  String temperature = "---°C";
+  String humidity = "--%";
+  String wind = "-- km/h";
+  String uvIndex = "--";
+  String aqi = "--";
+  String lastUpdated = "—";
+  String weatherCondition = "Fetching...";
+  IconData weatherIcon = WeatherIcons.cloud;
+  String backgroundImage = 'lib/assets/images/default.jpg';
+
+  bool isLoading = true;
+ final WeatherService weatherService = WeatherService();
+
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchHomeData();
+  }
+
+  Future<void> _fetchHomeData() async {
+    setState(() => isLoading = true);
+
+    try {
+      final locData = await LocationService().getCurrentLocation();
+      lat = locData['latitude'] ?? 0.0;
+      lon = locData['longitude'] ?? 0.0;
+      locationName = "${locData['city'] ?? 'Unknown'}, ${locData['country'] ?? ''}";
+
+      // Snappy placeholder
+      setState(() {
+        weatherCondition = "Fetching...";
+        temperature = "---°C";
+        humidity = "--%";
+        wind = "-- km/h";
+        uvIndex = "--";
+        aqi = "--";
+        weatherIcon = WeatherIcons.cloud;
+        backgroundImage = getBackgroundImage(weatherCondition);
+      });
+
+      // Fetch weather + AQI
+      final weatherData = await weatherService.getWeatherData(
+        token: "dummy_token", // replace later if needed
+        lat: lat,
+        lon: lon,
+      );
+
+      final aqiData = await weatherService.getAQIData(lat: lat, lon: lon);
+
+      setState(() {
+        temperature =
+            "${(weatherData['temperature'] ?? 0).toStringAsFixed(1)}°C";
+        humidity = "${weatherData['humidity'] ?? '--'}%";
+        wind = "${weatherData['wind_speed'] ?? '--'} km/h";
+        uvIndex = (weatherData['uv']?.toString() ?? "--");
+        aqi = (aqiData['aqi']?.toString() ?? "--");
+        weatherCondition = weatherData['condition'] ?? "Unknown";
+        weatherIcon = weatherService.getWeatherIcon(weatherCondition);
+        backgroundImage = weatherService.getBackgroundImage(weatherCondition);
+        lastUpdated = DateFormat('hh:mm a').format(DateTime.now());
+        isLoading = false;
+      });
+    } catch (e) {
+      debugPrint("Error fetching home data: $e");
+      if (mounted) setState(() => isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBody: true,
-      backgroundColor: const Color(0xFF0A0A0A),
-
-      // ✅ AppBar Clean + Blur + Settings Navigation
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        backgroundColor: Colors.black.withOpacity(0.4),
-        elevation: 0,
-        flexibleSpace: ClipRect(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
-            child: Container(color: Colors.transparent),
-          ),
-        ),
-        title: const Text(
-          "Terrascope",
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.5,
-          ),
-        ),
-        actions: [
-          IconButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const SettingsScreen()),
-              );
-            },
-            icon: const Icon(Icons.settings, size: 26),
-          )
-        ],
-      ),
-
-      // ✅ Body + Footer
-      body: Column(
-        children: [
-          Expanded(child: _buildMainFeatures(context)),
-          const FooterButtons(),
-          const SizedBox(height: 15),
-        ],
-      ),
-    );
-  }
-
-  // ✅ Main Features Grid (Animated + Clean)
-  Widget _buildMainFeatures(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(18.0),
-      child: GridView.builder(
-        physics: const BouncingScrollPhysics(),
-        itemCount: 4,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          mainAxisSpacing: 20,
-          crossAxisSpacing: 20,
-          childAspectRatio: 1.05,
-        ),
-        itemBuilder: (context, index) {
-          switch (index) {
-            case 0:
-              return _featureCard(
-                title: "Real-Time Weather",
-                icon: Icons.cloud_outlined,
-                gradient: const [Color(0xFF4FACFE), Color(0xFF00F2FE)],
-                onTap: () {},
-              );
-            case 1:
-              return _featureCard(
-                title: "Anomaly Alerts",
-                icon: Icons.warning_amber_rounded,
-                gradient: const [Color(0xFFFFA751), Color(0xFFFF5858)],
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const AnomalyScreen(),
-                    ),
-                  );
-                },
-              );
-            case 2:
-              return _featureCard(
-                title: "Forecast",
-                icon: Icons.calendar_today_outlined,
-                gradient: const [Color(0xFF43E97B), Color(0xFF38F9D7)],
-                onTap: () {},
-              );
-            case 3:
-              return _featureCard(
-                title: "History",
-                icon: Icons.history,
-                gradient: const [Color(0xFFFA8BFF), Color(0xFF2BD2FF)],
-                onTap: () {},
-              );
-            default:
-              return Container();
-          }
-        },
-      ),
-    );
-  }
-
-  // ✅ Improved Glass Card
-  Widget _featureCard({
-    required String title,
-    required IconData icon,
-    required List<Color> gradient,
-    required Function onTap,
-  }) {
-    return GestureDetector(
-      onTap: () => onTap(),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          color: Colors.white.withOpacity(0.07),
-          border: Border.all(color: Colors.white.withOpacity(0.15)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.35),
-              blurRadius: 18,
-              offset: const Offset(0, 8),
-            )
-          ],
-        ),
+      body: RefreshIndicator(
+        onRefresh: _fetchHomeData,
         child: Stack(
           children: [
-            // ✅ Glow effect
-            Positioned(
-              right: -40,
-              bottom: -40,
-              child: Container(
-                height: 130,
-                width: 130,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: gradient.map((c) => c.withOpacity(0.4)).toList(),
-                  ),
-                ),
-              ),
+            Positioned.fill(
+              child: Image.asset(backgroundImage, fit: BoxFit.cover),
             ),
+            Container(color: Colors.black.withOpacity(0.3)),
+            SafeArea(
+              child: isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(color: Colors.white),
+                    )
+                  : ListView(
+                      padding: const EdgeInsets.all(16),
+                      children: [
+                        // Location & Updated Time
+                        Text(
+                          locationName,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                              fontSize: 26,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          "Last updated: $lastUpdated",
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: Colors.white70),
+                        ),
+                        const SizedBox(height: 20),
 
-            // ✅ Center Content
-            Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(icon, size: 46, color: Colors.white),
-                  const SizedBox(height: 12),
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 17,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.3,
+                        // Weather Card
+                        Card(
+                          color: Colors.white24,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              children: [
+                                BoxedIcon(weatherIcon,
+                                    size: 64, color: Colors.white),
+                                const SizedBox(height: 8),
+                                Text(
+                                  temperature,
+                                  style: const TextStyle(
+                                      fontSize: 48,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white),
+                                ),
+                                Text(
+                                  weatherCondition.toUpperCase(),
+                                  style: const TextStyle(
+                                      fontSize: 18, color: Colors.white70),
+                                ),
+                                const SizedBox(height: 12),
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceAround,
+                                  children: [
+                                    _infoColumn("Humidity", humidity),
+                                    _infoColumn("Wind", wind),
+                                    _infoColumn("UV Index", uvIndex),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                _infoColumn("Air Quality", aqi,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+
+                        // Quick Access Buttons
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            _quickButton("Forecast", Icons.calendar_today, () {
+                              Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) => ForecastDashboard(
+                                            lat: lat,
+                                            lon: lon,
+                                            selectedDay: DateTime.now(),
+                                            locationName: locationName,
+                                          )));
+                            }),
+                            _quickButton("Radar", Icons.map, () {
+                              Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) =>
+                                          RadarScreen(lat: lat, lon: lon)));
+                            }),
+                            _quickButton("Alerts", Icons.warning, () {
+                              Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) => AnomaliesScreen(
+                                            lat: lat,
+                                            lon: lon,
+                                          )));
+                            }),
+                            _quickButton("Panic", Icons.sos, () {
+                              Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) => const PanicScreen()));
+                            }),
+                          ],
+                        ),
+                        const SizedBox(height: 30),
+                      ],
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _quickButton(String label, IconData icon, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          CircleAvatar(
+            radius: 28,
+            backgroundColor: Colors.white24,
+            child: Icon(icon, color: Colors.white, size: 28),
+          ),
+          const SizedBox(height: 4),
+          Text(label, style: const TextStyle(color: Colors.white)),
+        ],
+      ),
+    );
+  }
+
+  Widget _infoColumn(String label, String value,
+      {double fontSize = 14, FontWeight fontWeight = FontWeight.normal}) {
+    return Column(
+      children: [
+        Text(label,
+            style: TextStyle(color: Colors.white70, fontSize: fontSize - 2)),
+        const SizedBox(height: 4),
+        Text(value,
+            style: TextStyle(
+                color: Colors.white,
+                fontSize: fontSize,
+                fontWeight: fontWeight)),
+      ],
     );
   }
 }
