@@ -14,7 +14,7 @@ class AnomalyScreen extends StatelessWidget {
         title: const Text(
           "Anomaly Alerts",
           style: TextStyle(
-            fontSize: 22,
+            fontSize: 21,
             fontWeight: FontWeight.w700,
           ),
         ),
