@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
 
-class HomeScreen0 extends StatelessWidget {
+class HomeScreen0 extends StatefulWidget {
   final Function(String) onModeSelected;
 
   const HomeScreen0({super.key, required this.onModeSelected});
+
+  @override
+  State<HomeScreen0> createState() => _HomeScreen0State();
+}
+
+class _HomeScreen0State extends State<HomeScreen0> {
+  String selectedMode = ""; // 🔥 currently selected mode
 
   @override
   Widget build(BuildContext context) {
@@ -65,35 +72,30 @@ class HomeScreen0 extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 children: [
                   modeCard(
-                    context,
                     title: "Default",
                     icon: Icons.dashboard,
                     color: Colors.blue,
                     mode: "default",
                   ),
                   modeCard(
-                    context,
                     title: "Traveller",
                     icon: Icons.travel_explore,
                     color: Colors.green,
                     mode: "traveller",
                   ),
                   modeCard(
-                    context,
                     title: "Farmer",
                     icon: Icons.agriculture,
                     color: Colors.brown,
                     mode: "farmer",
                   ),
                   modeCard(
-                    context,
                     title: "Safety",
                     icon: Icons.shield,
                     color: Colors.red,
                     mode: "safety",
                   ),
                   modeCard(
-                    context,
                     title: "Kids / Senior",
                     icon: Icons.family_restroom,
                     color: Colors.deepPurple,
@@ -105,7 +107,6 @@ class HomeScreen0 extends StatelessWidget {
 
             const SizedBox(height: 10),
 
-            // LOGIN REQUIRED NOTE
             Center(
               child: Text(
                 "Switching modes requires login",
@@ -122,9 +123,14 @@ class HomeScreen0 extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: ElevatedButton(
-                onPressed: () {},
+                onPressed: selectedMode.isEmpty
+                    ? null
+                    : () {
+                        widget.onModeSelected(selectedMode);
+                      },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black87,
+                  backgroundColor:
+                      selectedMode.isEmpty ? Colors.grey : Colors.black87,
                   foregroundColor: Colors.white,
                   minimumSize: const Size(double.infinity, 55),
                   shape: RoundedRectangleBorder(
@@ -132,7 +138,7 @@ class HomeScreen0 extends StatelessWidget {
                   ),
                 ),
                 child: const Text(
-                  "Login / Continue",
+                  "Continue",
                   style: TextStyle(fontSize: 18),
                 ),
               ),
@@ -145,22 +151,30 @@ class HomeScreen0 extends StatelessWidget {
     );
   }
 
-  // 🔥 MODE CARD WIDGET
-  Widget modeCard(
-    BuildContext context, {
+  // 🔥 MODE CARD WIDGET WITH SELECTION
+  Widget modeCard({
     required String title,
     required IconData icon,
     required Color color,
     required String mode,
   }) {
+    final bool isSelected = selectedMode == mode;
+
     return GestureDetector(
       onTap: () {
-        onModeSelected(mode);
+        setState(() {
+          selectedMode = mode;
+        });
       },
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: isSelected ? color : Colors.transparent,
+            width: 2.5,
+          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black12,
