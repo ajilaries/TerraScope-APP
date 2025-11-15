@@ -1,6 +1,6 @@
 name: terra_scope_apk
 description: "Terrascope Pro - Advanced Weather & Safety Flutter App"
-publish_to: 'none' # Remove this line if you want to publish to pub.dev
+publish_to: 'none'
 
 version: 1.0.0+1
 
@@ -11,26 +11,28 @@ dependencies:
   flutter:
     sdk: flutter
 
-  #  UI & Icons
+  provider: ^6.1.2
+
+  # UI & Icons
   cupertino_icons: ^1.0.8
   weather_icons: ^3.0.0
   fl_chart: ^1.1.1
 
-  #  Networking
+  # Networking
   http: ^1.5.0
 
-  #  Location Services
+  # Location Services
   geolocator: ^14.0.2
   geocoding: ^2.1.1
 
-  #  Maps
+  # Maps
   flutter_map: ^6.1.0
   latlong2: ^0.9.1
 
-  #  Utilities
-  intl: ^0.19.0  # For DateFormat
+  # Utilities
+  intl: ^0.19.0
 
-  #  Firebase Services
+  # Firebase Services
   firebase_core: ^4.2.1
   cloud_firestore: ^6.1.0
   firebase_messaging: ^16.0.4
@@ -45,7 +47,6 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-  #  App Assets
   assets:
     - lib/assets/logo.png
     - lib/assets/images/cloudy.jpeg
