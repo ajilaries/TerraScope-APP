@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../Services/weather_services.dart';
-import 'package:fl_chart/fl_chart.dart';
 
 class AnomaliesScreen extends StatefulWidget {
   final double lat;
