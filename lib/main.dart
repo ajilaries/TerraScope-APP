@@ -4,7 +4,6 @@ import 'package:terra_scope_apk/Services/notification_service.dart';
 import 'firebase_options.dart';
 
 import 'Screens/splash_screen.dart';
-import 'dart:async';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
