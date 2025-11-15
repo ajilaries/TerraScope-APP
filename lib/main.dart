@@ -1,28 +1,26 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:terra_scope_apk/Services/notification_service.dart';
-import 'firebase_options.dart';
+import 'package:provider/provider.dart';
 
-import 'Screens/splash_screen.dart';
+import 'package:terra_scope_apk/providers/mode_provider.dart';
+import 'package:terra_scope_apk/Screens/main_page.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
-  String? token = await NotificationService.getDeviceToken();
-  print("FCM device token :$token");
-
-  runApp(const TerraScopeApp());
+void main() {
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => ModeProvider(),
+      child: const MyApp(),
+    ),
+  );
 }
 
-class TerraScopeApp extends StatelessWidget {
-  const TerraScopeApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: const SplashScreen(),
+      home: MainPage(),
     );
   }
 }
