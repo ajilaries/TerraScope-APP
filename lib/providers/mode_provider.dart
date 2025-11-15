@@ -1,12 +1,12 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 
 class ModeProvider extends ChangeNotifier {
-  String _currentMode = "normal"; //default mode
+  String _mode = "normal"; // default mode
 
-  String get currentMode => _currentMode;
+  String get mode => _mode;
 
   void setMode(String newMode) {
-    _currentMode = newMode;
+    _mode = newMode;
     notifyListeners();
   }
 }
