@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:terra_scope_apk/screens/signup_screen.dart';
+  // <--- import your signup page
 
 class HomeScreen0 extends StatefulWidget {
   final Function(String) onModeSelected;
@@ -10,7 +12,7 @@ class HomeScreen0 extends StatefulWidget {
 }
 
 class _HomeScreen0State extends State<HomeScreen0> {
-  String selectedMode = ""; // 🔥 currently selected mode
+  String selectedMode = ""; // stores selected mode
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +22,6 @@ class _HomeScreen0State extends State<HomeScreen0> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
             // HEADER
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
@@ -49,7 +50,7 @@ class _HomeScreen0State extends State<HomeScreen0> {
 
             const SizedBox(height: 20),
 
-            // MODES SECTION TITLE
+            // SECTION TITLE
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Text(
@@ -63,7 +64,7 @@ class _HomeScreen0State extends State<HomeScreen0> {
 
             const SizedBox(height: 20),
 
-            // GRID OF MODES
+            // MODES GRID
             Expanded(
               child: GridView.count(
                 crossAxisCount: 2,
@@ -123,23 +124,35 @@ class _HomeScreen0State extends State<HomeScreen0> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor:
+                      selectedMode.isEmpty ? Colors.grey : Colors.black,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
                 onPressed: selectedMode.isEmpty
                     ? null
                     : () {
-                        widget.onModeSelected(selectedMode);
+                        if (selectedMode == "default") {
+                          widget.onModeSelected(selectedMode);
+                        } else {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => SignupScreen(
+                                  selectedMode: selectedMode),
+                            ),
+                          );
+                        }
                       },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor:
-                      selectedMode.isEmpty ? Colors.grey : Colors.black87,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(double.infinity, 55),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                child: const Text(
+                child: Text(
                   "Continue",
-                  style: TextStyle(fontSize: 18),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ),
@@ -151,7 +164,7 @@ class _HomeScreen0State extends State<HomeScreen0> {
     );
   }
 
-  // 🔥 MODE CARD WIDGET WITH SELECTION
+  // MODE CARD UI
   Widget modeCard({
     required String title,
     required IconData icon,
