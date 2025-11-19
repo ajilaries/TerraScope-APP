@@ -1,34 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-import '../Screens/home_screen2.dart';
-import '../Screens/forecast_dashboard.dart';
-import '../Screens/radar_screen.dart';
-import '../Screens/anomalies_screen.dart';
-import '../Screens/panic_screen.dart';
-import '../providers/mode_provider.dart';
-import '../Services/weather_services.dart';
 import '../Services/location_service.dart';
+import '../Services/weather_services.dart';
+import '../providers/mode_provider.dart';
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+class MainHomeScreen extends StatefulWidget {
+  const MainHomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<MainHomeScreen> createState() => _MainHomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
-  String smallTemp = "---°C";
-  String smallCond = "Loading...";
-  String smallCity = "Loading...";
+class _MainHomeScreenState extends State<MainHomeScreen> {
+  String city = "Loading...";
+  String condition = "—";
+  String temp = "—°C";
+  int aqi = 0;
+
+  List<Map<String, dynamic>> forecast7 = [];
+  List<Map<String, dynamic>> forecast24 = [];
 
   @override
   void initState() {
     super.initState();
-    _loadSmallWeatherPreview();
+    loadAllWeather();
   }
 
-  Future<void> _loadSmallWeatherPreview() async {
+  Future<void> loadAllWeather() async {
     try {
       final loc = await LocationService().getCurrentLocation();
       final weather = await WeatherService().getWeatherData(
@@ -38,104 +38,280 @@ class _HomeScreenState extends State<HomeScreen> {
       );
 
       setState(() {
-        smallCity = loc["city"];
-        smallTemp = "${weather["temperature"]?.toStringAsFixed(1)}°C";
-        smallCond = weather["condition"];
+        city = loc["city"];
+        temp = "${weather["temperature"]?.toStringAsFixed(1)}°C";
+        condition = weather["condition"];
+        aqi = weather["aqi"] ?? 40;
+        forecast7 = weather["forecast7"] ?? [];
+        forecast24 = weather["forecast24"] ?? [];
       });
     } catch (e) {
       setState(() {
-        smallTemp = "---°C";
-        smallCond = "Unable to fetch";
+        temp = "—°C";
+        condition = "Error";
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final mode = Provider.of<ModeProvider>(context).mode;
+    final isDark = Provider.of<ModeProvider>(context).isDarkMode;
 
     return Scaffold(
+      backgroundColor: isDark ? Colors.black : Colors.white,
       appBar: AppBar(
-        title: const Text("Terrascope Pro"),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        title: Text("Terrascope Pro",
+            style: TextStyle(
+              color: isDark ? Colors.white : Colors.black,
+              fontWeight: FontWeight.bold,
+            )),
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () {},
-          )
+            icon: Icon(Icons.brightness_6,
+                color: isDark ? Colors.white : Colors.black),
+            onPressed: () =>
+                Provider.of<ModeProvider>(context, listen: false)
+                    .toggleTheme(),
+          ),
         ],
       ),
 
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
+      body: RefreshIndicator(
+        onRefresh: loadAllWeather,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
 
-          // 🔹 Small Weather Row
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.wb_sunny_outlined),
-              title: Text("$smallCity • $smallTemp"),
-              subtitle: Text(smallCond),
-            ),
-          ),
+            // 🔥 TOP: Temperature + Location
+            _currentWeatherCard(isDark),
+
+            const SizedBox(height: 20),
+
+            // 🔥 7-day forecast
+            _forecast7Card(isDark),
+
+            const SizedBox(height: 20),
+
+            // 🔥 24-hour forecast
+            _forecast24Card(isDark),
+
+            const SizedBox(height: 20),
+
+            // 🔥 Basic Metrics
+            _metricsGrid(isDark),
+
+            const SizedBox(height: 20),
+
+            // 🔥 AQI Section
+            _aqiCard(isDark),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ---------------- UI WIDGETS ----------------
+
+  Widget _currentWeatherCard(bool dark) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: _box(dark),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(city,
+              style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: dark ? Colors.white : Colors.black)),
+
+          Text(DateFormat('EEE, MMM d • hh:mm a').format(DateTime.now()),
+              style: TextStyle(color: dark ? Colors.white54 : Colors.black54)),
 
           const SizedBox(height: 20),
 
-          // 🔹 Mode Buttons
-          _bigButton("Real-Time Weather", Icons.cloud, () {
-            Navigator.push(context, MaterialPageRoute(
-              builder: (_) => const HomeScreen2(),
-            ));
-          }),
-
-          _bigButton("Forecast", Icons.calendar_today, () {}),
-          _bigButton("Radar & Maps", Icons.satellite_alt, () {}),
-          _bigButton("Anomaly Alerts", Icons.warning_amber, () {}),
-          _bigButton("Compass & Sensors", Icons.explore, () {}),
-          _bigButton("Panic / Safety Mode", Icons.sos, () {
-            Navigator.push(context, MaterialPageRoute(
-              builder: (_) => const PanicScreen(),
-            ));
-          }),
-
-          if (mode == "admin") 
-            _bigButton("Admin Dashboard", Icons.admin_panel_settings, () {}),
-
-          const SizedBox(height: 30),
-
-          // 🔹 Quick Stats
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _smallStat("Temp", smallTemp),
-              _smallStat("Humidity", "—"),
-              _smallStat("AQI", "—"),
-              _smallStat("Rain", "—"),
+              Text(temp,
+                  style: TextStyle(
+                      fontSize: 60,
+                      fontWeight: FontWeight.bold,
+                      color: dark ? Colors.white : Colors.black)),
+              const SizedBox(width: 15),
+              Text(condition,
+                  style: TextStyle(
+                    fontSize: 20,
+                    color: dark ? Colors.white70 : Colors.black87,
+                  )),
             ],
-          ),
+          )
         ],
       ),
     );
   }
 
-  // 🔸 Big Button
-  Widget _bigButton(String title, IconData icon, VoidCallback onTap) {
-    return Card(
-      elevation: 2,
-      child: ListTile(
-        leading: Icon(icon, size: 32),
-        title: Text(title),
-        onTap: onTap,
+  Widget _forecast7Card(bool dark) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: _box(dark),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text("7-Day Forecast",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: dark ? Colors.white : Colors.black,
+              )),
+
+          const SizedBox(height: 10),
+
+          SizedBox(
+            height: 105,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: forecast7.length,
+              itemBuilder: (_, i) {
+                return Container(
+                  width: 80,
+                  padding: const EdgeInsets.all(8),
+                  margin: const EdgeInsets.only(right: 12),
+                  decoration: _smallBox(dark),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(forecast7[i]["day"],
+                          style: TextStyle(
+                              color: dark ? Colors.white70 : Colors.black87)),
+                      const SizedBox(height: 5),
+                      Icon(Icons.cloud_queue, color: dark ? Colors.white : Colors.black),
+                      const SizedBox(height: 5),
+                      Text("${forecast7[i]["max"]}° / ${forecast7[i]["min"]}°",
+                          style: TextStyle(color: dark ? Colors.white : Colors.black)),
+                    ],
+                  ),
+                );
+              },
+            ),
+          )
+        ],
       ),
     );
   }
 
-  // 🔸 Small Stat Box
-  Widget _smallStat(String label, String value) {
-    return Column(
+  Widget _forecast24Card(bool dark) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: _box(dark),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text("Next 24 Hours",
+              style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: dark ? Colors.white : Colors.black)),
+          const SizedBox(height: 10),
+
+          SizedBox(
+            height: 120,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: forecast24.length,
+              itemBuilder: (_, i) {
+                return Container(
+                  width: 75,
+                  padding: const EdgeInsets.all(8),
+                  margin: const EdgeInsets.only(right: 12),
+                  decoration: _smallBox(dark),
+                  child: Column(
+                    children: [
+                      Text(forecast24[i]["time"],
+                          style: TextStyle(color: dark ? Colors.white : Colors.black)),
+                      const SizedBox(height: 5),
+                      Icon(Icons.cloud, color: dark ? Colors.white : Colors.black),
+                      const SizedBox(height: 5),
+                      Text("${forecast24[i]["temp"]}°",
+                          style: TextStyle(color: dark ? Colors.white : Colors.black)),
+                    ],
+                  ),
+                );
+              },
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _metricsGrid(bool dark) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
-        Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-        Text(label),
+        _metric("Humidity", "62%", dark),
+        _metric("Wind", "12 km/h", dark),
+        _metric("Pressure", "1008 hPa", dark),
+        _metric("Visibility", "8 km", dark),
       ],
     );
   }
+
+  Widget _metric(String label, String value, bool dark) {
+    return Column(
+      children: [
+        Text(value,
+            style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: dark ? Colors.white : Colors.black)),
+        Text(label, style: TextStyle(color: dark ? Colors.white70 : Colors.black87)),
+      ],
+    );
+  }
+
+  Widget _aqiCard(bool dark) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: _box(dark),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text("Air Quality Index",
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: dark ? Colors.white : Colors.black)),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 25,
+                backgroundColor: Colors.orange,
+                child: Text(
+                  "$aqi",
+                  style: const TextStyle(fontSize: 22, color: Colors.white),
+                ),
+              ),
+              const SizedBox(width: 15),
+              Text("Moderate air quality today.",
+                  style: TextStyle(
+                      color: dark ? Colors.white70 : Colors.black87)),
+            ],
+          )
+        ],
+      ),
+    );
+  }
+
+  // ---------------- Decorations ----------------
+
+  BoxDecoration _box(bool dark) => BoxDecoration(
+        color: dark ? Colors.white10 : Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(18),
+      );
+
+  BoxDecoration _smallBox(bool dark) => BoxDecoration(
+        color: dark ? Colors.white12 : Colors.grey.shade200,
+        borderRadius: BorderRadius.circular(14),
+      );
 }
