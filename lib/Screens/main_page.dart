@@ -17,7 +17,7 @@ class MainPage extends StatelessWidget {
             print("Selected mode: $mode");
           },
         ),
-        HomeScreen(),
+        MainHomeScreen(),
         HomeScreen2(),
       ],
     );
