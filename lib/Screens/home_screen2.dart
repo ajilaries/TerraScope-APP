@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:weather_icons/weather_icons.dart';
@@ -7,7 +8,6 @@ import '../Screens/forecast_dashboard.dart';
 import '../Screens/radar_screen.dart';
 import '../Screens/anomalies_screen.dart';
 import '../Screens/panic_screen.dart';
-import '../utils/background_helper.dart';
 
 class HomeScreen2 extends StatefulWidget {
   const HomeScreen2({super.key});
@@ -32,25 +32,42 @@ class _HomeScreen2State extends State<HomeScreen2> {
   String backgroundImage = 'lib/assets/images/default.jpg';
 
   bool isLoading = true;
- final WeatherService weatherService = WeatherService();
 
+  final WeatherService weatherService = WeatherService();
+  Timer? autoRefreshTimer;
 
   @override
   void initState() {
     super.initState();
     _fetchHomeData();
+
+    // 🔥 Auto-refresh every 30 seconds
+    autoRefreshTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      _fetchHomeData();
+    });
+  }
+
+  @override
+  void dispose() {
+    autoRefreshTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _fetchHomeData() async {
+    if (!mounted) return;
+
     setState(() => isLoading = true);
 
     try {
+      // 🔥 Get live location first
       final locData = await LocationService().getCurrentLocation();
       lat = locData['latitude'] ?? 0.0;
       lon = locData['longitude'] ?? 0.0;
-      locationName = "${locData['city'] ?? 'Unknown'}, ${locData['country'] ?? ''}";
 
-      // Snappy placeholder
+      locationName =
+          "${locData['city'] ?? 'Unknown'}, ${locData['country'] ?? ''}";
+
+      // Snappy placeholders
       setState(() {
         weatherCondition = "Fetching...";
         temperature = "---°C";
@@ -59,16 +76,16 @@ class _HomeScreen2State extends State<HomeScreen2> {
         uvIndex = "--";
         aqi = "--";
         weatherIcon = WeatherIcons.cloud;
-        backgroundImage = getBackgroundImage(weatherCondition);
       });
 
-      // Fetch weather + AQI
+      // 🔥 Fetch Weather
       final weatherData = await weatherService.getWeatherData(
-        token: "dummy_token", // replace later if needed
+        token: "dummy_token",
         lat: lat,
         lon: lon,
       );
 
+      // 🔥 Fetch AQI
       final aqiData = await weatherService.getAQIData(lat: lat, lon: lon);
 
       setState(() {
@@ -76,16 +93,18 @@ class _HomeScreen2State extends State<HomeScreen2> {
             "${(weatherData['temperature'] ?? 0).toStringAsFixed(1)}°C";
         humidity = "${weatherData['humidity'] ?? '--'}%";
         wind = "${weatherData['wind_speed'] ?? '--'} km/h";
-        uvIndex = (weatherData['uv']?.toString() ?? "--");
-        aqi = (aqiData['aqi']?.toString() ?? "--");
+        uvIndex = weatherData['uv']?.toString() ?? "--";
+        aqi = aqiData['aqi']?.toString() ?? "--";
+
         weatherCondition = weatherData['condition'] ?? "Unknown";
         weatherIcon = weatherService.getWeatherIcon(weatherCondition);
         backgroundImage = weatherService.getBackgroundImage(weatherCondition);
+
         lastUpdated = DateFormat('hh:mm a').format(DateTime.now());
         isLoading = false;
       });
     } catch (e) {
-      debugPrint("Error fetching home data: $e");
+      debugPrint("🔥 Error fetching data: $e");
       if (mounted) setState(() => isLoading = false);
     }
   }
@@ -100,7 +119,7 @@ class _HomeScreen2State extends State<HomeScreen2> {
             Positioned.fill(
               child: Image.asset(backgroundImage, fit: BoxFit.cover),
             ),
-            Container(color: Colors.black.withOpacity(0.3)),
+            Container(color: Colors.black.withOpacity(0.30)),
             SafeArea(
               child: isLoading
                   ? const Center(
@@ -109,20 +128,21 @@ class _HomeScreen2State extends State<HomeScreen2> {
                   : ListView(
                       padding: const EdgeInsets.all(16),
                       children: [
-                        // Location & Updated Time
+                        // Location
                         Text(
                           locationName,
                           textAlign: TextAlign.center,
                           style: const TextStyle(
+                              color: Colors.white,
                               fontSize: 26,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white),
+                              fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          "Last updated: $lastUpdated",
+                          "Updated: $lastUpdated",
                           textAlign: TextAlign.center,
-                          style: const TextStyle(color: Colors.white70),
+                          style: const TextStyle(
+                              color: Colors.white70, fontSize: 14),
                         ),
                         const SizedBox(height: 20),
 
@@ -133,45 +153,52 @@ class _HomeScreen2State extends State<HomeScreen2> {
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: Padding(
-                            padding: const EdgeInsets.all(16.0),
+                            padding: const EdgeInsets.all(16),
                             child: Column(
                               children: [
                                 BoxedIcon(weatherIcon,
                                     size: 64, color: Colors.white),
-                                const SizedBox(height: 8),
+                                const SizedBox(height: 10),
                                 Text(
                                   temperature,
                                   style: const TextStyle(
+                                      color: Colors.white,
                                       fontSize: 48,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white),
+                                      fontWeight: FontWeight.bold),
                                 ),
                                 Text(
                                   weatherCondition.toUpperCase(),
                                   style: const TextStyle(
-                                      fontSize: 18, color: Colors.white70),
+                                      color: Colors.white70, fontSize: 18),
                                 ),
                                 const SizedBox(height: 12),
+
                                 Row(
                                   mainAxisAlignment:
-                                      MainAxisAlignment.spaceAround,
+                                      MainAxisAlignment.spaceEvenly,
                                   children: [
                                     _infoColumn("Humidity", humidity),
                                     _infoColumn("Wind", wind),
-                                    _infoColumn("UV Index", uvIndex),
+                                    _infoColumn("UV", uvIndex),
                                   ],
                                 ),
+
                                 const SizedBox(height: 12),
-                                _infoColumn("Air Quality", aqi,
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold),
+
+                                _infoColumn(
+                                  "Air Quality",
+                                  aqi,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ],
                             ),
                           ),
                         ),
+
                         const SizedBox(height: 20),
 
-                        // Quick Access Buttons
+                        // Quick Buttons
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: [
@@ -210,7 +237,8 @@ class _HomeScreen2State extends State<HomeScreen2> {
                             }),
                           ],
                         ),
-                        const SizedBox(height: 30),
+
+                        const SizedBox(height: 40),
                       ],
                     ),
             ),
@@ -228,9 +256,9 @@ class _HomeScreen2State extends State<HomeScreen2> {
           CircleAvatar(
             radius: 28,
             backgroundColor: Colors.white24,
-            child: Icon(icon, color: Colors.white, size: 28),
+            child: Icon(icon, color: Colors.white, size: 26),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Text(label, style: const TextStyle(color: Colors.white)),
         ],
       ),
@@ -242,7 +270,8 @@ class _HomeScreen2State extends State<HomeScreen2> {
     return Column(
       children: [
         Text(label,
-            style: TextStyle(color: Colors.white70, fontSize: fontSize - 2)),
+            style:
+                TextStyle(color: Colors.white70, fontSize: fontSize - 2)),
         const SizedBox(height: 4),
         Text(value,
             style: TextStyle(

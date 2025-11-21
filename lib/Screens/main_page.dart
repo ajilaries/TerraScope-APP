@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'home_screen.dart';
 import 'home_screen2.dart';
 import 'home_screen0.dart';
+import '../Screens/farmer/farmer_dashboard.dart';
 
 class MainPage extends StatelessWidget {
   const MainPage({super.key});
@@ -13,10 +14,21 @@ class MainPage extends StatelessWidget {
       children: [
         HomeScreen0(
           onModeSelected: (mode) {
-            // ADD WHAT YOU WANT TO DO WHEN A MODE IS SELECTED
             print("Selected mode: $mode");
+
+            if (mode == "farmer") {
+              // TODO: later add signup check here
+
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const FarmerDashboard(),
+                ),
+              );
+            }
           },
         ),
+
         MainHomeScreen(),
         HomeScreen2(),
       ],
