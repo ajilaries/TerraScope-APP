@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:terra_scope_apk/screens/signup_screen.dart';
+import 'package:terra_scope_apk/Screens/signup_screen.dart';
   // <--- import your signup page
 
 class HomeScreen0 extends StatefulWidget {
