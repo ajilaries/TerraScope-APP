@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:geocoding/geocoding.dart';
 
 import '../Services/location_service.dart';
 import '../Services/weather_services.dart';
@@ -14,7 +15,7 @@ class MainHomeScreen extends StatefulWidget {
 }
 
 class _MainHomeScreenState extends State<MainHomeScreen> {
-  String city = "Loading...";
+  String city = "Fetching location...";
   String condition = "—";
   String temp = "—°C";
   int aqi = 0;
@@ -22,33 +23,67 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
   List<Map<String, dynamic>> forecast7 = [];
   List<Map<String, dynamic>> forecast24 = [];
 
+  bool isLoading = true;
+
   @override
   void initState() {
     super.initState();
     loadAllWeather();
+    Future.delayed(Duration.zero, () => _startAutoRefresh());
   }
 
-  Future<void> loadAllWeather() async {
+  void _startAutoRefresh() {
+    Future.doWhile(() async {
+      await Future.delayed(const Duration(seconds: 10));
+      if (!mounted) return false;
+      await loadAllWeather(autoRefresh: true);
+      return mounted;
+    });
+  }
+
+  Future<String> _getCityName(double lat, double lon) async {
+    try {
+      List<Placemark> place = await placemarkFromCoordinates(lat, lon);
+      if (place.isNotEmpty) {
+        return place.first.locality ?? "Unknown";
+      }
+      return "Unknown";
+    } catch (e) {
+      return "Unknown";
+    }
+  }
+
+  Future<void> loadAllWeather({bool autoRefresh = false}) async {
+    if (!autoRefresh) setState(() => isLoading = true);
+
     try {
       final loc = await LocationService().getCurrentLocation();
+
+      double lat = loc["latitude"];
+      double lon = loc["longitude"];
+
+      String cityName = await _getCityName(lat, lon);
+
       final weather = await WeatherService().getWeatherData(
-        token: "dummy",
-        lat: loc["latitude"],
-        lon: loc["longitude"],
+        token: "dummy_token",
+        lat: lat,
+        lon: lon,
       );
 
       setState(() {
-        city = loc["city"];
+        city = cityName;
         temp = "${weather["temperature"]?.toStringAsFixed(1)}°C";
-        condition = weather["condition"];
+        condition = weather["condition"] ?? "—";
         aqi = weather["aqi"] ?? 40;
         forecast7 = weather["forecast7"] ?? [];
         forecast24 = weather["forecast24"] ?? [];
+        isLoading = false;
       });
     } catch (e) {
       setState(() {
         temp = "—°C";
         condition = "Error";
+        isLoading = false;
       });
     }
   }
@@ -62,53 +97,42 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.transparent,
-        title: Text("Terrascope Pro",
-            style: TextStyle(
-              color: isDark ? Colors.white : Colors.black,
-              fontWeight: FontWeight.bold,
-            )),
+        title: Text(
+          "Terrascope Pro",
+          style: TextStyle(
+            color: isDark ? Colors.white : Colors.black,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         actions: [
           IconButton(
             icon: Icon(Icons.brightness_6,
                 color: isDark ? Colors.white : Colors.black),
             onPressed: () =>
-                Provider.of<ModeProvider>(context, listen: false)
-                    .toggleTheme(),
+                Provider.of<ModeProvider>(context, listen: false).toggleTheme(),
           ),
         ],
       ),
 
-      body: RefreshIndicator(
-        onRefresh: loadAllWeather,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-
-            // 🔥 TOP: Temperature + Location
-            _currentWeatherCard(isDark),
-
-            const SizedBox(height: 20),
-
-            // 🔥 7-day forecast
-            _forecast7Card(isDark),
-
-            const SizedBox(height: 20),
-
-            // 🔥 24-hour forecast
-            _forecast24Card(isDark),
-
-            const SizedBox(height: 20),
-
-            // 🔥 Basic Metrics
-            _metricsGrid(isDark),
-
-            const SizedBox(height: 20),
-
-            // 🔥 AQI Section
-            _aqiCard(isDark),
-          ],
-        ),
-      ),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
+              onRefresh: loadAllWeather,
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  _currentWeatherCard(isDark),
+                  const SizedBox(height: 20),
+                  _forecast7Card(isDark),
+                  const SizedBox(height: 20),
+                  _forecast24Card(isDark),
+                  const SizedBox(height: 20),
+                  _metricsGrid(isDark),
+                  const SizedBox(height: 20),
+                  _aqiCard(isDark),
+                ],
+              ),
+            ),
     );
   }
 
@@ -126,12 +150,10 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                   color: dark ? Colors.white : Colors.black)),
-
           Text(DateFormat('EEE, MMM d • hh:mm a').format(DateTime.now()),
-              style: TextStyle(color: dark ? Colors.white54 : Colors.black54)),
-
+              style:
+                  TextStyle(color: dark ? Colors.white54 : Colors.black54)),
           const SizedBox(height: 20),
-
           Row(
             children: [
               Text(temp,
@@ -164,9 +186,7 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
                 fontWeight: FontWeight.bold,
                 color: dark ? Colors.white : Colors.black,
               )),
-
           const SizedBox(height: 10),
-
           SizedBox(
             height: 105,
             child: ListView.builder(
@@ -185,10 +205,12 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
                           style: TextStyle(
                               color: dark ? Colors.white70 : Colors.black87)),
                       const SizedBox(height: 5),
-                      Icon(Icons.cloud_queue, color: dark ? Colors.white : Colors.black),
+                      Icon(Icons.cloud_queue,
+                          color: dark ? Colors.white : Colors.black),
                       const SizedBox(height: 5),
                       Text("${forecast7[i]["max"]}° / ${forecast7[i]["min"]}°",
-                          style: TextStyle(color: dark ? Colors.white : Colors.black)),
+                          style: TextStyle(
+                              color: dark ? Colors.white : Colors.black)),
                     ],
                   ),
                 );
@@ -212,7 +234,6 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
                   fontWeight: FontWeight.bold,
                   color: dark ? Colors.white : Colors.black)),
           const SizedBox(height: 10),
-
           SizedBox(
             height: 120,
             child: ListView.builder(
@@ -227,12 +248,15 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
                   child: Column(
                     children: [
                       Text(forecast24[i]["time"],
-                          style: TextStyle(color: dark ? Colors.white : Colors.black)),
+                          style: TextStyle(
+                              color: dark ? Colors.white : Colors.black)),
                       const SizedBox(height: 5),
-                      Icon(Icons.cloud, color: dark ? Colors.white : Colors.black),
+                      Icon(Icons.cloud,
+                          color: dark ? Colors.white : Colors.black),
                       const SizedBox(height: 5),
                       Text("${forecast24[i]["temp"]}°",
-                          style: TextStyle(color: dark ? Colors.white : Colors.black)),
+                          style: TextStyle(
+                              color: dark ? Colors.white : Colors.black)),
                     ],
                   ),
                 );
@@ -264,7 +288,9 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: dark ? Colors.white : Colors.black)),
-        Text(label, style: TextStyle(color: dark ? Colors.white70 : Colors.black87)),
+        Text(label,
+            style: TextStyle(
+                color: dark ? Colors.white70 : Colors.black87)),
       ],
     );
   }
@@ -302,8 +328,6 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
       ),
     );
   }
-
-  // ---------------- Decorations ----------------
 
   BoxDecoration _box(bool dark) => BoxDecoration(
         color: dark ? Colors.white10 : Colors.grey.shade100,
