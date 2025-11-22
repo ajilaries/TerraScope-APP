@@ -176,10 +176,22 @@ class _HomeScreen0State extends State<HomeScreen0> {
 
     return GestureDetector(
       onTap: () {
-        setState(() {
-          selectedMode = mode;
-        });
-      },
+  setState(() {
+    selectedMode = mode;
+  });
+
+      // Show intro popup for special modes
+      if (mode == "farmer") {
+        showFarmerIntroPopup(context);
+      } else if (mode == "traveller") {
+        showTravellerIntroPopup(context);
+      } else if (mode == "safety") {
+        showSafetyIntroPopup(context);
+      } else if (mode == "care") {
+        showCareIntroPopup(context);
+      }
+      }
+
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         decoration: BoxDecoration(
