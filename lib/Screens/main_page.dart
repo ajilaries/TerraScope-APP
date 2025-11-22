@@ -17,8 +17,6 @@ class MainPage extends StatelessWidget {
             print("Selected mode: $mode");
 
             if (mode == "farmer") {
-              // TODO: later add signup check here
-
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -29,6 +27,7 @@ class MainPage extends StatelessWidget {
           },
         ),
 
+        // Your existing screens
         MainHomeScreen(),
         HomeScreen2(),
       ],
