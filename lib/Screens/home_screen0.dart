@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:terra_scope_apk/popups/farmer_intro_popup.dart';
 import 'package:terra_scope_apk/Screens/signup_screen.dart';
-  // <--- import your signup page
+// <--- import your signup page
 
 class HomeScreen0 extends StatefulWidget {
   final Function(String) onModeSelected;
@@ -39,10 +40,7 @@ class _HomeScreen0State extends State<HomeScreen0> {
                   const SizedBox(height: 6),
                   Text(
                     "Your Weather. Your Safety.",
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey.shade600,
-                    ),
+                    style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
                   ),
                 ],
               ),
@@ -55,10 +53,7 @@ class _HomeScreen0State extends State<HomeScreen0> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Text(
                 "Choose Your Experience",
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
               ),
             ),
 
@@ -111,10 +106,7 @@ class _HomeScreen0State extends State<HomeScreen0> {
             Center(
               child: Text(
                 "Switching modes requires login",
-                style: TextStyle(
-                  color: Colors.grey.shade600,
-                  fontSize: 14,
-                ),
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
               ),
             ),
 
@@ -125,8 +117,9 @@ class _HomeScreen0State extends State<HomeScreen0> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor:
-                      selectedMode.isEmpty ? Colors.grey : Colors.black,
+                  backgroundColor: selectedMode.isEmpty
+                      ? Colors.grey
+                      : Colors.black,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -141,18 +134,15 @@ class _HomeScreen0State extends State<HomeScreen0> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => SignupScreen(
-                                  selectedMode: selectedMode),
+                              builder: (_) =>
+                                  SignupScreen(selectedMode: selectedMode),
                             ),
                           );
                         }
                       },
                 child: Text(
                   "Continue",
-                  style: const TextStyle(
-                    fontSize: 18,
-                    color: Colors.white,
-                  ),
+                  style: const TextStyle(fontSize: 18, color: Colors.white),
                 ),
               ),
             ),
@@ -178,6 +168,18 @@ class _HomeScreen0State extends State<HomeScreen0> {
         setState(() {
           selectedMode = mode;
         });
+
+        // Show intro popup for special modes
+        if (mode == "farmer") {
+          showFarmerIntroPopup(context);
+        }
+        // else if (mode == "traveller") {
+        //   showTravellerIntroPopup(context);
+        // } else if (mode == "safety") {
+        //   showSafetyIntroPopup(context);
+        // } else if (mode == "care") {
+        //   showCareIntroPopup(context);
+        // }
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
@@ -193,7 +195,7 @@ class _HomeScreen0State extends State<HomeScreen0> {
               color: Colors.black12,
               blurRadius: 8,
               offset: const Offset(0, 3),
-            )
+            ),
           ],
         ),
         child: Column(
@@ -203,11 +205,8 @@ class _HomeScreen0State extends State<HomeScreen0> {
             const SizedBox(height: 12),
             Text(
               title,
-              style: const TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w600,
-              ),
-            )
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+            ),
           ],
         ),
       ),

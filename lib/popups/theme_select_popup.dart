@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:terra_scope_apk/popups/personalization_popup.dart';
 
 Future<void> showThemeSelectPopup(BuildContext context) {
   return showDialog(
@@ -6,9 +7,7 @@ Future<void> showThemeSelectPopup(BuildContext context) {
     barrierDismissible: false,
     builder: (context) {
       return Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(22),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
@@ -38,7 +37,7 @@ Future<void> showThemeSelectPopup(BuildContext context) {
                     borderColor: Colors.grey.shade400,
                     onTap: () {
                       Navigator.pop(context);
-                      // Next popup -> personalization
+                      showPersonalizationPopup(context);   // <-- REAL CALL
                     },
                   ),
                   _ThemeBox(
@@ -48,7 +47,7 @@ Future<void> showThemeSelectPopup(BuildContext context) {
                     textColor: Colors.white,
                     onTap: () {
                       Navigator.pop(context);
-                      // Next popup -> personalization
+                      showPersonalizationPopup(context);   // <-- REAL CALL
                     },
                   ),
                 ],
@@ -62,7 +61,7 @@ Future<void> showThemeSelectPopup(BuildContext context) {
                   "Back",
                   style: TextStyle(fontSize: 14, color: Colors.grey),
                 ),
-              )
+              ),
             ],
           ),
         ),
