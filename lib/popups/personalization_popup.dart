@@ -6,11 +6,7 @@ Future<void> showPersonalizationPopup(BuildContext context) {
   String? selectedIrrigation;
   String? selectedRegion;
 
-  final List<String> farmTypes = [
-    "Small-scale",
-    "Medium-scale",
-    "Large-scale",
-  ];
+  final List<String> farmTypes = ["Small-scale", "Medium-scale", "Large-scale"];
 
   final List<String> crops = [
     "Rice",
@@ -42,130 +38,136 @@ Future<void> showPersonalizationPopup(BuildContext context) {
     context: context,
     barrierDismissible: false,
     builder: (context) {
-      return StatefulBuilder(builder: (context, setState) {
-        return Dialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return Dialog(
+            shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(22),
-              color: Colors.white,
             ),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // TITLE
-                  Text(
-                    "Personalize Your Farming Mode",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green.shade800,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // FARM TYPE
-                  _dropdownSection(
-                    title: "Farm Type",
-                    value: selectedFarmType,
-                    items: farmTypes,
-                    onChanged: (val) => setState(() => selectedFarmType = val),
-                  ),
-
-                  const SizedBox(height: 15),
-
-                  // MAIN CROP
-                  _dropdownSection(
-                    title: "Main Crop",
-                    value: selectedCrop,
-                    items: crops,
-                    onChanged: (val) => setState(() => selectedCrop = val),
-                  ),
-
-                  const SizedBox(height: 15),
-
-                  // IRRIGATION TYPE
-                  _dropdownSection(
-                    title: "Irrigation Type",
-                    value: selectedIrrigation,
-                    items: irrigation,
-                    onChanged: (val) =>
-                        setState(() => selectedIrrigation = val),
-                  ),
-
-                  const SizedBox(height: 15),
-
-                  // REGION
-                  _dropdownSection(
-                    title: "Region",
-                    value: selectedRegion,
-                    items: regions,
-                    onChanged: (val) => setState(() => selectedRegion = val),
-                  ),
-
-                  const SizedBox(height: 25),
-
-                  // CONTINUE BUTTON
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green.shade800,
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 14,
-                        horizontal: 35,
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(22),
+                color: Colors.white,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // TITLE
+                    Text(
+                      "Personalize Your Farming Mode",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green.shade800,
                       ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
+                      textAlign: TextAlign.center,
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // FARM TYPE
+                    _dropdownSection(
+                      title: "Farm Type",
+                      value: selectedFarmType,
+                      items: farmTypes,
+                      onChanged: (val) =>
+                          setState(() => selectedFarmType = val),
+                    ),
+
+                    const SizedBox(height: 15),
+
+                    // MAIN CROP
+                    _dropdownSection(
+                      title: "Main Crop",
+                      value: selectedCrop,
+                      items: crops,
+                      onChanged: (val) => setState(() => selectedCrop = val),
+                    ),
+
+                    const SizedBox(height: 15),
+
+                    // IRRIGATION TYPE
+                    _dropdownSection(
+                      title: "Irrigation Type",
+                      value: selectedIrrigation,
+                      items: irrigation,
+                      onChanged: (val) =>
+                          setState(() => selectedIrrigation = val),
+                    ),
+
+                    const SizedBox(height: 15),
+
+                    // REGION
+                    _dropdownSection(
+                      title: "Region",
+                      value: selectedRegion,
+                      items: regions,
+                      onChanged: (val) => setState(() => selectedRegion = val),
+                    ),
+
+                    const SizedBox(height: 25),
+
+                    // CONTINUE BUTTON
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green.shade800,
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 14,
+                          horizontal: 35,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      onPressed: () {
+                        // CHECKS
+                        if (selectedFarmType == null ||
+                            selectedCrop == null ||
+                            selectedIrrigation == null ||
+                            selectedRegion == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("Please fill all fields"),
+                            ),
+                          );
+                          return;
+                        }
+
+                        Navigator.pop(context);
+
+                        // TODO → Go to FARMER DASHBOARD SCREEN
+                        // Navigator.push(context,
+                        //   MaterialPageRoute(builder: (_) => FarmerDashboard()),
+                        // );
+                      },
+                      child: const Text(
+                        "Continue",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
-                    onPressed: () {
-                      // CHECKS
-                      if (selectedFarmType == null ||
-                          selectedCrop == null ||
-                          selectedIrrigation == null ||
-                          selectedRegion == null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text("Please fill all fields"),
-                          ),
-                        );
-                        return;
-                      }
 
-                      Navigator.pop(context);
+                    const SizedBox(height: 10),
 
-                      // TODO → Go to FARMER DASHBOARD SCREEN
-                      // Navigator.push(context,
-                      //   MaterialPageRoute(builder: (_) => FarmerDashboard()),
-                      // );
-                    },
-                    child: const Text(
-                      "Continue",
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    // BACK / CANCEL
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text(
+                        "Back",
+                        style: TextStyle(fontSize: 14, color: Colors.grey),
+                      ),
                     ),
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  // BACK / CANCEL
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text(
-                      "Back",
-                      style: TextStyle(fontSize: 14, color: Colors.grey),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-        );
-      });
+          );
+        },
+      );
     },
   );
 }
@@ -182,10 +184,7 @@ Widget _dropdownSection({
     children: [
       Text(
         title,
-        style: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-        ),
+        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
       ),
       const SizedBox(height: 6),
       Container(
@@ -200,12 +199,7 @@ Widget _dropdownSection({
           isExpanded: true,
           underline: const SizedBox(),
           items: items
-              .map(
-                (e) => DropdownMenuItem<String>(
-                  value: e,
-                  child: Text(e),
-                ),
-              )
+              .map((e) => DropdownMenuItem<String>(value: e, child: Text(e)))
               .toList(),
           onChanged: onChanged,
         ),
