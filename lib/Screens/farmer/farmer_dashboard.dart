@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'farmer_weather_details.dart';
 import 'farmer_crop_health.dart';
-import 'crop_recommendation.dart';
+import 'crop_recommendation.dart';   // ✅ FIXED IMPORT
 
 class FarmerDashboard extends StatefulWidget {
   const FarmerDashboard({super.key});
@@ -26,7 +26,7 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
         ),
       ),
 
-      // ⭐ ADDED FARMER DRAWER HERE
+      // ⭐ Drawer
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
@@ -60,32 +60,32 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
             _drawerItem(
               icon: Icons.dashboard,
               label: "Dashboard",
+              onTap: () => Navigator.pop(context),
+            ),
+
+            _drawerItem(
+              icon: Icons.health_and_safety,
+              label: "Crop Health",
               onTap: () {
-                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const FarmerCropHealth(),
+                  ),
+                );
               },
             ),
 
             _drawerItem(
-              icon: Icons.agriculture,
-              label: "Crop Suitability",
+              icon: Icons.recommend,
+              label: "Crop Recommendations",
               onTap: () {
-                Navigator.pushNamed(context, "/crop_suitability");
-              },
-            ),
-
-            _drawerItem(
-              icon: Icons.energy_savings_leaf,
-              label: "Soil Analysis",
-              onTap: () {
-                Navigator.pushNamed(context, "/soil_analysis");
-              },
-            ),
-
-            _drawerItem(
-              icon: Icons.notifications_active,
-              label: "Alerts",
-              onTap: () {
-                Navigator.pushNamed(context, "/alerts");
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const CropRecommendationScreen(),
+                  ),
+                );
               },
             ),
 
@@ -93,7 +93,12 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
               icon: Icons.wb_sunny,
               label: "Weather Details",
               onTap: () {
-                Navigator.pushNamed(context, "/weather_details");
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const FarmerWeatherDetails(),
+                  ),
+                );
               },
             ),
           ],
@@ -107,6 +112,9 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
           children: [
 
             _weatherHeader(),
+            const SizedBox(height: 20),
+
+            _quickButtons(),      // ⭐ NEW SECTION
             const SizedBox(height: 20),
 
             _recommendationSection(),
@@ -231,16 +239,85 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
       children: [
         Icon(icon, size: 26, color: Colors.white),
         const SizedBox(height: 4),
-        Text(
-          label,
-          style: const TextStyle(color: Colors.white70, fontSize: 13),
-        ),
+        Text(label,
+            style: const TextStyle(color: Colors.white70, fontSize: 13)),
         Text(
           value,
           style: const TextStyle(
               color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
         ),
       ],
+    );
+  }
+
+  // ⭐ Quick Navigation Buttons (NEW)
+  Widget _quickButtons() {
+    return Row(
+      children: [
+        Expanded(
+          child: _quickCard(
+            title: "Crop Health",
+            icon: Icons.monitor_heart,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const FarmerCropHealth()),
+              );
+            },
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _quickCard(
+            title: "Recommendations",
+            icon: Icons.recommend,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => const CropRecommendationScreen()),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _quickCard({
+    required String title,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            )
+          ],
+        ),
+        child: Column(
+          children: [
+            Icon(icon, size: 30, color: Colors.green),
+            const SizedBox(height: 10),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            )
+          ],
+        ),
+      ),
     );
   }
 
@@ -315,8 +392,8 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
                     const SizedBox(height: 6),
                     Text(
                       f["temp"],
-                      style:
-                          const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     Text("${f["rain"]} rain",
                         style: TextStyle(color: Colors.grey.shade600)),
