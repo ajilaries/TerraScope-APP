@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'farmer_weather_details.dart';
+import 'farmer_crop_health.dart';
+import 'crop_recommendation.dart';
 
 class FarmerDashboard extends StatefulWidget {
   const FarmerDashboard({super.key});
