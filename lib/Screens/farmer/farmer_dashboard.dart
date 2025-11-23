@@ -24,33 +24,98 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
         ),
       ),
 
+      // ⭐ ADDED FARMER DRAWER HERE
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+
+            DrawerHeader(
+              decoration: BoxDecoration(
+                color: Colors.green.shade700,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: const [
+                  Text(
+                    "Farmer Menu",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: 6),
+                  Text(
+                    "Terrascope Farmer Mode",
+                    style: TextStyle(color: Colors.white70, fontSize: 14),
+                  ),
+                ],
+              ),
+            ),
+
+            _drawerItem(
+              icon: Icons.dashboard,
+              label: "Dashboard",
+              onTap: () {
+                Navigator.pop(context);
+              },
+            ),
+
+            _drawerItem(
+              icon: Icons.agriculture,
+              label: "Crop Suitability",
+              onTap: () {
+                Navigator.pushNamed(context, "/crop_suitability");
+              },
+            ),
+
+            _drawerItem(
+              icon: Icons.energy_savings_leaf,
+              label: "Soil Analysis",
+              onTap: () {
+                Navigator.pushNamed(context, "/soil_analysis");
+              },
+            ),
+
+            _drawerItem(
+              icon: Icons.notifications_active,
+              label: "Alerts",
+              onTap: () {
+                Navigator.pushNamed(context, "/alerts");
+              },
+            ),
+
+            _drawerItem(
+              icon: Icons.wb_sunny,
+              label: "Weather Details",
+              onTap: () {
+                Navigator.pushNamed(context, "/weather_details");
+              },
+            ),
+          ],
+        ),
+      ),
+
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
 
-            // WEATHER HEADER CARD
             _weatherHeader(),
-
             const SizedBox(height: 20),
 
-            // RECOMMENDATION SECTION
             _recommendationSection(),
-
             const SizedBox(height: 20),
 
-            // WEEKLY FORECAST
             _forecastSection(),
-
             const SizedBox(height: 20),
 
-            // SOIL DATA
             _soilSection(),
-
             const SizedBox(height: 20),
 
-            // ALERTS
             _alertsSection(),
           ],
         ),
@@ -58,90 +123,106 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
     );
   }
 
-  // =============================
+  // Drawer Tile Widget
+  Widget _drawerItem({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      leading: Icon(icon, color: Colors.green.shade700),
+      title: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      onTap: onTap,
+    );
+  }
+
   // WEATHER HEADER
-  // =============================
-Widget _weatherHeader() {
-  return Container(
-    padding: const EdgeInsets.all(18),
-    decoration: BoxDecoration(
-      color: Colors.green.shade700,
-      borderRadius: BorderRadius.circular(20),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "Kottayam, Kerala",
-          style: TextStyle(
-            color: Colors.white.withOpacity(0.9),
-            fontSize: 16,
-          ),
-        ),
-        const SizedBox(height: 6),
-        const Text(
-          "29°C",
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 42,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          "Partly Cloudy",
-          style: TextStyle(
-            color: Colors.white.withOpacity(0.9),
-            fontSize: 18,
-          ),
-        ),
-
-        const SizedBox(height: 16),
-
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _miniInfo(Icons.water_drop, "Humidity", "78%"),
-            _miniInfo(Icons.cloudy_snowing, "Rain Chance", "65%"),
-            _miniInfo(Icons.air, "Wind", "12 km/h"),
-          ],
-        ),
-
-        const SizedBox(height: 20),
-
-        // ⭐ Added view details button
-        GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const FarmerWeatherDetails(),
-              ),
-            );
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
+  Widget _weatherHeader() {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.green.shade700,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Kottayam, Kerala",
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.9),
+              fontSize: 16,
             ),
-            child: const Center(
-              child: Text(
-                "View Weather Details",
-                style: TextStyle(
-                  color: Colors.green,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            "29°C",
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 42,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            "Partly Cloudy",
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.9),
+              fontSize: 18,
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _miniInfo(Icons.water_drop, "Humidity", "78%"),
+              _miniInfo(Icons.cloudy_snowing, "Rain Chance", "65%"),
+              _miniInfo(Icons.air, "Wind", "12 km/h"),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const FarmerWeatherDetails(),
+                ),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Center(
+                child: Text(
+                  "View Weather Details",
+                  style: TextStyle(
+                    color: Colors.green,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
 
   Widget _miniInfo(IconData icon, String label, String value) {
     return Column(
@@ -161,9 +242,7 @@ Widget _weatherHeader() {
     );
   }
 
-  // =============================
   // RECOMMENDATION SECTION
-  // =============================
   Widget _recommendationSection() {
     return Container(
       padding: const EdgeInsets.all(18),
@@ -191,9 +270,7 @@ Widget _weatherHeader() {
     );
   }
 
-  // =============================
-  // FORECAST SECTION
-  // =============================
+  // WEEKLY FORECAST
   Widget _forecastSection() {
     List<Map<String, dynamic>> forecast = [
       {"day": "Mon", "temp": "29°", "rain": "40%"},
@@ -251,9 +328,7 @@ Widget _weatherHeader() {
     );
   }
 
-  // =============================
-  // SOIL DATA SECTION
-  // =============================
+  // SOIL DATA
   Widget _soilSection() {
     return Container(
       padding: const EdgeInsets.all(18),
@@ -277,9 +352,7 @@ Widget _weatherHeader() {
     );
   }
 
-  // =============================
-  // ALERTS SECTION
-  // =============================
+  // ALERTS
   Widget _alertsSection() {
     return Container(
       padding: const EdgeInsets.all(18),
