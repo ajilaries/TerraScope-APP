@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'farmer_weather_dashboard.dart';
 
 class FarmerDashboard extends StatefulWidget {
   const FarmerDashboard({super.key});
@@ -60,55 +61,87 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
   // =============================
   // WEATHER HEADER
   // =============================
-  Widget _weatherHeader() {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.green.shade700,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "Kottayam, Kerala",
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.9),
-              fontSize: 16,
-            ),
+Widget _weatherHeader() {
+  return Container(
+    padding: const EdgeInsets.all(18),
+    decoration: BoxDecoration(
+      color: Colors.green.shade700,
+      borderRadius: BorderRadius.circular(20),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "Kottayam, Kerala",
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.9),
+            fontSize: 16,
           ),
-          const SizedBox(height: 6),
-          const Text(
-            "29°C",
-            style: TextStyle(
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          "29°C",
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 42,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          "Partly Cloudy",
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.9),
+            fontSize: 18,
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _miniInfo(Icons.water_drop, "Humidity", "78%"),
+            _miniInfo(Icons.cloudy_snowing, "Rain Chance", "65%"),
+            _miniInfo(Icons.air, "Wind", "12 km/h"),
+          ],
+        ),
+
+        const SizedBox(height: 20),
+
+        // ⭐ Added view details button
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const FarmerWeatherDetails(),
+              ),
+            );
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            width: double.infinity,
+            decoration: BoxDecoration(
               color: Colors.white,
-              fontSize: 42,
-              fontWeight: FontWeight.bold,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Center(
+              child: Text(
+                "View Weather Details",
+                style: TextStyle(
+                  color: Colors.green,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            "Partly Cloudy",
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.9),
-              fontSize: 18,
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _miniInfo(Icons.water_drop, "Humidity", "78%"),
-              _miniInfo(Icons.cloudy_snowing, "Rain Chance", "65%"),
-              _miniInfo(Icons.air, "Wind", "12 km/h"),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
 
   Widget _miniInfo(IconData icon, String label, String value) {
     return Column(
