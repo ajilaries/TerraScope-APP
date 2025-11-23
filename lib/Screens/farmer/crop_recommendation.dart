@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'farmer_crop_health.dart';  // <-- ADD THIS
 
 class CropRecommendationScreen extends StatelessWidget {
   const CropRecommendationScreen({super.key});
@@ -19,7 +20,6 @@ class CropRecommendationScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
             const Text(
               "Based on today’s weather & soil conditions",
               style: TextStyle(
@@ -32,6 +32,7 @@ class CropRecommendationScreen extends StatelessWidget {
 
             // Crop Cards
             _cropCard(
+              context: context,
               crop: "Paddy",
               suitability: 88,
               soil: "Clay / Loam Soil",
@@ -44,6 +45,7 @@ class CropRecommendationScreen extends StatelessWidget {
             const SizedBox(height: 16),
 
             _cropCard(
+              context: context,
               crop: "Pepper",
               suitability: 75,
               soil: "Loamy Soil",
@@ -56,6 +58,7 @@ class CropRecommendationScreen extends StatelessWidget {
             const SizedBox(height: 16),
 
             _cropCard(
+              context: context,
               crop: "Coconut",
               suitability: 82,
               soil: "Sandy Loam Soil",
@@ -70,10 +73,8 @@ class CropRecommendationScreen extends StatelessWidget {
     );
   }
 
-  // ===============================
-  // Crop Card Widget
-  // ===============================
   Widget _cropCard({
+    required BuildContext context,
     required String crop,
     required int suitability,
     required String soil,
@@ -81,83 +82,93 @@ class CropRecommendationScreen extends StatelessWidget {
     required IconData icon,
     required String reason,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => FarmerCropHealth(),
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 26,
-                backgroundColor: Colors.green.shade100,
-                child: Icon(icon, color: Colors.green, size: 28),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Text(
-                  crop,
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 26,
+                  backgroundColor: Colors.green.shade100,
+                  child: Icon(icon, color: Colors.green, size: 28),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    crop,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                Text(
+                  "$suitability%",
                   style: const TextStyle(
-                    fontSize: 20,
+                    color: Colors.green,
+                    fontSize: 22,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-              ),
-              Text(
-                "$suitability%",
-                style: const TextStyle(
-                    color: Colors.green,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          Text("• Ideal Soil: $soil",
-              style: const TextStyle(fontSize: 15, color: Colors.black87)),
-
-          Text("• Temperature: $temp",
-              style: const TextStyle(fontSize: 15, color: Colors.black87)),
-
-          const SizedBox(height: 16),
-
-          // Why recommended section
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.green.shade50,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.info, color: Colors.green, size: 22),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    reason,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Colors.black87,
-                    ),
-                  ),
-                )
               ],
             ),
-          )
-        ],
+
+            const SizedBox(height: 16),
+
+            Text("• Ideal Soil: $soil",
+                style: const TextStyle(fontSize: 15, color: Colors.black87)),
+
+            Text("• Temperature: $temp",
+                style: const TextStyle(fontSize: 15, color: Colors.black87)),
+
+            const SizedBox(height: 16),
+
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.info, color: Colors.green, size: 22),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      reason,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  )
+                ],
+              ),
+            )
+          ],
+        ),
       ),
     );
   }
