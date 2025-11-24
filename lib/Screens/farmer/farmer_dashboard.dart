@@ -86,6 +86,18 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
                 );
               },
             ),
+            _drawerItem(
+              icon: Icons.notifications_active,
+               label: "alerts",
+                onTap: (){
+                  Navigator.push(context,
+                   MaterialPageRoute(
+                    builder: (_)=> const FarmerAlertsScreen(),
+                    ),
+                    );
+                },
+            ),
+              
 
             _drawerItem(
               icon: Icons.wb_sunny,
