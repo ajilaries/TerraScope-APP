@@ -97,6 +97,15 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
                     );
                 },
             ),
+            _drawerItem(icon: Icons.agriculture,
+             label:"Crop Suitability",
+              onTap: (){
+                Navigator.push(context,
+                 MaterialPageRoute(builder: (_)=> const FarmerCropSuitability(),
+                 ),
+                 );
+              },
+              ),
               
 
             _drawerItem(
