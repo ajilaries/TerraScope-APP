@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:math';
+
 import 'package:terra_scope_apk/Screens/traveler/traveler_quick_actions.dart';
+import 'traveler_sos_share.dart';
 
 class TravelerDashboard extends StatefulWidget {
   const TravelerDashboard({super.key});
@@ -21,6 +23,7 @@ class _TravelerDashboardState extends State<TravelerDashboard> {
       TextEditingController(text: "Current Location");
   final TextEditingController _toCtrl =
       TextEditingController(text: "Alleppey, Kerala");
+
   bool _planning = false;
 
   List<Map<String, String>> hourlyRoute = [];
@@ -35,6 +38,9 @@ class _TravelerDashboardState extends State<TravelerDashboard> {
     _setMockHourly();
   }
 
+  // ---------------------------------------------
+  // MOCK DATA
+  // ---------------------------------------------
   void _setMockHourly() {
     hourlyRoute = List.generate(8, (i) {
       final hour = "${6 + i}:00";
@@ -57,6 +63,9 @@ class _TravelerDashboardState extends State<TravelerDashboard> {
     ];
   }
 
+  // ---------------------------------------------
+  // PLAN ROUTE
+  // ---------------------------------------------
   Future<void> _planRoute() async {
     setState(() {
       _planning = true;
@@ -73,6 +82,9 @@ class _TravelerDashboardState extends State<TravelerDashboard> {
     });
   }
 
+  // ---------------------------------------------
+  // UI HELPERS
+  // ---------------------------------------------
   Widget _card(Widget child) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
@@ -81,8 +93,7 @@ class _TravelerDashboardState extends State<TravelerDashboard> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.04), blurRadius: 8)
+          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8)
         ],
       ),
       child: child,
@@ -95,6 +106,9 @@ class _TravelerDashboardState extends State<TravelerDashboard> {
     return Colors.red;
   }
 
+  // ---------------------------------------------
+  // BOTTOM SHEET FOR ALERTS
+  // ---------------------------------------------
   void _showAlertsSheet() {
     showModalBottomSheet(
       context: context,
@@ -124,6 +138,9 @@ class _TravelerDashboardState extends State<TravelerDashboard> {
     );
   }
 
+  // ---------------------------------------------
+  // SOS + SHARE
+  // ---------------------------------------------
   void _onSOS() {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text("SOS triggered — demo (backend not added)")),
@@ -134,20 +151,20 @@ class _TravelerDashboardState extends State<TravelerDashboard> {
     setState(() => shareLocation = !shareLocation);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-          content:
-              Text(shareLocation ? "Share enabled" : "Share disabled")),
+          content: Text(shareLocation ? "Share enabled" : "Share disabled")),
     );
   }
 
-  // ---------- NEW: TRAVEL TOOLS QUICK PANEL ----------
+  // ---------------------------------------------
+  // TRAVEL TOOLS PANEL
+  // ---------------------------------------------
   void _showTravelTools() {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-          borderRadius:
-              BorderRadius.vertical(top: Radius.circular(26))),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(26))),
       builder: (_) => DraggableScrollableSheet(
         expand: false,
         minChildSize: 0.45,
@@ -172,9 +189,7 @@ class _TravelerDashboardState extends State<TravelerDashboard> {
                 const Text(
                   "Travel Tools",
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 20),
 
@@ -217,8 +232,8 @@ class _TravelerDashboardState extends State<TravelerDashboard> {
       ),
     );
   }
-  // ---------------------------------------------------
 
+  // ---------------------------------------------
   @override
   Widget build(BuildContext context) {
     final safetyColor = _safetyColor(travelSafetyScore);
@@ -233,23 +248,19 @@ class _TravelerDashboardState extends State<TravelerDashboard> {
             icon: const Icon(Icons.refresh),
             onPressed: () {
               setState(() {
-                currentTemp =
-                    (25 + Random().nextInt(8)).toDouble();
+                currentTemp = (25 + Random().nextInt(8)).toDouble();
                 currentAQI = 50 + Random().nextInt(80);
                 _setMockHourly();
-                travelSafetyScore =
-                    80 + Random().nextInt(20);
+                travelSafetyScore = 80 + Random().nextInt(20);
               });
             },
           )
         ],
       ),
 
-      // 🔥🔥 NEW: Floating Button for Travel Tools
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.indigo.shade700,
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         onPressed: _showTravelTools,
         child: const Icon(Icons.grid_view_rounded, size: 28),
       ),
@@ -258,36 +269,32 @@ class _TravelerDashboardState extends State<TravelerDashboard> {
         padding: const EdgeInsets.all(14),
         child: Column(
           children: [
+            // Weather Header
             _card(Row(
               children: [
                 Expanded(
                   child: Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(currentPlace,
                             style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold)),
+                                fontSize: 18, fontWeight: FontWeight.bold)),
                         const SizedBox(height: 6),
-                        Text(
-                            "Feels like ${currentTemp.toStringAsFixed(0)}°C • Humidity $currentHumidity%"),
+                        Text("Feels like ${currentTemp.toStringAsFixed(0)}°C • Humidity $currentHumidity%"),
                         const SizedBox(height: 6),
-                        Text(
-                            "Wind ${currentWind.toStringAsFixed(1)} km/h • AQI $currentAQI"),
+                        Text("Wind ${currentWind.toStringAsFixed(1)} km/h • AQI $currentAQI"),
                       ]),
                 ),
+
                 Column(
                   children: [
                     CircleAvatar(
                       radius: 28,
-                      backgroundColor:
-                          Colors.indigo.shade50,
+                      backgroundColor: Colors.indigo.shade50,
                       child: Text(
                         "${currentTemp.toStringAsFixed(0)}°",
                         style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold),
+                            fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -296,57 +303,50 @@ class _TravelerDashboardState extends State<TravelerDashboard> {
                       icon: const Icon(Icons.notifications_active),
                       label: const Text("Alerts"),
                       style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              Colors.red.shade400),
+                          backgroundColor: Colors.red.shade400),
                     ),
                   ],
                 )
               ],
             )),
 
+            // Route Planner
             _card(Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text("Plan Route",
-                    style: TextStyle(
-                        fontWeight: FontWeight.w700)),
+                    style: TextStyle(fontWeight: FontWeight.w700)),
                 const SizedBox(height: 8),
                 TextField(
                   controller: _fromCtrl,
                   decoration: const InputDecoration(
-                      labelText: "From",
-                      prefixIcon: Icon(Icons.my_location)),
+                      labelText: "From", prefixIcon: Icon(Icons.my_location)),
                 ),
                 const SizedBox(height: 8),
                 TextField(
                   controller: _toCtrl,
                   decoration: const InputDecoration(
-                      labelText: "To",
-                      prefixIcon: Icon(Icons.place)),
+                      labelText: "To", prefixIcon: Icon(Icons.place)),
                 ),
                 const SizedBox(height: 12),
+
                 Row(
                   children: [
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed:
-                            _planning ? null : _planRoute,
+                        onPressed: _planning ? null : _planRoute,
                         icon: _planning
                             ? const SizedBox(
                                 width: 16,
                                 height: 16,
-                                child:
-                                    CircularProgressIndicator(
+                                child: CircularProgressIndicator(
                                   strokeWidth: 2,
                                   color: Colors.white,
                                 ))
                             : const Icon(Icons.alt_route),
-                        label: Text(_planning
-                            ? "Planning..."
-                            : "Plan Route"),
+                        label: Text(_planning ? "Planning..." : "Plan Route"),
                         style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                Colors.indigo.shade700),
+                            backgroundColor: Colors.indigo.shade700),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -363,18 +363,16 @@ class _TravelerDashboardState extends State<TravelerDashboard> {
               ],
             )),
 
+            // Safety + Map
             _card(Row(
               children: [
                 Expanded(
                   flex: 2,
                   child: Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text("Travel Safety",
-                            style: TextStyle(
-                                fontWeight:
-                                    FontWeight.w700)),
+                            style: TextStyle(fontWeight: FontWeight.w700)),
                         const SizedBox(height: 8),
                         Row(
                           children: [
@@ -383,8 +381,7 @@ class _TravelerDashboardState extends State<TravelerDashboard> {
                               height: 64,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: safetyColor
-                                    .withOpacity(0.12),
+                                color: safetyColor.withOpacity(0.12),
                               ),
                               child: Center(
                                 child: Text(
@@ -392,8 +389,7 @@ class _TravelerDashboardState extends State<TravelerDashboard> {
                                   style: TextStyle(
                                       color: safetyColor,
                                       fontSize: 18,
-                                      fontWeight:
-                                          FontWeight.bold),
+                                      fontWeight: FontWeight.bold),
                                 ),
                               ),
                             ),
@@ -405,9 +401,8 @@ class _TravelerDashboardState extends State<TravelerDashboard> {
                                     : (travelSafetyScore >= 50
                                         ? "Take caution"
                                         : "Avoid travel"),
-                                style: TextStyle(
-                                    fontSize: 16,
-                                    color: safetyColor),
+                                style:
+                                    TextStyle(fontSize: 16, color: safetyColor),
                               ),
                             ),
                           ],
@@ -416,8 +411,7 @@ class _TravelerDashboardState extends State<TravelerDashboard> {
                         LinearProgressIndicator(
                           value: travelSafetyScore / 100,
                           color: safetyColor,
-                          backgroundColor:
-                              Colors.grey.shade300,
+                          backgroundColor: Colors.grey.shade300,
                         )
                       ]),
                 ),
@@ -428,8 +422,7 @@ class _TravelerDashboardState extends State<TravelerDashboard> {
                     height: 110,
                     decoration: BoxDecoration(
                         color: Colors.grey.shade100,
-                        borderRadius:
-                            BorderRadius.circular(10)),
+                        borderRadius: BorderRadius.circular(10)),
                     child: const Center(
                         child: Text(
                       "Map preview\n(plug Google Maps here)",
@@ -440,20 +433,19 @@ class _TravelerDashboardState extends State<TravelerDashboard> {
               ],
             )),
 
+            // Hourly Forecast
             _card(Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text("Hourly along route",
-                    style: TextStyle(
-                        fontWeight: FontWeight.w700)),
+                    style: TextStyle(fontWeight: FontWeight.w700)),
                 const SizedBox(height: 8),
                 SizedBox(
                   height: 90,
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
                     itemCount: hourlyRoute.length,
-                    separatorBuilder: (_, __) =>
-                        const SizedBox(width: 8),
+                    separatorBuilder: (_, __) => const SizedBox(width: 8),
                     itemBuilder: (context, idx) {
                       final h = hourlyRoute[idx];
                       return Container(
@@ -461,22 +453,18 @@ class _TravelerDashboardState extends State<TravelerDashboard> {
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
                             color: Colors.indigo.shade50,
-                            borderRadius:
-                                BorderRadius.circular(10)),
+                            borderRadius: BorderRadius.circular(10)),
                         child: Column(
-                          mainAxisAlignment:
-                              MainAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(h["hour"] ?? ""),
                             const SizedBox(height: 6),
                             Text(h["weather"] ?? "",
-                                style: const TextStyle(
-                                    fontSize: 12)),
+                                style: const TextStyle(fontSize: 12)),
                             const SizedBox(height: 6),
                             Text(h["temp"] ?? "",
                                 style: const TextStyle(
-                                    fontWeight:
-                                        FontWeight.bold)),
+                                    fontWeight: FontWeight.bold)),
                           ],
                         ),
                       );
@@ -486,6 +474,7 @@ class _TravelerDashboardState extends State<TravelerDashboard> {
               ],
             )),
 
+            // Alerts Preview
             _card(Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -493,9 +482,7 @@ class _TravelerDashboardState extends State<TravelerDashboard> {
                   children: [
                     const Expanded(
                         child: Text("Route Alerts",
-                            style: TextStyle(
-                                fontWeight:
-                                    FontWeight.w700))),
+                            style: TextStyle(fontWeight: FontWeight.w700))),
                     TextButton(
                       onPressed: _showAlertsSheet,
                       child: const Text("View all"),
@@ -505,8 +492,8 @@ class _TravelerDashboardState extends State<TravelerDashboard> {
                 const SizedBox(height: 8),
                 ...routeAlerts.map((a) => ListTile(
                       contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.info_outline,
-                          color: Colors.orange),
+                      leading:
+                          const Icon(Icons.info_outline, color: Colors.orange),
                       title: Text(a["title"] ?? ""),
                       subtitle: Text(a["desc"] ?? ""),
                     )),
@@ -515,35 +502,14 @@ class _TravelerDashboardState extends State<TravelerDashboard> {
               ],
             )),
 
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: _onSOS,
-                    icon: const Icon(Icons.report),
-                    label: const Text("SOS"),
-                    style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            Colors.red.shade700),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: _toggleShare,
-                    icon: Icon(shareLocation
-                        ? Icons.share
-                        : Icons.share_outlined),
-                    label: Text(shareLocation
-                        ? "Sharing"
-                        : "Share Location"),
-                    style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            Colors.green.shade700),
-                  ),
-                ),
-              ],
+            // NEW: SOS + SHARE (modular)
+            const SizedBox(height: 10),
+            TravelerSOSShare(
+              shareLocation: shareLocation,
+              onSOS: _onSOS,
+              onToggleShare: _toggleShare,
             ),
+
             const SizedBox(height: 20),
           ],
         ),
