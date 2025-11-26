@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:terra_scope_apk/Screens/farmer/farmer_dashboard.dart';
+import 'package:terra_scope_apk/Screens/main_page.dart';
+import 'package:terra_scope_apk/Screens/traveler/traveler_dashboard.dart';
 import 'firebase_options.dart';
+import 'package:terra_scope_apk/Screens/traveler/traveler_dashboard.dart';
 
 import 'providers/mode_provider.dart';
-import 'Screens/main_page.dart';
+// import 'Screens/main_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
