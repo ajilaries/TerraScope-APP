@@ -101,9 +101,7 @@ class CommuteAlerts extends StatelessWidget {
         return Colors.orangeAccent;
       case AlertType.safety:
         return Colors.redAccent;
-      default:
-        return Colors.grey;
-    }
+      }
   }
 
   IconData _alertIcon(AlertType type) {
@@ -114,9 +112,7 @@ class CommuteAlerts extends StatelessWidget {
         return Icons.traffic;
       case AlertType.safety:
         return Icons.warning_amber;
-      default:
-        return Icons.info;
-    }
+      }
   }
 }
 
