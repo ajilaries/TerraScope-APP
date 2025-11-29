@@ -4,73 +4,97 @@ import 'package:terra_scope_apk/Services/notification_service.dart';
 import 'package:terra_scope_apk/Services/device_service.dart';
 
 class LocationService {
-  String? deviceToken; // ✅ Store device token here for reuse
+  get deviceToken => null;
 
-  /// Fetches the most accurate and fast location
-  Future<Map<String, dynamic>> getCurrentLocation() async {
-    bool serviceEnabled;
-    LocationPermission permission;
+  set deviceToken(String deviceToken) {}
 
-    // Check if location services are enabled
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      throw Exception('Location services are disabled. Please enable them.');
+  /// 👉 Fast + accurate location fetch
+  Future<Position> getCurrentPositionFast() async {
+    // 1️⃣ Check service
+    if (!await Geolocator.isLocationServiceEnabled()) {
+      throw Exception("Location services are disabled.");
     }
 
-    // Check and request permissions
-    permission = await Geolocator.checkPermission();
+    // 2️⃣ Permissions
+    LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
-        throw Exception('Location permissions are denied.');
+        throw Exception("Location permissions are denied.");
       }
     }
-
     if (permission == LocationPermission.deniedForever) {
       throw Exception(
-        'Location permissions are permanently denied. Please enable them from settings.',
-      );
+          "Location permissions are permanently denied. Enable them in settings.");
     }
 
-    // Get last known position (fast) or current position (accurate)
-    Position? position = await Geolocator.getLastKnownPosition();
-    position ??= await Geolocator.getCurrentPosition(
+    // 3️⃣ ⚡ First try last known (instant)
+    Position? lastPos = await Geolocator.getLastKnownPosition();
+
+    // 4️⃣ Start fetching the accurate one in background
+    Future<Position> accuratePos = Geolocator.getCurrentPosition(
       desiredAccuracy: LocationAccuracy.bestForNavigation,
+      timeLimit: const Duration(seconds: 10),
     );
 
-    // Convert coordinates to human-readable place
-    List<Placemark> placemarks =
-        await placemarkFromCoordinates(position.latitude, position.longitude);
-
-    String city = placemarks.isNotEmpty
-        ? placemarks[0].locality ?? "Unknown"
-        : "Unknown";
-    String country = placemarks.isNotEmpty ? placemarks[0].country ?? "" : "";
-
-    return {
-      "latitude": position.latitude,
-      "longitude": position.longitude,
-      "city": city,
-      "country": country,
-    };
+    // 5️⃣ Return the fast one first, accurate one later
+    return lastPos ?? await accuratePos;
   }
 
-  /// Updates device location to backend (includes token handling)
+  /// 👉 Convert lat/lon → city + country
+  Future<Map<String, String>> getLocationName(double lat, double lon) async {
+    List<Placemark> placemarks = await placemarkFromCoordinates(lat, lon);
+
+    String city =
+        placemarks.isNotEmpty ? placemarks[0].locality ?? "Unknown" : "Unknown";
+    String country =
+        placemarks.isNotEmpty ? placemarks[0].country ?? "Unknown" : "Unknown";
+
+    return {"city": city, "country": country};
+  }
+
+  /// 👉 Friendly wrapper for HomeScreen2
+  Future<Map<String, dynamic>> getCurrentLocation() async {
+    Position pos = await getCurrentPositionFast();
+
+    final place = await getLocationName(pos.latitude, pos.longitude);
+
+    return {
+      "latitude": pos.latitude,
+      "longitude": pos.longitude,
+      "city": place["city"],
+      "country": place["country"],
+    };
+  }
+Future<Map<String, String>> getLocationNameFromCoordinates(double lat, double lon) async {
+    try {
+      List<Placemark> placemarks = await placemarkFromCoordinates(lat, lon);
+
+      String city = placemarks.isNotEmpty ? placemarks[0].locality ?? "Unknown" : "Unknown";
+      String country = placemarks.isNotEmpty ? placemarks[0].country ?? "Unknown" : "Unknown";
+
+      return {
+        "city": city,
+        "country": country,
+      };
+    } catch (e) {
+      print("Error getting location name: $e");
+      return {"city": "Unknown", "country": "Unknown"};
+    }
+  }
+  /// 👉 Update backend
   Future<void> updateDeviceLocationToBackend() async {
     try {
-      // 1️⃣ Get current location
-      final locData = await getCurrentLocation();
-      double lat = locData["latitude"];
-      double lon = locData["longitude"];
+      final loc = await getCurrentLocation();
 
-      // 2️⃣ Get FCM token
+      double lat = loc["latitude"];
+      double lon = loc["longitude"];
+
       String? token = await NotificationService.getDeviceToken();
-
-      // 3️⃣ Fallback to DeviceService token if FCM token unavailable
       token ??= DeviceService.getDeviceToken();
 
-      // 4️⃣ Register device to backend
       await DeviceService.registerDevice(lat: lat, lon: lon);
+
       print("✅ Device location updated to backend (token: $token)");
     } catch (e) {
       print("❌ Failed to update device location: $e");

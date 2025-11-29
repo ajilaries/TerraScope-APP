@@ -14,6 +14,7 @@ class DeviceService {
     if (locationService.deviceToken != null &&
         locationService.deviceToken!.isNotEmpty) {
       return locationService.deviceToken!;
+
     }
 
     // Otherwise, generate a new token
