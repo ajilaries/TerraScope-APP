@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:terra_scope_apk/Services/notification_service.dart';
 
 import '../Services/location_service.dart';
 import '../Services/weather_services.dart';
@@ -53,33 +54,80 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
     }
   }
 
+  // Future<void> loadAllWeather({bool autoRefresh = false}) async {
+  //   if (!autoRefresh) setState(() => isLoading = true);
+
+  //   try {
+  //     final loc = await LocationService().getCurrentLocation();
+
+  //     double lat = loc["latitude"];
+  //     double lon = loc["longitude"];
+
+  //     String cityName = await _getCityName(lat, lon);
+
+  //     final weather = await WeatherService().getWeatherData(
+  //       token: "dummy_token",
+  //       lat: lat,
+  //       lon: lon,
+  //     );
+
+  //     setState(() {
+  //       city = cityName;
+  //       temp = "${weather["temperature"]?.toStringAsFixed(1)}°C";
+  //       condition = weather["condition"] ?? "—";
+  //       aqi = weather["aqi"] ?? 40;
+  //       forecast7 = weather["forecast7"] ?? [];
+  //       forecast24 = weather["forecast24"] ?? [];
+  //       isLoading = false;
+  //     });
+  //   } catch (e) {
+  //     setState(() {
+  //       temp = "—°C";
+  //       condition = "Error";
+  //       isLoading = false;
+  //     });
+  //   }
+  // }
+
   Future<void> loadAllWeather({bool autoRefresh = false}) async {
     if (!autoRefresh) setState(() => isLoading = true);
 
     try {
+      //update device location to backend + get current location
+
       final loc = await LocationService().getCurrentLocation();
+      await LocationService().updateDeviceLocationToBackend();
 
       double lat = loc["latitude"];
       double lon = loc["longitude"];
 
-      String cityName = await _getCityName(lat, lon);
+      //get real device location
 
+      final token = await NotificationService.getDeviceToken()??"";
+
+      //real weather api call
       final weather = await WeatherService().getWeatherData(
-        token: "dummy_token",
+        token: token,
         lat: lat,
         lon: lon,
       );
 
+      //city name
+
+      String cityName = await _getCityName(lat, lon);
+
+      //update UI
       setState(() {
         city = cityName;
-        temp = "${weather["temperature"]?.toStringAsFixed(1)}°C";
-        condition = weather["condition"] ?? "—";
+        temp = "${weather["temparature"]?.toStringAsFixed(1)}°C";
+        condition = weather["condition"] ?? "_";
         aqi = weather["aqi"] ?? 40;
         forecast7 = weather["forecast7"] ?? [];
         forecast24 = weather["forecast24"] ?? [];
         isLoading = false;
       });
     } catch (e) {
+      print("loadAllWeather error:$e");
       setState(() {
         temp = "—°C";
         condition = "Error";
@@ -106,8 +154,10 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.brightness_6,
-                color: isDark ? Colors.white : Colors.black),
+            icon: Icon(
+              Icons.brightness_6,
+              color: isDark ? Colors.white : Colors.black,
+            ),
             onPressed: () =>
                 Provider.of<ModeProvider>(context, listen: false).toggleTheme(),
           ),
@@ -145,30 +195,39 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(city,
-              style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: dark ? Colors.white : Colors.black)),
-          Text(DateFormat('EEE, MMM d • hh:mm a').format(DateTime.now()),
-              style:
-                  TextStyle(color: dark ? Colors.white54 : Colors.black54)),
+          Text(
+            city,
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: dark ? Colors.white : Colors.black,
+            ),
+          ),
+          Text(
+            DateFormat('EEE, MMM d • hh:mm a').format(DateTime.now()),
+            style: TextStyle(color: dark ? Colors.white54 : Colors.black54),
+          ),
           const SizedBox(height: 20),
           Row(
             children: [
-              Text(temp,
-                  style: TextStyle(
-                      fontSize: 60,
-                      fontWeight: FontWeight.bold,
-                      color: dark ? Colors.white : Colors.black)),
+              Text(
+                temp,
+                style: TextStyle(
+                  fontSize: 60,
+                  fontWeight: FontWeight.bold,
+                  color: dark ? Colors.white : Colors.black,
+                ),
+              ),
               const SizedBox(width: 15),
-              Text(condition,
-                  style: TextStyle(
-                    fontSize: 20,
-                    color: dark ? Colors.white70 : Colors.black87,
-                  )),
+              Text(
+                condition,
+                style: TextStyle(
+                  fontSize: 20,
+                  color: dark ? Colors.white70 : Colors.black87,
+                ),
+              ),
             ],
-          )
+          ),
         ],
       ),
     );
@@ -181,11 +240,13 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("7-Day Forecast",
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: dark ? Colors.white : Colors.black,
-              )),
+          Text(
+            "7-Day Forecast",
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: dark ? Colors.white : Colors.black,
+            ),
+          ),
           const SizedBox(height: 10),
           SizedBox(
             height: 105,
@@ -201,22 +262,30 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(forecast7[i]["day"],
-                          style: TextStyle(
-                              color: dark ? Colors.white70 : Colors.black87)),
+                      Text(
+                        forecast7[i]["day"],
+                        style: TextStyle(
+                          color: dark ? Colors.white70 : Colors.black87,
+                        ),
+                      ),
                       const SizedBox(height: 5),
-                      Icon(Icons.cloud_queue,
-                          color: dark ? Colors.white : Colors.black),
+                      Icon(
+                        Icons.cloud_queue,
+                        color: dark ? Colors.white : Colors.black,
+                      ),
                       const SizedBox(height: 5),
-                      Text("${forecast7[i]["max"]}° / ${forecast7[i]["min"]}°",
-                          style: TextStyle(
-                              color: dark ? Colors.white : Colors.black)),
+                      Text(
+                        "${forecast7[i]["max"]}° / ${forecast7[i]["min"]}°",
+                        style: TextStyle(
+                          color: dark ? Colors.white : Colors.black,
+                        ),
+                      ),
                     ],
                   ),
                 );
               },
             ),
-          )
+          ),
         ],
       ),
     );
@@ -229,10 +298,13 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("Next 24 Hours",
-              style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: dark ? Colors.white : Colors.black)),
+          Text(
+            "Next 24 Hours",
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: dark ? Colors.white : Colors.black,
+            ),
+          ),
           const SizedBox(height: 10),
           SizedBox(
             height: 120,
@@ -247,22 +319,30 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
                   decoration: _smallBox(dark),
                   child: Column(
                     children: [
-                      Text(forecast24[i]["time"],
-                          style: TextStyle(
-                              color: dark ? Colors.white : Colors.black)),
+                      Text(
+                        forecast24[i]["time"],
+                        style: TextStyle(
+                          color: dark ? Colors.white : Colors.black,
+                        ),
+                      ),
                       const SizedBox(height: 5),
-                      Icon(Icons.cloud,
-                          color: dark ? Colors.white : Colors.black),
+                      Icon(
+                        Icons.cloud,
+                        color: dark ? Colors.white : Colors.black,
+                      ),
                       const SizedBox(height: 5),
-                      Text("${forecast24[i]["temp"]}°",
-                          style: TextStyle(
-                              color: dark ? Colors.white : Colors.black)),
+                      Text(
+                        "${forecast24[i]["temp"]}°",
+                        style: TextStyle(
+                          color: dark ? Colors.white : Colors.black,
+                        ),
+                      ),
                     ],
                   ),
                 );
               },
             ),
-          )
+          ),
         ],
       ),
     );
@@ -283,14 +363,18 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
   Widget _metric(String label, String value, bool dark) {
     return Column(
       children: [
-        Text(value,
-            style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: dark ? Colors.white : Colors.black)),
-        Text(label,
-            style: TextStyle(
-                color: dark ? Colors.white70 : Colors.black87)),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: dark ? Colors.white : Colors.black,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(color: dark ? Colors.white70 : Colors.black87),
+        ),
       ],
     );
   }
@@ -302,11 +386,14 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("Air Quality Index",
-              style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: dark ? Colors.white : Colors.black)),
+          Text(
+            "Air Quality Index",
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: dark ? Colors.white : Colors.black,
+            ),
+          ),
           const SizedBox(height: 10),
           Row(
             children: [
@@ -319,23 +406,24 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
                 ),
               ),
               const SizedBox(width: 15),
-              Text("Moderate air quality today.",
-                  style: TextStyle(
-                      color: dark ? Colors.white70 : Colors.black87)),
+              Text(
+                "Moderate air quality today.",
+                style: TextStyle(color: dark ? Colors.white70 : Colors.black87),
+              ),
             ],
-          )
+          ),
         ],
       ),
     );
   }
 
   BoxDecoration _box(bool dark) => BoxDecoration(
-        color: dark ? Colors.white10 : Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(18),
-      );
+    color: dark ? Colors.white10 : Colors.grey.shade100,
+    borderRadius: BorderRadius.circular(18),
+  );
 
   BoxDecoration _smallBox(bool dark) => BoxDecoration(
-        color: dark ? Colors.white12 : Colors.grey.shade200,
-        borderRadius: BorderRadius.circular(14),
-      );
+    color: dark ? Colors.white12 : Colors.grey.shade200,
+    borderRadius: BorderRadius.circular(14),
+  );
 }
