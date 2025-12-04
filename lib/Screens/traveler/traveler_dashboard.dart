@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:math';
-import 'travel_map_preview.dart';
 
 import 'traveler_alerts.dart';
 import 'traveler_hourly_route.dart';
