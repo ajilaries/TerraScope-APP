@@ -35,7 +35,7 @@ class CommuteAlerts extends StatelessWidget {
           ),
 
         // List of alerts
-        ...alerts.map((alert) => _buildAlertCard(alert)).toList(),
+        ...alerts.map((alert) => _buildAlertCard(alert)),
       ],
     );
   }

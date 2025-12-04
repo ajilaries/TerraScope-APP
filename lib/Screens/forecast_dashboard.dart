@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../Services/weather_services.dart';
-import 'package:intl/intl.dart';
+// import 'package:intl/intl.dart';
 
 class ForecastDashboard extends StatefulWidget {
   final double lat;
