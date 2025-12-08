@@ -33,8 +33,8 @@ class MainPage extends StatelessWidget {
         HomeScreen2(),
 
 
-        //ai predict mode as na new page
-        AIPredictPage(lat: 10.1, lon: 7.4),
+        // //ai predict mode as na new page
+        // AIPredictPage(lat: 10.1, lon: 7.4),
       ],
     );
   }
