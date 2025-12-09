@@ -47,6 +47,7 @@ Commute Mode → daily travel weather, bus/train safety
 Each mode shows different UI elements & functionalities.
 
 🧠 Tech Stack
+
 📱 Frontend
 
 Flutter
