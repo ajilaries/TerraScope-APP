@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:terra_scope_apk/Screens/main_page.dart';
+import 'package:terra_scope_apk/Screens/splash_screen.dart';
 import 'firebase_options.dart';
 
 import 'providers/mode_provider.dart';
@@ -49,7 +50,7 @@ class MyApp extends StatelessWidget {
         cardColor: Colors.grey[900],
       ),
 
-      home: const MainPage(),
+      home: const SplashScreen(),
     );
   }
 }
