@@ -61,13 +61,13 @@ Mode-based navigation
 
 ☁️ Backend
 
-Python (depending on the module)
+Python 
 
 Weather API integration
 
 AI anomaly detection engine
 
-MongoDB / Firebase / MySQL (your choice)
+Firebase
 
 Firebase Cloud Messaging for push notifications
 
@@ -117,7 +117,7 @@ Admin panel for anomaly management
 
 📲 Installation
 Clone the repo:
-git clone https://github.com/yourusername/terrascope.git
+git clone https://github.com/ajilaries/TerraScope-APP.git
 
 Install packages:
 flutter pub get
@@ -127,9 +127,6 @@ flutter run
 
 🧪 Backend Setup
 
-Deploy backend on Render / Railway / Fly.io
-
-Get your production URL
 
 Update API base URL in ai_predict_service.dart and weather service
 
@@ -138,10 +135,6 @@ Configure Firebase for push notifications
 🤝 Contributing
 
 Pull requests are welcome!
-Make sure to:
-
-git pull origin main
-git checkout -b feature-name
 
 
 Submit your PR with a clean commit message.
