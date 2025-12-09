@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:terra_scope_apk/popups/farmer_intro_popup.dart';
-import 'package:terra_scope_apk/Screens/signup_screen.dart';
+// import 'package:terra_scope_apk/Screens/signup_screen.dart';
+import 'package:terra_scope_apk/Screens/traveler/traveler_dashboard.dart';
+import 'package:terra_scope_apk/Screens/commute/commute_dashboard.dart';
 // <--- import your signup page
 
 class HomeScreen0 extends StatefulWidget {
@@ -99,60 +101,59 @@ class _HomeScreen0State extends State<HomeScreen0> {
                   ),
                   modeCard(
                     title: "commute",
-                    icon:Icons.commute,
+                    icon: Icons.commute,
                     color: Colors.blue,
-                    mode:"commute",
-                  )
+                    mode: "commute",
+                  ),
                 ],
               ),
             ),
 
             const SizedBox(height: 10),
 
-            Center(
-              child: Text(
-                "Switching modes requires login",
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
-              ),
-            ),
+            // Center(
+            //   child: Text(
+            //     "Switching modes requires login",
+            //     style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+            //   ),
+            // ),
 
-            const SizedBox(height: 20),
+            // const SizedBox(height: 20),
 
-            // LOGIN BUTTON
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: selectedMode.isEmpty
-                      ? Colors.grey
-                      : Colors.black,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                onPressed: selectedMode.isEmpty
-                    ? null
-                    : () {
-                        if (selectedMode == "default") {
-                          widget.onModeSelected(selectedMode);
-                        } else {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  SignupScreen(selectedMode: selectedMode),
-                            ),
-                          );
-                        }
-                      },
-                child: Text(
-                  "Continue",
-                  style: const TextStyle(fontSize: 18, color: Colors.white),
-                ),
-              ),
-            ),
-
+            // // LOGIN BUTTON
+            // Padding(
+            //   padding: const EdgeInsets.symmetric(horizontal: 20),
+            //   child: ElevatedButton(
+            //     style: ElevatedButton.styleFrom(
+            //       backgroundColor: selectedMode.isEmpty
+            //           ? Colors.grey
+            //           : Colors.black,
+            //       padding: const EdgeInsets.symmetric(vertical: 14),
+            //       shape: RoundedRectangleBorder(
+            //         borderRadius: BorderRadius.circular(12),
+            //       ),
+            //     ),
+            //     onPressed: selectedMode.isEmpty
+            //         ? null
+            //         : () {
+            //             if (selectedMode == "default") {
+            //               widget.onModeSelected(selectedMode);
+            //             } else {
+            //               Navigator.push(
+            //                 context,
+            //                 MaterialPageRoute(
+            //                   builder: (_) =>
+            //                       SignupScreen(selectedMode: selectedMode),
+            //                 ),
+            //               );
+            //             }
+            //           },
+            //     child: Text(
+            //       "Continue",
+            //       style: const TextStyle(fontSize: 18, color: Colors.white),
+            //     ),
+            //   ),
+            // ),
             const SizedBox(height: 25),
           ],
         ),
@@ -178,14 +179,17 @@ class _HomeScreen0State extends State<HomeScreen0> {
         // Show intro popup for special modes
         if (mode == "farmer") {
           showFarmerIntroPopup(context);
+        } else if (mode == "traveller") {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => TravelerDashboard()),
+          );
+        } else if (mode == "commute") {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => CommuteDashboard()),
+          );
         }
-        //  else if (mode == "traveller") {
-        // //   showTravellerIntroPopup(context);
-        //  } else if (mode == "safety") {
-        // //   showSafetyIntroPopup(context);
-        //  } else if (mode == "care") {
-        // //   showCareIntroPopup(context);
-        // // }
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
