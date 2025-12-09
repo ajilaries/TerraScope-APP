@@ -3,7 +3,7 @@ import 'home_screen.dart';
 import 'home_screen2.dart';
 import 'home_screen0.dart';
 import '../Screens/farmer/farmer_dashboard.dart';
-import 'splash_screen.dart';
+// import 'splash_screen.dart';
 // import '../pages/ai_predict_page.dart';
 
 class MainPage extends StatelessWidget {
