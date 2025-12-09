@@ -1,145 +1,102 @@
 🌦️ Terrascope — Smart Weather & Safety Assistant
 
-Terrascope is a next-gen weather and anomaly-detection app built using Flutter with a cloud-powered backend.
-It goes beyond basic weather reports — Terrascope actually predicts anomalies, alerts users, and adapts to different lifestyles using specialized modes.
+Terrascope is a next-gen weather intelligence and anomaly-detection app built using Flutter + a cloud-powered backend.
+It doesn’t just show weather… it understands it.
+Terrascope predicts anomalies, pushes smart alerts, and adapts to different lifestyles with multiple experience modes.
 
-🚀 Features
-🔹 🌤️ Real-Time Weather
+
+🌤️ Real-Time Weather
 
 Live temperature, humidity, wind, rainfall
 
-Accurate geolocation
+Accurate GPS-based location
 
-Auto-refresh system
+Auto-refresh for up-to-date weather
 
-🔹 🔍 AI-Powered Predictions
+🔍 AI-Powered Predictions
 
-Backend ML model detects anomalies
+Backend ML model for anomaly detection
 
-Spike detection for rainfall, storms, unusual temperatures
+Detects rainfall spikes, storms, unusual temperature changes
 
 Instant predictive alerts
 
-🔹 📢 Cloud Notifications
+Cloud Notifications
 
-Push notifications via FCM
+Push notifications via Firebase Cloud Messaging (FCM)
 
-Location-based alerts
+Location-based smart alerts
 
-Alerts stored inside an “Alerts” section
+Alerts saved in a dedicated Alerts Center
 
-🔹 🎛 Modes
-
-Terrascope adapts depending on who’s using it:
-
-Default Mode → simple weather + AI predictions
-
-Traveller Mode → route safety, travel weather, warnings
-
-Farmer Mode → crop-friendly insights, rainfall alerts, soil moisture forecasting
-
-Safety Mode → emergency features + SOS integration
-
-Kids/Senior Mode → simplified UI, clear alerts
-
-Commute Mode → daily travel weather, bus/train safety
-
-Each mode shows different UI elements & functionalities.
 
 🧠 Tech Stack
-
 📱 Frontend
 
 Flutter
 
-Clean UI
-
-Multiple dashboards
-
-Location services
+Responsive layouts + clean UI
 
 Mode-based navigation
 
+Geo-location services
+
 ☁️ Backend
 
-Python 
+Python
 
-Weather API integration
+Weather API integrations
 
 AI anomaly detection engine
 
-Firebase
+Firebase for user notifications
 
-Firebase Cloud Messaging for push notifications
+FCM for push alerts
+
 
 📡 How Terrascope Works
 
-User opens Terrascope
+User opens the app
 
-App fetches current location
+Device GPS fetches current location
 
 Backend fetches real-time + historical weather
 
 ML engine checks for anomalies
 
-If anomaly detected → send FCM notification
+If detected → send cloud notification
 
-User sees live alerts + AI predictions
+App displays live alerts + AI predictions
 
-🛠 Project Structure (Flutter)
-lib/
- ├── Screens/
- │    ├── default/
- │    ├── traveller/
- │    ├── farmer/
- │    ├── commute/
- │    ├── safety/
- │    └── care/
- ├── services/
- │    ├── weather_api.dart
- │    ├── ai_predict_service.dart
- │    └── location_service.dart
- ├── popups/
- ├── widgets/
- └── main.dart
 
 🔥 Upcoming Features
 
-Radar + live weather maps
+Live radar maps
 
-Travel/farming/commute modes with personalised insights
+Fully polished travel / farming / commute experiences
 
-Offline mode
+Offline weather mode
 
-Air quality monitoring (AQI)
+Air Quality Index (AQI) monitoring
 
-Admin panel for anomaly management
+Admin panel for anomaly logs
 
+Terrascope Pro (future expansion)
 
-📲 Installation
-Clone the repo:
-git clone https://github.com/ajilaries/TerraScope-APP.git
+Installation 
 
-Install packages:
+Clone the repository
+
+git clone  https://github.com/ajilaries/TerraScope-APP.git
+
+Install dependencies
+
 flutter pub get
 
-Run:
-flutter run
+Run the project
 
-🧪 Backend Setup
+flutter run 
 
+MIIT License
 
-Update API base URL in ai_predict_service.dart and weather service
-
-Configure Firebase for push notifications
-
-🤝 Contributing
-
-Pull requests are welcome!
-
-
-Submit your PR with a clean commit message.
-
-📄 License
-
-MIT License — free to use, modify, and build on.
+Free to use, modifiy and build upon
