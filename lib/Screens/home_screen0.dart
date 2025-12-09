@@ -97,6 +97,12 @@ class _HomeScreen0State extends State<HomeScreen0> {
                     color: Colors.deepPurple,
                     mode: "care",
                   ),
+                  modeCard(
+                    title: "commute",
+                    icon:Icons.commute,
+                    color: Colors.blue,
+                    mode:"commute",
+                  )
                 ],
               ),
             ),
@@ -173,13 +179,13 @@ class _HomeScreen0State extends State<HomeScreen0> {
         if (mode == "farmer") {
           showFarmerIntroPopup(context);
         }
-        // else if (mode == "traveller") {
-        //   showTravellerIntroPopup(context);
-        // } else if (mode == "safety") {
-        //   showSafetyIntroPopup(context);
-        // } else if (mode == "care") {
-        //   showCareIntroPopup(context);
-        // }
+        //  else if (mode == "traveller") {
+        // //   showTravellerIntroPopup(context);
+        //  } else if (mode == "safety") {
+        // //   showSafetyIntroPopup(context);
+        //  } else if (mode == "care") {
+        // //   showCareIntroPopup(context);
+        // // }
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
