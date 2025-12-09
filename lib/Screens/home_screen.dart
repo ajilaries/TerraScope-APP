@@ -10,7 +10,6 @@ import '../Services/weather_services.dart';
 import '../Services/notification_service.dart';
 import '../providers/mode_provider.dart';
 
-
 class MainHomeScreen extends StatefulWidget {
   const MainHomeScreen({super.key});
 
@@ -65,7 +64,7 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
       final loc = await LocationService().getCurrentLocation();
       await LocationService().updateDeviceLocationToBackend();
 
-       currentLat = loc["latitude"];
+      currentLat = loc["latitude"];
       currentLon = loc["longitude"];
 
       final token = await NotificationService.getDeviceToken() ?? "";
@@ -78,7 +77,10 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
       );
 
       // 🔥 Fetch AQI separately
-      final aqiData = await weatherService.getAQIData(lat: currentLat, lon: currentLon);
+      final aqiData = await weatherService.getAQIData(
+        lat: currentLat,
+        lon: currentLon,
+      );
 
       String cityName = await _getCityName(currentLat, currentLon);
 
@@ -113,7 +115,7 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
         elevation: 0,
         backgroundColor: Colors.transparent,
         title: Text(
-          "Terrascope Pro",
+          "Terrascope",
           style: TextStyle(
             color: isDark ? Colors.white : Colors.black,
             fontWeight: FontWeight.bold,
