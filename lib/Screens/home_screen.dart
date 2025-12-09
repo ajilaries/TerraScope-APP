@@ -172,6 +172,8 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
   }
 
   // ---------------- UI Widgets ----------------
+
+
   Widget _currentWeatherCard(bool dark) {
     return Container(
       padding: const EdgeInsets.all(20),
