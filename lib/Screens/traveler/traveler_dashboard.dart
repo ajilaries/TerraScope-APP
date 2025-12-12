@@ -192,7 +192,7 @@ class _TravelerDashboardState extends State<TravelerDashboard> {
                           )
                         : const Icon(Icons.alt_route),
                     label: Text(_planning ? "Planning..." : "Plan Route"),
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo.shade700),
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo.shade300),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -221,7 +221,7 @@ class _TravelerDashboardState extends State<TravelerDashboard> {
       appBar: AppBar(
         title: const Text("Traveler Mode"),
         centerTitle: true,
-        backgroundColor: Colors.indigo.shade700,
+        backgroundColor: Colors.indigo.shade300,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -237,7 +237,7 @@ class _TravelerDashboardState extends State<TravelerDashboard> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.indigo.shade700,
+        backgroundColor: Colors.indigo.shade300,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         onPressed: _showTravelTools,
         child: const Icon(Icons.grid_view_rounded, size: 28),
