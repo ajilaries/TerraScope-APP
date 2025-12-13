@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:terra_scope_apk/Screens/farmer/farmer_result_screen.dart';
+// import 'package:terra_scope_apk/Screens/farmer/farmer_result_screen.dart';
 import 'package:terra_scope_apk/popups/farmer_intro_popup.dart';
 // import 'package:terra_scope_apk/Screens/signup_screen.dart';
 import 'package:terra_scope_apk/Screens/traveler/traveler_dashboard.dart';
