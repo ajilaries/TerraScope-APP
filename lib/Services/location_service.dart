@@ -10,78 +10,87 @@ class LocationService {
 
   /// 👉 Fast + accurate location fetch
   Future<Position> getCurrentPositionFast() async {
-    // 1️⃣ Check service
     if (!await Geolocator.isLocationServiceEnabled()) {
       throw Exception("Location services are disabled.");
     }
 
-    // 2️⃣ Permissions
     LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
+
       if (permission == LocationPermission.denied) {
         throw Exception("Location permissions are denied.");
       }
     }
+
     if (permission == LocationPermission.deniedForever) {
       throw Exception(
           "Location permissions are permanently denied. Enable them in settings.");
     }
 
-    // 3️⃣ ⚡ First try last known (instant)
     Position? lastPos = await Geolocator.getLastKnownPosition();
 
-    // 4️⃣ Start fetching the accurate one in background
     Future<Position> accuratePos = Geolocator.getCurrentPosition(
       desiredAccuracy: LocationAccuracy.bestForNavigation,
       timeLimit: const Duration(seconds: 10),
     );
 
-    // 5️⃣ Return the fast one first, accurate one later
     return lastPos ?? await accuratePos;
   }
 
-  /// 👉 Convert lat/lon → city + country
-  Future<Map<String, String>> getLocationName(double lat, double lon) async {
-    List<Placemark> placemarks = await placemarkFromCoordinates(lat, lon);
+  /// 👉 Convert lat/lon → city + state + district + country (MOST IMPORTANT)
+  Future<Map<String, String>> getAdministrativeDetails(
+      double lat, double lon) async {
+    try {
+      List<Placemark> placemarks = await placemarkFromCoordinates(lat, lon);
 
-    String city =
-        placemarks.isNotEmpty ? placemarks[0].locality ?? "Unknown" : "Unknown";
-    String country =
-        placemarks.isNotEmpty ? placemarks[0].country ?? "Unknown" : "Unknown";
+      final place = placemarks.first;
 
-    return {"city": city, "country": country};
+      return {
+        "city": place.locality ?? "Unknown",
+        "district": place.subAdministrativeArea ?? "Unknown",
+        "state": place.administrativeArea ?? "Unknown",
+        "country": place.country ?? "Unknown",
+      };
+    } catch (e) {
+      print("❌ Error getting admin details: $e");
+      return {
+        "city": "Unknown",
+        "district": "Unknown",
+        "state": "Unknown",
+        "country": "Unknown",
+      };
+    }
   }
 
   /// 👉 Friendly wrapper for HomeScreen2
   Future<Map<String, dynamic>> getCurrentLocation() async {
     Position pos = await getCurrentPositionFast();
 
-    final place = await getLocationName(pos.latitude, pos.longitude);
+    final place =
+        await getAdministrativeDetails(pos.latitude, pos.longitude);
 
     return {
       "latitude": pos.latitude,
       "longitude": pos.longitude,
       "city": place["city"],
+      "district": place["district"],
+      "state": place["state"],
       "country": place["country"],
     };
   }
-Future<Map<String, String>> getLocationNameFromCoordinates(double lat, double lon) async {
+
+  /// 👉 Simple city+country lookup (old method, still used somewhere)
+  Future<Map<String, String>> getLocationNameFromCoordinates(
+      double lat, double lon) async {
     try {
-      List<Placemark> placemarks = await placemarkFromCoordinates(lat, lon);
-
-      String city = placemarks.isNotEmpty ? placemarks[0].locality ?? "Unknown" : "Unknown";
-      String country = placemarks.isNotEmpty ? placemarks[0].country ?? "Unknown" : "Unknown";
-
-      return {
-        "city": city,
-        "country": country,
-      };
+      return await getAdministrativeDetails(lat, lon);
     } catch (e) {
-      print("Error getting location name: $e");
+      print("Error: $e");
       return {"city": "Unknown", "country": "Unknown"};
     }
   }
+
   /// 👉 Update backend
   Future<void> updateDeviceLocationToBackend() async {
     try {
