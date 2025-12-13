@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:terra_scope_apk/Screens/farmer/farmer_result_screen.dart';
 import 'package:terra_scope_apk/popups/farmer_intro_popup.dart';
 // import 'package:terra_scope_apk/Screens/signup_screen.dart';
 import 'package:terra_scope_apk/Screens/traveler/traveler_dashboard.dart';
@@ -15,7 +16,7 @@ class HomeScreen0 extends StatefulWidget {
 }
 
 class _HomeScreen0State extends State<HomeScreen0> {
-  String selectedMode = ""; // stores selected mode
+  String selectedMode = "";
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +32,7 @@ class _HomeScreen0State extends State<HomeScreen0> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  const Text(
                     "Terrascope",
                     style: TextStyle(
                       fontSize: 32,
@@ -42,7 +43,10 @@ class _HomeScreen0State extends State<HomeScreen0> {
                   const SizedBox(height: 6),
                   Text(
                     "Your Weather. Your Safety.",
-                    style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey.shade600,
+                    ),
                   ),
                 ],
               ),
@@ -50,10 +54,9 @@ class _HomeScreen0State extends State<HomeScreen0> {
 
             const SizedBox(height: 20),
 
-            // SECTION TITLE
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Text(
+              child: const Text(
                 "Choose Your Experience",
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
               ),
@@ -61,7 +64,6 @@ class _HomeScreen0State extends State<HomeScreen0> {
 
             const SizedBox(height: 20),
 
-            // MODES GRID
             Expanded(
               child: GridView.count(
                 crossAxisCount: 2,
@@ -100,7 +102,7 @@ class _HomeScreen0State extends State<HomeScreen0> {
                     mode: "care",
                   ),
                   modeCard(
-                    title: "commute",
+                    title: "Commute",
                     icon: Icons.commute,
                     color: Colors.blue,
                     mode: "commute",
@@ -109,51 +111,6 @@ class _HomeScreen0State extends State<HomeScreen0> {
               ),
             ),
 
-            const SizedBox(height: 10),
-
-            // Center(
-            //   child: Text(
-            //     "Switching modes requires login",
-            //     style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
-            //   ),
-            // ),
-
-            // const SizedBox(height: 20),
-
-            // // LOGIN BUTTON
-            // Padding(
-            //   padding: const EdgeInsets.symmetric(horizontal: 20),
-            //   child: ElevatedButton(
-            //     style: ElevatedButton.styleFrom(
-            //       backgroundColor: selectedMode.isEmpty
-            //           ? Colors.grey
-            //           : Colors.black,
-            //       padding: const EdgeInsets.symmetric(vertical: 14),
-            //       shape: RoundedRectangleBorder(
-            //         borderRadius: BorderRadius.circular(12),
-            //       ),
-            //     ),
-            //     onPressed: selectedMode.isEmpty
-            //         ? null
-            //         : () {
-            //             if (selectedMode == "default") {
-            //               widget.onModeSelected(selectedMode);
-            //             } else {
-            //               Navigator.push(
-            //                 context,
-            //                 MaterialPageRoute(
-            //                   builder: (_) =>
-            //                       SignupScreen(selectedMode: selectedMode),
-            //                 ),
-            //               );
-            //             }
-            //           },
-            //     child: Text(
-            //       "Continue",
-            //       style: const TextStyle(fontSize: 18, color: Colors.white),
-            //     ),
-            //   ),
-            // ),
             const SizedBox(height: 25),
           ],
         ),
@@ -161,7 +118,7 @@ class _HomeScreen0State extends State<HomeScreen0> {
     );
   }
 
-  // MODE CARD UI
+  // MODE CARD
   Widget modeCard({
     required String title,
     required IconData icon,
@@ -176,9 +133,9 @@ class _HomeScreen0State extends State<HomeScreen0> {
           selectedMode = mode;
         });
 
-        // Show intro popup for special modes
         if (mode == "farmer") {
-          showFarmerIntroPopup(context);
+            showFarmerIntroPopup(context);
+          
         } else if (mode == "traveller") {
           Navigator.push(
             context,
@@ -189,6 +146,8 @@ class _HomeScreen0State extends State<HomeScreen0> {
             context,
             MaterialPageRoute(builder: (_) => CommuteDashboard()),
           );
+        } else {
+          widget.onModeSelected(mode);
         }
       },
       child: AnimatedContainer(
@@ -200,11 +159,11 @@ class _HomeScreen0State extends State<HomeScreen0> {
             color: isSelected ? color : Colors.transparent,
             width: 2.5,
           ),
-          boxShadow: [
+          boxShadow: const [
             BoxShadow(
               color: Colors.black12,
               blurRadius: 8,
-              offset: const Offset(0, 3),
+              offset: Offset(0, 3),
             ),
           ],
         ),
@@ -215,7 +174,10 @@ class _HomeScreen0State extends State<HomeScreen0> {
             const SizedBox(height: 12),
             Text(
               title,
-              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+              style: const TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ],
         ),
