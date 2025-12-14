@@ -1,25 +1,23 @@
 class FarmerPrediction {
-  final double temperature;
-  final double rainfall;
-  final String crop;
-  final String risk;
-  final String suggestion;
+  final int bestPlantingMonth;
+  final double expectedYield;
+  final String yieldRisk;
+  final Map<int, double> monthWiseYield;
 
   FarmerPrediction({
-    required this.temperature,
-    required this.rainfall,
-    required this.crop,
-    required this.risk,
-    required this.suggestion,
+    required this.bestPlantingMonth,
+    required this.expectedYield,
+    required this.yieldRisk,
+    required this.monthWiseYield,
   });
 
   factory FarmerPrediction.fromJson(Map<String, dynamic> json) {
     return FarmerPrediction(
-      temperature: json['predicted_weather']['temperature'].toDouble(),
-      rainfall: json['predicted_weather']['rainfall'].toDouble(),
-      crop: json['best_crop'],
-      risk: json['risk_level'],
-      suggestion: json['suggestion'],
+      bestPlantingMonth: json['best_planting_month'],
+      expectedYield: (json['expected_yield'] as num).toDouble(),
+      yieldRisk: json['yield_risk'],
+      monthWiseYield: (json['month_wise_yield'] as Map<String, dynamic>)
+          .map((k, v) => MapEntry(int.parse(k), (v as num).toDouble())),
     );
   }
 }
