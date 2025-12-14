@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:terra_scope_apk/popups/theme_select_popup.dart';
+// import 'package:terra_scope_apk/popups/theme_select_popup.dart';
 
 class FarmerIntroPopup extends StatelessWidget {
   final Function(double lat, double lon, String soilType) onSubmit;
