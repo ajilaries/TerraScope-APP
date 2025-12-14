@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-// import 'package:terra_scope_apk/Screens/farmer/farmer_result_screen.dart';
+import 'package:terra_scope_apk/Screens/farmer/farmer_result_screen.dart';
 import 'package:terra_scope_apk/popups/farmer_intro_popup.dart';
-// import 'package:terra_scope_apk/Screens/signup_screen.dart';
 import 'package:terra_scope_apk/Screens/traveler/traveler_dashboard.dart';
 import 'package:terra_scope_apk/Screens/commute/commute_dashboard.dart';
-// <--- import your signup page
 
 class HomeScreen0 extends StatefulWidget {
   final Function(String) onModeSelected;
@@ -134,19 +132,40 @@ class _HomeScreen0State extends State<HomeScreen0> {
         });
 
         if (mode == "farmer") {
-            showFarmerIntroPopup(context);
-          
-        } else if (mode == "traveller") {
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (_) => FarmerIntroPopup(
+              onSubmit: (double lat, double lon, String soilType) {
+                Navigator.pop(context); // close popup
+
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => FarmerResultScreen(
+                      lat: lat,
+                      lon: lon,
+                      soilType: soilType,
+                    ),
+                  ),
+                );
+              },
+            ),
+          );
+        } 
+        else if (mode == "traveller") {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => TravelerDashboard()),
           );
-        } else if (mode == "commute") {
+        } 
+        else if (mode == "commute") {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => CommuteDashboard()),
           );
-        } else {
+        } 
+        else {
           widget.onModeSelected(mode);
         }
       },
