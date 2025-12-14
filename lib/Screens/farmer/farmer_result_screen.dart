@@ -34,8 +34,8 @@ class _FarmerResultScreenState extends State<FarmerResultScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Farmer Insights")),
-      body: FutureBuilder(
+      appBar: AppBar(title: const Text("Farmer Insights 🌾")),
+      body: FutureBuilder<FarmerPrediction>(
         future: prediction,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -43,7 +43,9 @@ class _FarmerResultScreenState extends State<FarmerResultScreen> {
           }
 
           if (snapshot.hasError) {
-            return const Center(child: Text("Something went wrong 😵"));
+            return Center(
+              child: Text("Error: ${snapshot.error} 😵"),
+            );
           }
 
           final data = snapshot.data!;
@@ -54,19 +56,24 @@ class _FarmerResultScreenState extends State<FarmerResultScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "🌾 Best Crop: ${data.crop}",
+                  "📅 Best Planting Month: ${data.bestPlantingMonth}",
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
 
-                Text("⚠️ Risk Level: ${data.risk}"),
-                Text("🌡️ Temperature: ${data.temperature} °C"),
-                Text("🌧️ Rainfall: ${data.rainfall} mm"),
+                const SizedBox(height: 8),
 
-                const SizedBox(height: 10),
+                Text("🌾 Expected Yield: ${data.expectedYield.toStringAsFixed(2)} kg"),
+                Text("⚠️ Risk Level: ${data.yieldRisk}"),
+
+                const SizedBox(height: 16),
 
                 Text(
-                  "📌 ${data.suggestion}",
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  "📊 Month-wise Yield",
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+
+                ...data.monthWiseYield.entries.map(
+                  (e) => Text("Month ${e.key}: ${e.value.toStringAsFixed(1)} kg"),
                 ),
               ],
             ),
