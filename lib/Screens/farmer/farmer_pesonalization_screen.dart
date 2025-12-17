@@ -1,7 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:terra_scope_apk/Services/crop_service.dart';
 
 class FarmerPersonalizationScreen extends StatefulWidget {
-  const FarmerPersonalizationScreen({super.key});
+  final double lat;
+  final double lon;
+
+  const FarmerPersonalizationScreen({
+    super.key,
+    required this.lat,
+    required this.lon,
+  });
 
   @override
   State<FarmerPersonalizationScreen> createState() =>
@@ -14,16 +23,8 @@ class _FarmerPersonalizationScreenState
   String? landSize;
   String? irrigation;
 
-  final List<String> cropOptions = [
-    "Paddy",
-    "Wheat",
-    "Sugarcane",
-    "Vegetables",
-    "Fruits",
-    "Tea",
-    "Coffee",
-    "Others"
-  ];
+  bool loadingCrops = true;
+  List<String> cropOptions = [];
 
   final List<String> landOptions = [
     "< 1 Acre",
@@ -37,8 +38,62 @@ class _FarmerPersonalizationScreenState
     "Drip irrigation",
     "Sprinkler",
     "Canal water",
-    "Borewell"
+    "Borewell",
   ];
+
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   // _loadDistrictCrops();
+  // }
+
+  // /// --------------------------------------------------------------------------
+  // /// STEP 1: Reverse geocode → get state & district
+  // /// --------------------------------------------------------------------------
+  // Future<Map<String, String>> _getStateDistrict() async {
+  //   try {
+  //     final placemarks = await placemarkFromCoordinates(
+  //       widget.lat,
+  //       widget.lon,
+  //     );
+
+  //     final p = placemarks.first;
+
+  //     return {
+  //       "state": p.administrativeArea ?? "Unknown",
+  //       "district": p.subAdministrativeArea ?? "Unknown",
+  //     };
+  //   } catch (e) {
+  //     print("Error getting district: $e");
+  //     return {"state": "Unknown", "district": "Unknown"};
+  //   }
+  // }
+
+  // Future<void> _loadDistrictCrops() async {
+  //   final loc = await _getStateDistrict();
+
+  //   String state = loc["state"] ?? "Unknown";
+  //   String district = loc["district"] ?? "Unknown";
+
+  //   print("📍 Detected: $district, $state");
+
+  //   final crops = await CropService.getCropsForDistrict(
+  //     state: state,
+  //     district: district,
+  //   );
+
+  //   setState(() {
+  //     cropOptions = crops.isNotEmpty
+  //         ? crops
+  //         : [
+  //             "Paddy",
+  //             "Vegetables",
+  //             "Fruits",
+  //             "Other"
+  //           ]; // fallback if district not in JSON
+  //     loadingCrops = false;
+  //   });
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -57,23 +112,26 @@ class _FarmerPersonalizationScreenState
             Text(
               "Help us personalize your weather insights 🌾",
               style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey.shade800),
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade800,
+              ),
             ),
             const SizedBox(height: 25),
 
-            // CROP TYPE
-            buildDropdown(
-              title: "Primary Crop You Grow",
-              value: cropType,
-              items: cropOptions,
-              onChanged: (v) => setState(() => cropType = v),
-            ),
+            // ---- CROP TYPE ----
+            loadingCrops
+                ? const Center(child: CircularProgressIndicator())
+                : buildDropdown(
+                    title: "Primary Crop You Grow",
+                    value: cropType,
+                    items: cropOptions,
+                    onChanged: (v) => setState(() => cropType = v),
+                  ),
 
             const SizedBox(height: 20),
 
-            // LAND SIZE
+            // ---- LAND SIZE ----
             buildDropdown(
               title: "Land Size",
               value: landSize,
@@ -83,7 +141,7 @@ class _FarmerPersonalizationScreenState
 
             const SizedBox(height: 20),
 
-            // IRRIGATION
+            // ---- IRRIGATION ----
             buildDropdown(
               title: "Irrigation Method",
               value: irrigation,
@@ -93,7 +151,7 @@ class _FarmerPersonalizationScreenState
 
             const Spacer(),
 
-            // Continue button
+            // ---- SAVE BUTTON ----
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -120,14 +178,16 @@ class _FarmerPersonalizationScreenState
                   style: TextStyle(fontSize: 17, color: Colors.white),
                 ),
               ),
-            )
+            ),
           ],
         ),
       ),
     );
   }
 
+  // --------------------------------------------------------------------------
   // Reusable Dropdown Widget
+  // --------------------------------------------------------------------------
   Widget buildDropdown({
     required String title,
     required String? value,
@@ -155,8 +215,12 @@ class _FarmerPersonalizationScreenState
               isExpanded: true,
               hint: const Text("Select"),
               items: items
-                  .map((item) =>
-                      DropdownMenuItem(value: item, child: Text(item)))
+                  .map(
+                    (item) => DropdownMenuItem(
+                      value: item,
+                      child: Text(item),
+                    ),
+                  )
                   .toList(),
               onChanged: onChanged,
             ),
