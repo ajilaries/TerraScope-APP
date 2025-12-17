@@ -4,9 +4,12 @@ import 'package:terra_scope_apk/Services/notification_service.dart';
 import 'package:terra_scope_apk/Services/device_service.dart';
 
 class LocationService {
-  get deviceToken => null;
+  String? _deviceToken;
 
-  set deviceToken(String deviceToken) {}
+  String? get deviceToke => _deviceToken;
+  set deviceToken(String? token) {
+    _deviceToken = token;
+  }
 
   /// 👉 Fast + accurate location fetch
   Future<Position> getCurrentPositionFast() async {
@@ -67,8 +70,7 @@ class LocationService {
   Future<Map<String, dynamic>> getCurrentLocation() async {
     Position pos = await getCurrentPositionFast();
 
-    final place =
-        await getAdministrativeDetails(pos.latitude, pos.longitude);
+    final place = await getAdministrativeDetails(pos.latitude, pos.longitude);
 
     return {
       "latitude": pos.latitude,
@@ -100,7 +102,7 @@ class LocationService {
       double lon = loc["longitude"];
 
       String? token = await NotificationService.getDeviceToken();
-      token ??= DeviceService.getDeviceToken();
+      token ??= await DeviceService.getDeviceToken();
 
       await DeviceService.registerDevice(lat: lat, lon: lon);
 
