@@ -1,46 +1,51 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'location_service.dart'; // Make sure this path is correct
+import 'package:shared_preferences/shared_preferences.dart';
 
 class DeviceService {
   static const String backendUrl = "http://10.0.2.2:8000/save_device";
+  static const String _prefKey = "device_token";
 
-  /// ✅ Get or generate a device token
-  static String getDeviceToken() {
-    // Access the singleton LocationService instance
-    final locationService = LocationService();
+  /// ✅ Get or generate a persistent device token
+  static Future<String> getDeviceToken() async {
+    final prefs = await SharedPreferences.getInstance();
 
-    // If token already exists, return it
-    if (locationService.deviceToken != null &&
-        locationService.deviceToken!.isNotEmpty) {
-      return locationService.deviceToken!;
+    String? token = prefs.getString(_prefKey);
 
-    }
+    if (token != null && token.isNotEmpty) return token;
 
-    // Otherwise, generate a new token
-    final newToken = "DEVICE_TOKEN_${DateTime.now().millisecondsSinceEpoch}";
-    locationService.deviceToken = newToken;
-    return newToken;
+    // Generate a new token if none exists
+    token = "DEVICE_TOKEN_${DateTime.now().millisecondsSinceEpoch}";
+    await prefs.setString(_prefKey, token);
+
+    return token;
   }
 
   /// ✅ Register device to backend
-  static Future<void> registerDevice({required double lat, required double lon}) async {
-    final token = getDeviceToken();
+  static Future<void> registerDevice({
+    required double lat,
+    required double lon,
+  }) async {
+    final token = await getDeviceToken();
 
     try {
       final response = await http.post(
         Uri.parse(backendUrl),
         headers: {"Content-Type": "application/json"},
-        body: jsonEncode({"token": token, "lat": lat, "lon": lon}),
+        body: jsonEncode({
+          "token": token,
+          "lat": lat,
+          "lon": lon,
+        }),
       );
 
       if (response.statusCode == 200) {
-        print("Device registered successfully");
+        print("✅ Device registered successfully");
       } else {
-        print("Failed to register device: ${response.body}");
+        print("❌ Failed to register device: ${response.body}");
       }
     } catch (e) {
-      print("Error registering device: $e");
+      print("❌ Error registering device: $e");
     }
   }
 }
