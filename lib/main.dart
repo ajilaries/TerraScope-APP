@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 // import 'package:terra_scope_apk/Screens/main_page.dart';
 import 'package:terra_scope_apk/Screens/splash_screen.dart';
 import 'firebase_options.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'providers/mode_provider.dart';
 // import 'Screens/main_page.dart';
@@ -11,17 +12,17 @@ import 'providers/mode_provider.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase
+  //load the .env file
+  await dotenv.load(fileName: ".env");
+  //initialize firebase
+
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-
-  runApp(
-    ChangeNotifierProvider(
-      create: (_) => ModeProvider()..loadMode(),
-      child: const MyApp(),
-    ),
-  );
+  runApp(ChangeNotifierProvider(
+    create: (_) => ModeProvider()..loadMode(),
+    child: const MyApp(),
+  ));
 }
 
 class MyApp extends StatelessWidget {
