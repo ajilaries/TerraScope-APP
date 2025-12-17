@@ -4,73 +4,106 @@ import 'package:terra_scope_apk/Services/notification_service.dart';
 import 'package:terra_scope_apk/Services/device_service.dart';
 
 class LocationService {
-  String? deviceToken; // ✅ Store device token here for reuse
+  get deviceToken => null;
 
-  /// Fetches the most accurate and fast location
-  Future<Map<String, dynamic>> getCurrentLocation() async {
-    bool serviceEnabled;
-    LocationPermission permission;
+  set deviceToken(String deviceToken) {}
 
-    // Check if location services are enabled
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      throw Exception('Location services are disabled. Please enable them.');
+  /// 👉 Fast + accurate location fetch
+  Future<Position> getCurrentPositionFast() async {
+    if (!await Geolocator.isLocationServiceEnabled()) {
+      throw Exception("Location services are disabled.");
     }
 
-    // Check and request permissions
-    permission = await Geolocator.checkPermission();
+    LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
+
       if (permission == LocationPermission.denied) {
-        throw Exception('Location permissions are denied.');
+        throw Exception("Location permissions are denied.");
       }
     }
 
     if (permission == LocationPermission.deniedForever) {
       throw Exception(
-        'Location permissions are permanently denied. Please enable them from settings.',
-      );
+          "Location permissions are permanently denied. Enable them in settings.");
     }
 
-    // Get last known position (fast) or current position (accurate)
-    Position? position = await Geolocator.getLastKnownPosition();
-    position ??= await Geolocator.getCurrentPosition(
+    Position? lastPos = await Geolocator.getLastKnownPosition();
+
+    Future<Position> accuratePos = Geolocator.getCurrentPosition(
       desiredAccuracy: LocationAccuracy.bestForNavigation,
+      timeLimit: const Duration(seconds: 10),
     );
 
-    // Convert coordinates to human-readable place
-    List<Placemark> placemarks =
-        await placemarkFromCoordinates(position.latitude, position.longitude);
+    return lastPos ?? await accuratePos;
+  }
 
-    String city = placemarks.isNotEmpty
-        ? placemarks[0].locality ?? "Unknown"
-        : "Unknown";
-    String country = placemarks.isNotEmpty ? placemarks[0].country ?? "" : "";
+  /// 👉 Convert lat/lon → city + state + district + country (MOST IMPORTANT)
+  Future<Map<String, String>> getAdministrativeDetails(
+      double lat, double lon) async {
+    try {
+      List<Placemark> placemarks = await placemarkFromCoordinates(lat, lon);
+
+      final place = placemarks.first;
+
+      return {
+        "city": place.locality ?? "Unknown",
+        "district": place.subAdministrativeArea ?? "Unknown",
+        "state": place.administrativeArea ?? "Unknown",
+        "country": place.country ?? "Unknown",
+      };
+    } catch (e) {
+      print("❌ Error getting admin details: $e");
+      return {
+        "city": "Unknown",
+        "district": "Unknown",
+        "state": "Unknown",
+        "country": "Unknown",
+      };
+    }
+  }
+
+  /// 👉 Friendly wrapper for HomeScreen2
+  Future<Map<String, dynamic>> getCurrentLocation() async {
+    Position pos = await getCurrentPositionFast();
+
+    final place =
+        await getAdministrativeDetails(pos.latitude, pos.longitude);
 
     return {
-      "latitude": position.latitude,
-      "longitude": position.longitude,
-      "city": city,
-      "country": country,
+      "latitude": pos.latitude,
+      "longitude": pos.longitude,
+      "city": place["city"],
+      "district": place["district"],
+      "state": place["state"],
+      "country": place["country"],
     };
   }
 
-  /// Updates device location to backend (includes token handling)
+  /// 👉 Simple city+country lookup (old method, still used somewhere)
+  Future<Map<String, String>> getLocationNameFromCoordinates(
+      double lat, double lon) async {
+    try {
+      return await getAdministrativeDetails(lat, lon);
+    } catch (e) {
+      print("Error: $e");
+      return {"city": "Unknown", "country": "Unknown"};
+    }
+  }
+
+  /// 👉 Update backend
   Future<void> updateDeviceLocationToBackend() async {
     try {
-      // 1️⃣ Get current location
-      final locData = await getCurrentLocation();
-      double lat = locData["latitude"];
-      double lon = locData["longitude"];
+      final loc = await getCurrentLocation();
 
-      // 2️⃣ Get FCM token
+      double lat = loc["latitude"];
+      double lon = loc["longitude"];
+
       String? token = await NotificationService.getDeviceToken();
-
-      // 3️⃣ Fallback to DeviceService token if FCM token unavailable
       token ??= DeviceService.getDeviceToken();
 
-      // 4️⃣ Register device to backend
       await DeviceService.registerDevice(lat: lat, lon: lon);
+
       print("✅ Device location updated to backend (token: $token)");
     } catch (e) {
       print("❌ Failed to update device location: $e");

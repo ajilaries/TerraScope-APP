@@ -1,274 +1,415 @@
+// {"id":"45913","variant":"standard","title":"Corrected MainHomeScreen with live updates"}
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:weather_icons/weather_icons.dart';
+import 'package:provider/provider.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:terra_scope_apk/pages/ai_predict_page.dart';
 import '../Services/location_service.dart';
 import '../Services/weather_services.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:provider/provider.dart';
+import '../Services/notification_service.dart';
 import '../providers/mode_provider.dart';
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+class MainHomeScreen extends StatefulWidget {
+  const MainHomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<MainHomeScreen> createState() => _MainHomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
-  String locationName = "Loading...";
-  String temperature = "---°C";
-  String weatherCondition = "Fetching...";
-  IconData weatherIcon = WeatherIcons.cloud;
+class _MainHomeScreenState extends State<MainHomeScreen> {
+  String city = "Fetching location...";
+  String condition = "—";
+  String temp = "—°C";
+  int aqi = 0;
+  double currentLat = 0.0;
+  double currentLon = 0.0;
+  List<Map<String, dynamic>> forecast7 = [];
+  List<Map<String, dynamic>> forecast24 = [];
+  bool isLoading = true;
 
-  String latitude = "--";
-  String longitude = "--";
-
-  String day = "";
-  String time = "";
-  String lastUpdated = "—";
-  bool isRefreshing = false;
-
-  StreamSubscription<Position>? positionStream;
-  Timer? _refreshTimer;
+  final WeatherService weatherService = WeatherService();
+  Timer? autoRefreshTimer;
 
   @override
   void initState() {
     super.initState();
-    _updateDateTime();
-    _fetchWeatherData(initial: true);
-    _startAutoRefresh();
-    _listenToLiveLocation();
-    LocationService().updateDeviceLocationToBackend();
+    _fetchHomeData();
+    autoRefreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      _fetchHomeData(autoRefresh: true);
+    });
   }
 
   @override
   void dispose() {
-    _refreshTimer?.cancel();
-    positionStream?.cancel();
+    autoRefreshTimer?.cancel();
     super.dispose();
   }
 
-  // ✅ Update date & time
-  void _updateDateTime() {
-    final now = DateTime.now();
-    day = DateFormat('EEE, MMM d').format(now);
-    time = DateFormat('hh:mm a').format(now);
+  Future<String> _getCityName(double lat, double lon) async {
+    try {
+      List<Placemark> place = await placemarkFromCoordinates(lat, lon);
+      if (place.isNotEmpty) return place.first.locality ?? "Unknown";
+      return "Unknown";
+    } catch (e) {
+      return "Unknown";
+    }
   }
 
-  // ✅ Auto refresh every 5 min
-  void _startAutoRefresh() {
-    _refreshTimer = Timer.periodic(
-      const Duration(minutes: 5),
-      (_) => _fetchWeatherData(),
-    );
-  }
-
-  // ✅ Listen to live GPS updates
-  void _listenToLiveLocation() {
-    positionStream = Geolocator.getPositionStream(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.high,
-        distanceFilter: 10,
-      ),
-    ).listen((Position pos) async {
-      print("📍 Live GPS: ${pos.latitude}, ${pos.longitude}");
-      await _fetchWeatherData(lat: pos.latitude, lon: pos.longitude);
-    });
-  }
-
-  // ✅ Fetch weather (initial or GPS-triggered)
-  Future<void> _fetchWeatherData({
-    bool initial = false,
-    double? lat,
-    double? lon,
-  }) async {
-    setState(() => isRefreshing = true);
-
-    const String token = "YOUR_DEVICE_TOKEN";
+  Future<void> _fetchHomeData({bool autoRefresh = false}) async {
+    if (!autoRefresh) setState(() => isLoading = true);
 
     try {
-      if (lat == null || lon == null) {
-        final loc = await LocationService().getCurrentLocation();
-        lat = loc["latitude"];
-        lon = loc["longitude"];
-      }
+      // 🔥 Get fresh high-accuracy location
+      final loc = await LocationService().getCurrentLocation();
+      await LocationService().updateDeviceLocationToBackend();
 
-      final locInfo = await LocationService().getCurrentLocation();
-      locationName = "${locInfo["city"]}, ${locInfo["country"]}";
-      latitude = lat!.toStringAsFixed(4);
-      longitude = lon!.toStringAsFixed(4);
+      currentLat = loc["latitude"];
+      currentLon = loc["longitude"];
 
-      final latest = await WeatherService().getWeatherData(
+      final token = await NotificationService.getDeviceToken() ?? "";
+
+      // 🔥 Fetch weather
+      final weather = await weatherService.getWeatherData(
         token: token,
-        lat: lat,
-        lon: lon,
+        lat: currentLat,
+        lon: currentLon,
       );
 
-      final temp = latest["temperature"] ?? 0;
-      final rainfall = latest["rainfall"] ?? 0;
-      final condition = latest["condition"] ?? (rainfall > 0 ? "Rain" : "Clear");
+      // 🔥 Fetch AQI separately
+      final aqiData = await weatherService.getAQIData(
+        lat: currentLat,
+        lon: currentLon,
+      );
 
+      String cityName = await _getCityName(currentLat, currentLon);
+
+      if (!mounted) return;
       setState(() {
-        temperature = "${temp.toStringAsFixed(1)}°C";
-        weatherCondition = condition;
-        weatherIcon = WeatherService().getWeatherIcon(condition);
-        lastUpdated = DateFormat('hh:mm a').format(DateTime.now());
+        city = cityName;
+        temp = "${weather["temperature"]?.toStringAsFixed(1) ?? '--'}°C";
+        condition = weather["condition"] ?? "_";
+        aqi = aqiData['aqi'] ?? 40;
+        forecast7 = weather["forecast7"] ?? [];
+        forecast24 = weather["forecast24"] ?? [];
+        isLoading = false;
       });
     } catch (e) {
-      debugPrint("❌ ERROR: $e");
-      setState(() {
-        locationName = "Location / Weather Error";
-        temperature = "---°C";
-        weatherCondition = "Unknown";
-        weatherIcon = WeatherIcons.na;
-      });
-    } finally {
-      setState(() => isRefreshing = false);
+      print("Error fetching home data: $e");
+      if (mounted)
+        setState(() {
+          temp = "—°C";
+          condition = "Error";
+          isLoading = false;
+        });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final mode = Provider.of<ModeProvider>(context).mode; // 🔥 mode loaded
-
-    // 🎨 Mode-based overlay color
-    Color overlayColor;
-    if (mode == 'farm') {
-      overlayColor = Colors.green.withOpacity(0.25);
-    } else if (mode == 'travel') {
-      overlayColor = Colors.blue.withOpacity(0.25);
-    } else {
-      overlayColor = Colors.black.withOpacity(0.3);
-    }
-
-    // 🔥 Title changes with mode
-    String title = mode == "farm"
-        ? "TerraScope – Farm Mode"
-        : mode == "travel"
-            ? "TerraScope – Travel Mode"
-            : "TerraScope";
-
-    // 🔥 Icon dynamic size
-    double iconSize = mode == "travel"
-        ? 110
-        : mode == "farm"
-            ? 95
-            : 80;
-
-    final bgImage = WeatherService().getBackgroundImage(weatherCondition);
+    final isDark = Provider.of<ModeProvider>(context).isDarkMode;
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
+      backgroundColor: isDark ? Colors.black : Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
         elevation: 0,
+        backgroundColor: Colors.transparent,
         title: Text(
-          title,
-          style: const TextStyle(
+          "Terrascope",
+          style: TextStyle(
+            color: isDark ? Colors.white : Colors.black,
             fontWeight: FontWeight.bold,
-            fontSize: 22,
           ),
         ),
         actions: [
           IconButton(
-            icon: isRefreshing
-                ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
-                    ),
-                  )
-                : const Icon(Icons.refresh),
-            onPressed: isRefreshing ? null : () => _fetchWeatherData(),
+            icon: Icon(
+              Icons.brightness_6,
+              color: isDark ? Colors.white : Colors.black,
+            ),
+            onPressed: () =>
+                Provider.of<ModeProvider>(context, listen: false).toggleTheme(),
+          ),
+          IconButton(
+            icon: const Icon(
+              Icons.auto_awesome,
+              color: Colors.deepPurple,
+              size: 28,
+            ),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      AIPredictPage(lat: currentLat, lon: currentLon),
+                ),
+              );
+            },
+          ),
+          const SizedBox(width: 10),
+        ],
+      ),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
+              onRefresh: () => _fetchHomeData(),
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  _currentWeatherCard(isDark),
+                  const SizedBox(height: 20),
+                  _forecast7Card(isDark),
+                  const SizedBox(height: 20),
+                  _forecast24Card(isDark),
+                  const SizedBox(height: 20),
+                  _metricsGrid(isDark),
+                  const SizedBox(height: 20),
+                  _aqiCard(isDark),
+                ],
+              ),
+            ),
+    );
+  }
+
+  // ---------------- UI Widgets ----------------
+
+
+  Widget _currentWeatherCard(bool dark) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: _boxDecoration(dark),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            city,
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: dark ? Colors.white : Colors.black,
+            ),
+          ),
+          Text(
+            DateFormat('EEE, MMM d • hh:mm a').format(DateTime.now()),
+            style: TextStyle(color: dark ? Colors.white54 : Colors.black54),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Text(
+                temp,
+                style: TextStyle(
+                  fontSize: 60,
+                  fontWeight: FontWeight.bold,
+                  color: dark ? Colors.white : Colors.black,
+                ),
+              ),
+              const SizedBox(width: 15),
+              Text(
+                condition,
+                style: TextStyle(
+                  fontSize: 20,
+                  color: dark ? Colors.white70 : Colors.black87,
+                ),
+              ),
+            ],
           ),
         ],
       ),
+    );
+  }
 
-      // BODY
-      body: Stack(
+  Widget _forecast7Card(bool dark) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: _boxDecoration(dark),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Positioned.fill(child: Image.asset(bgImage, fit: BoxFit.cover)),
-          Container(color: overlayColor), // 🔥 Mode overlay applied
-
-          SafeArea(
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                const SizedBox(height: 40),
-
-                // 🌍 Location Name
-                Text(
-                  locationName,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-
-                const SizedBox(height: 6),
-                Text(
-                  "Lat: $latitude   |   Lon: $longitude",
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 14,
-                  ),
-                ),
-
-                const SizedBox(height: 10),
-                Text(
-                  "$day · $time",
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.white70, fontSize: 16),
-                ),
-
-                const SizedBox(height: 40),
-
-                // 🌤 Weather Section
-                Center(
+          Text(
+            "7-Day Forecast",
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: dark ? Colors.white : Colors.black,
+            ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 105,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: forecast7.length,
+              itemBuilder: (_, i) {
+                return Container(
+                  width: 80,
+                  padding: const EdgeInsets.all(8),
+                  margin: const EdgeInsets.only(right: 12),
+                  decoration: _smallBox(dark),
                   child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(weatherIcon, size: iconSize, color: Colors.white),
-
                       Text(
-                        temperature,
-                        style: const TextStyle(
-                          fontSize: 60,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                        forecast7[i]["day"],
+                        style: TextStyle(
+                          color: dark ? Colors.white70 : Colors.black87,
                         ),
                       ),
-
-                      Text(
-                        weatherCondition.toUpperCase(),
-                        style: const TextStyle(
-                          fontSize: 18,
-                          color: Colors.white70,
-                        ),
+                      const SizedBox(height: 5),
+                      Icon(
+                        Icons.cloud_queue,
+                        color: dark ? Colors.white : Colors.black,
                       ),
-
-                      const SizedBox(height: 12),
-
+                      const SizedBox(height: 5),
                       Text(
-                        "Last updated: $lastUpdated",
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Colors.white60,
+                        "${forecast7[i]["max"]}° / ${forecast7[i]["min"]}°",
+                        style: TextStyle(
+                          color: dark ? Colors.white : Colors.black,
                         ),
                       ),
                     ],
                   ),
-                ),
-              ],
+                );
+              },
             ),
           ),
         ],
       ),
     );
   }
+
+  Widget _forecast24Card(bool dark) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: _boxDecoration(dark),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Next 24 Hours",
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: dark ? Colors.white : Colors.black,
+            ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 120,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: forecast24.length,
+              itemBuilder: (_, i) {
+                return Container(
+                  width: 75,
+                  padding: const EdgeInsets.all(8),
+                  margin: const EdgeInsets.only(right: 12),
+                  decoration: _smallBox(dark),
+                  child: Column(
+                    children: [
+                      Text(
+                        forecast24[i]["time"],
+                        style: TextStyle(
+                          color: dark ? Colors.white : Colors.black,
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Icon(
+                        Icons.cloud,
+                        color: dark ? Colors.white : Colors.black,
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        "${forecast24[i]["temp"]}°",
+                        style: TextStyle(
+                          color: dark ? Colors.white : Colors.black,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _metricsGrid(bool dark) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      children: [
+        _metric("Humidity", "62%", dark),
+        _metric("Wind", "12 km/h", dark),
+        _metric("Pressure", "1008 hPa", dark),
+        _metric("Visibility", "8 km", dark),
+      ],
+    );
+  }
+
+  Widget _metric(String label, String value, bool dark) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: dark ? Colors.white : Colors.black,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(color: dark ? Colors.white70 : Colors.black87),
+        ),
+      ],
+    );
+  }
+
+  Widget _aqiCard(bool dark) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: _boxDecoration(dark),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Air Quality Index",
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: dark ? Colors.white : Colors.black,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 25,
+                backgroundColor: Colors.orange,
+                child: Text(
+                  "$aqi",
+                  style: const TextStyle(fontSize: 22, color: Colors.white),
+                ),
+              ),
+              const SizedBox(width: 15),
+              Text(
+                "Moderate air quality today.",
+                style: TextStyle(color: dark ? Colors.white70 : Colors.black87),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  BoxDecoration _boxDecoration(bool dark) => BoxDecoration(
+    color: dark ? Colors.white10 : Colors.grey.shade100,
+    borderRadius: BorderRadius.circular(18),
+  );
+
+  BoxDecoration _smallBox(bool dark) => BoxDecoration(
+    color: dark ? Colors.white12 : Colors.grey.shade200,
+    borderRadius: BorderRadius.circular(14),
+  );
 }

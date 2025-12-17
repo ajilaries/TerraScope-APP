@@ -100,55 +100,68 @@ class WeatherService {
     return "lib/assets/images/default.jpg";
   }
 
-  /// ✅ 5-day forecast (mocked for now)
-  Future<List<Map<String, dynamic>>> getFiveDayForecast({
-    required String token,
-    required double lat,
-    required double lon,
-  }) async {
-    final now = await getWeatherData(token: token, lat: lat, lon: lon);
-    final temp = now["temperature"];
-    final cond = now["condition"];
-    final icon = getWeatherIcon(cond);
+  /// ✅ 7-day forecast (mocked for now)
+Future<List<Map<String, dynamic>>> getSevenDayForecast({
+  required double lat,
+  required double lon,
+}) async {
+  final response = await http.post(
+    Uri.parse("http://10.0.2.2:8000/forecast"),
+    headers: {"Content-Type": "application/json"},
+    body: jsonEncode({"lat": lat, "lon": lon}),
+  );
 
-    return List.generate(5, (i) {
-      final d = DateTime.now().add(Duration(days: i + 1));
-      return {
-        "day": DateFormat('EEE').format(d),
-        "temp": temp,
-        "min": temp,
-        "max": temp,
-        "humidity": now["humidity"],
-        "wind": now["wind_speed"],
-        "description": cond,
-        "icon": icon,
-      };
-    });
+  if (response.statusCode != 200) {
+    throw Exception("Failed to fetch forecast");
   }
+
+  final data = jsonDecode(response.body);
+  final List daily = data["daily"];
+
+  return daily.map((d) {
+    return {
+      "day": DateFormat('EEE').format(
+        DateTime.fromMillisecondsSinceEpoch(d["dt"] * 1000),
+      ),
+      "temp": d["temp"]["day"],
+      "min": d["temp"]["min"],
+      "max": d["temp"]["max"],
+      "humidity": d["humidity"],
+      "wind": d["wind_speed"],
+      "description": d["weather"][0]["main"],
+      "icon": getWeatherIcon(d["weather"][0]["main"]),
+    };
+  }).toList();
+}
+
 
   /// ✅ Hourly forecast (mocked for now)
-  Future<List<Map<String, dynamic>>> getHourlyForecast({
-    required String token,
-    required double lat,
-    required double lon,
-    required DateTime day,
-  }) async {
-    final now = await getWeatherData(token: token, lat: lat, lon: lon);
-    final temp = now["temperature"];
-    final cond = now["condition"];
-    final icon = getWeatherIcon(cond);
+Future<List<Map<String, dynamic>>> getHourlyForecast({
+  required double lat,
+  required double lon,
+}) async {
+  final response = await http.post(
+    Uri.parse("http://10.0.2.2:8000/forecast"),
+    headers: {"Content-Type": "application/json"},
+    body: jsonEncode({"lat": lat, "lon": lon}),
+  );
 
-    return List.generate(24, (i) {
-      return {
-        "time": "${i.toString().padLeft(2, '0')}:00",
-        "temp": temp,
-        "humidity": now["humidity"],
-        "wind": now["wind_speed"],
-        "rain": now["rainfall"],
-        "icon": icon,
-      };
-    });
-  }
+  final data = jsonDecode(response.body);
+  final List hourly = data["hourly"];
+
+  return hourly.take(24).map((h) {
+    return {
+      "time": DateFormat('HH:mm').format(
+        DateTime.fromMillisecondsSinceEpoch(h["dt"] * 1000),
+      ),
+      "temp": h["temp"],
+      "humidity": h["humidity"],
+      "wind": h["wind_speed"],
+      "rain": h["rain"]?["1h"] ?? 0,
+      "icon": getWeatherIcon(h["weather"][0]["main"]),
+    };
+  }).toList();
+}
 
   /// ✅ AQI Data
   Future<Map<String, dynamic>> getAQIData({

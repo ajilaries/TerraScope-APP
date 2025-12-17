@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:terra_scope_apk/Screens/farmer/farmer_result_screen.dart';
+import 'package:terra_scope_apk/popups/farmer_intro_popup.dart';
+import 'package:terra_scope_apk/Screens/traveler/traveler_dashboard.dart';
+import 'package:terra_scope_apk/Screens/commute/commute_dashboard.dart';
 
 class HomeScreen0 extends StatefulWidget {
   final Function(String) onModeSelected;
@@ -10,7 +14,7 @@ class HomeScreen0 extends StatefulWidget {
 }
 
 class _HomeScreen0State extends State<HomeScreen0> {
-  String selectedMode = ""; // 🔥 currently selected mode
+  String selectedMode = "";
 
   @override
   Widget build(BuildContext context) {
@@ -20,14 +24,13 @@ class _HomeScreen0State extends State<HomeScreen0> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
             // HEADER
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  const Text(
                     "Terrascope",
                     style: TextStyle(
                       fontSize: 32,
@@ -49,21 +52,16 @@ class _HomeScreen0State extends State<HomeScreen0> {
 
             const SizedBox(height: 20),
 
-            // MODES SECTION TITLE
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Text(
+              child: const Text(
                 "Choose Your Experience",
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
               ),
             ),
 
             const SizedBox(height: 20),
 
-            // GRID OF MODES
             Expanded(
               child: GridView.count(
                 crossAxisCount: 2,
@@ -101,46 +99,13 @@ class _HomeScreen0State extends State<HomeScreen0> {
                     color: Colors.deepPurple,
                     mode: "care",
                   ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 10),
-
-            Center(
-              child: Text(
-                "Switching modes requires login",
-                style: TextStyle(
-                  color: Colors.grey.shade600,
-                  fontSize: 14,
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // LOGIN BUTTON
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: ElevatedButton(
-                onPressed: selectedMode.isEmpty
-                    ? null
-                    : () {
-                        widget.onModeSelected(selectedMode);
-                      },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor:
-                      selectedMode.isEmpty ? Colors.grey : Colors.black87,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(double.infinity, 55),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+                  modeCard(
+                    title: "Commute",
+                    icon: Icons.commute,
+                    color: Colors.blue,
+                    mode: "commute",
                   ),
-                ),
-                child: const Text(
-                  "Continue",
-                  style: TextStyle(fontSize: 18),
-                ),
+                ],
               ),
             ),
 
@@ -151,7 +116,7 @@ class _HomeScreen0State extends State<HomeScreen0> {
     );
   }
 
-  // 🔥 MODE CARD WIDGET WITH SELECTION
+  // MODE CARD
   Widget modeCard({
     required String title,
     required IconData icon,
@@ -165,6 +130,44 @@ class _HomeScreen0State extends State<HomeScreen0> {
         setState(() {
           selectedMode = mode;
         });
+
+        if (mode == "farmer") {
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (_) => FarmerIntroPopup(
+              onSubmit: (double lat, double lon, String soilType) {
+                Navigator.pop(context); // close popup
+
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => FarmerResultScreen(
+                      lat: lat,
+                      lon: lon,
+                      soilType: soilType,
+                    ),
+                  ),
+                );
+              },
+            ),
+          );
+        } 
+        else if (mode == "traveller") {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => TravelerDashboard()),
+          );
+        } 
+        else if (mode == "commute") {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => CommuteDashboard()),
+          );
+        } 
+        else {
+          widget.onModeSelected(mode);
+        }
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
@@ -175,12 +178,12 @@ class _HomeScreen0State extends State<HomeScreen0> {
             color: isSelected ? color : Colors.transparent,
             width: 2.5,
           ),
-          boxShadow: [
+          boxShadow: const [
             BoxShadow(
               color: Colors.black12,
               blurRadius: 8,
-              offset: const Offset(0, 3),
-            )
+              offset: Offset(0, 3),
+            ),
           ],
         ),
         child: Column(
@@ -194,7 +197,7 @@ class _HomeScreen0State extends State<HomeScreen0> {
                 fontSize: 17,
                 fontWeight: FontWeight.w600,
               ),
-            )
+            ),
           ],
         ),
       ),

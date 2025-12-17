@@ -1,0 +1,311 @@
+{
+  "metadata": {
+    "generated_for": "Terrascope - starter/all-india-scaffold",
+    "note": "This file is a scaffold: it includes full list of Indian states/UTs as keys. District-level entries are provided for Kerala (representative) and a few example districts from other states. To create a fully authoritative all-India file, populate each state's 'districts' map with district entries (major_crops, minor_crops, seasonal, soil_based, agro_climatic_zone) using DES/KVK/state reports.",
+    "how_to_complete": [
+      "Download official DES and KVK data for each state/district.",
+      "Populate `districts` dicts with real crop lists and soil mappings.",
+      "Version the file like crops_india_vYYYY-MM-DD.json after updates."
+    ],
+    "states_included": "All Indian states and union territories are present as top-level keys; most district maps are empty scaffolds except Kerala and a few samples."
+  },
+  "states": {
+    "Andhra Pradesh": {
+      "districts": {}
+    },
+    "Arunachal Pradesh": {
+      "districts": {}
+    },
+    "Assam": {
+      "districts": {}
+    },
+    "Bihar": {
+      "districts": {}
+    },
+    "Chhattisgarh": {
+      "districts": {}
+    },
+    "Goa": {
+      "districts": {}
+    },
+    "Gujarat": {
+      "districts": {}
+    },
+    "Haryana": {
+      "districts": {}
+    },
+    "Himachal Pradesh": {
+      "districts": {}
+    },
+    "Jharkhand": {
+      "districts": {}
+    },
+    "Karnataka": {
+      "districts": {
+        "Mandya": {
+          "major_crops": [
+            "Sugarcane",
+            "Paddy",
+            "Ragi"
+          ],
+          "minor_crops": [
+            "Vegetables",
+            "Millets"
+          ],
+          "seasonal": {
+            "kharif": [
+              "Paddy",
+              "Millets"
+            ],
+            "rabi": [
+              "Sugarcane"
+            ],
+            "zaid": [
+              "Vegetables"
+            ]
+          },
+          "soil_based": {
+            "red_loam": [
+              "Ragi",
+              "Millets"
+            ],
+            "alluvial": [
+              "Paddy",
+              "Sugarcane"
+            ]
+          },
+          "agro_climatic_zone": "Southern Plateau and Hills",
+          "dominant_soils": [
+            "red_loam",
+            "alluvial"
+          ]
+        }
+      }
+    },
+    "Kerala": {
+      "districts": {
+        "Kottayam": {
+          "major_crops": [
+            "Rubber",
+            "Paddy",
+            "Banana"
+          ],
+          "minor_crops": [
+            "Vegetables",
+            "Tapioca"
+          ],
+          "seasonal": {
+            "kharif": [
+              "Paddy",
+              "Vegetables"
+            ],
+            "rabi": [
+              "Paddy (2nd)",
+              "Banana"
+            ],
+            "zaid": [
+              "Vegetables",
+              "Cucurbits"
+            ]
+          },
+          "soil_based": {
+            "laterite": [
+              "Rubber",
+              "Pepper",
+              "Coconut"
+            ],
+            "alluvial": [
+              "Paddy",
+              "Banana",
+              "Vegetables"
+            ]
+          },
+          "agro_climatic_zone": "Southern Plateau and Hills",
+          "dominant_soils": [
+            "laterite",
+            "alluvial"
+          ]
+        },
+        "Palakkad": {
+          "major_crops": [
+            "Paddy",
+            "Coconut",
+            "Banana"
+          ],
+          "minor_crops": [
+            "Vegetables",
+            "Groundnut"
+          ],
+          "seasonal": {
+            "kharif": [
+              "Paddy",
+              "Groundnut"
+            ],
+            "rabi": [
+              "Sugarcane",
+              "Coconut"
+            ],
+            "zaid": [
+              "Vegetables",
+              "Banana"
+            ]
+          },
+          "soil_based": {
+            "clay": [
+              "Paddy",
+              "Sugarcane"
+            ],
+            "sandy_loam": [
+              "Coconut",
+              "Groundnut"
+            ]
+          },
+          "agro_climatic_zone": "Southern Plateau and Hills",
+          "dominant_soils": [
+            "clay",
+            "sandy_loam"
+          ]
+        }
+      }
+    },
+    "Madhya Pradesh": {
+      "districts": {}
+    },
+    "Maharashtra": {
+      "districts": {}
+    },
+    "Manipur": {
+      "districts": {}
+    },
+    "Meghalaya": {
+      "districts": {}
+    },
+    "Mizoram": {
+      "districts": {}
+    },
+    "Nagaland": {
+      "districts": {}
+    },
+    "Odisha": {
+      "districts": {}
+    },
+    "Punjab": {
+      "districts": {
+        "Amritsar": {
+          "major_crops": [
+            "Wheat",
+            "Rice"
+          ],
+          "minor_crops": [
+            "Maize",
+            "Vegetables"
+          ],
+          "seasonal": {
+            "kharif": [
+              "Rice"
+            ],
+            "rabi": [
+              "Wheat"
+            ],
+            "zaid": []
+          },
+          "soil_based": {
+            "alluvial": [
+              "Wheat",
+              "Rice"
+            ]
+          },
+          "agro_climatic_zone": "Trans-Gangetic Plains",
+          "dominant_soils": [
+            "alluvial"
+          ]
+        }
+      }
+    },
+    "Rajasthan": {
+      "districts": {}
+    },
+    "Sikkim": {
+      "districts": {}
+    },
+    "Tamil Nadu": {
+      "districts": {
+        "Coimbatore": {
+          "major_crops": [
+            "Sugarcane",
+            "Cotton",
+            "Coconut"
+          ],
+          "minor_crops": [
+            "Vegetables",
+            "Millets"
+          ],
+          "seasonal": {
+            "kharif": [
+              "Maize"
+            ],
+            "rabi": [
+              "Cotton"
+            ],
+            "zaid": [
+              "Vegetables"
+            ]
+          },
+          "soil_based": {
+            "red_loam": [
+              "Cotton",
+              "Millets"
+            ],
+            "alluvial": [
+              "Sugarcane"
+            ]
+          },
+          "agro_climatic_zone": "Southern Plateau and Hills",
+          "dominant_soils": [
+            "red_loam",
+            "alluvial"
+          ]
+        }
+      }
+    },
+    "Telangana": {
+      "districts": {}
+    },
+    "Tripura": {
+      "districts": {}
+    },
+    "Uttar Pradesh": {
+      "districts": {}
+    },
+    "Uttarakhand": {
+      "districts": {}
+    },
+    "West Bengal": {
+      "districts": {}
+    },
+    "Andaman and Nicobar Islands": {
+      "districts": {}
+    },
+    "Chandigarh": {
+      "districts": {}
+    },
+    "Dadra and Nagar Haveli and Daman and Diu": {
+      "districts": {}
+    },
+    "Delhi": {
+      "districts": {}
+    },
+    "Jammu and Kashmir": {
+      "districts": {}
+    },
+    "Ladakh": {
+      "districts": {}
+    },
+    "Lakshadweep": {
+      "districts": {}
+    },
+    "Puducherry": {
+      "districts": {}
+    }
+  }
+}
