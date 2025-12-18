@@ -6,7 +6,7 @@ import '../Services/weather_services.dart';
 import '../Services/location_service.dart';
 import '../Screens/forecast_dashboard.dart';
 import '../Screens/radar_screen.dart';
-import '../Screens/anomalies_screen.dart';
+import '../Screens/anomaly_screen.dart';
 import '../Screens/panic_screen.dart';
 
 class HomeScreen2 extends StatefulWidget {
@@ -55,61 +55,62 @@ super.dispose();
 }
 
 Future<void> _fetchHomeData() async {
-if (!mounted) return;
+  if (!mounted) return;
 
-setState(() => isLoading = true);
+  try {
+    setState(() => isLoading = true);
 
-try {
-  final position = await LocationService().getCurrentLocation();
-  lat = position["latitude"];
-  lon = position["longitude"];
+    final position = await LocationService().getCurrentLocation();
+    final latTemp = position["latitude"];
+    final lonTemp = position["longitude"];
 
-  final placeInfo =
-  await LocationService().getLocationNameFromCoordinates(lat, lon);
+    final placeInfo =
+        await LocationService().getLocationNameFromCoordinates(
+      latTemp,
+      lonTemp,
+    );
 
-  locationName = "${placeInfo['city']}, ${placeInfo['country']}";
+    final weatherData = await weatherService.getWeatherData(
+      token: "public_token",
+      lat: latTemp,
+      lon: lonTemp,
+    );
 
-  setState(() {
-    weatherCondition = "Fetching...";
-    temperature = "---°C";
-    humidity = "--%";
-    wind = "-- km/h";
-    uvIndex = "--";
-    aqi = "--";
-    weatherIcon = WeatherIcons.cloud;
-  });
+    final aqiData =
+        await weatherService.getAQIData(lat: latTemp, lon: lonTemp);
 
-  final weatherData = await weatherService.getWeatherData(
-    token: "public_token",
-    lat: lat,
-    lon: lon,
-  );
+    setState(() {
+      lat = latTemp;
+      lon = lonTemp;
+      locationName = "${placeInfo['city']}, ${placeInfo['country']}";
 
-  final aqiData = await weatherService.getAQIData(lat: lat, lon: lon);
+      temperature =
+          "${(weatherData['temperature'] ?? 0).toStringAsFixed(1)}°C";
+      humidity = "${weatherData['humidity'] ?? '--'}%";
+      wind = "${weatherData['wind_speed'] ?? '--'} km/h";
+      uvIndex = weatherData['uv']?.toString() ?? "--";
+      aqi = aqiData['aqi']?.toString() ?? "--";
 
-  setState(() {
-    temperature = "${(weatherData['temperature'] ?? 0).toStringAsFixed(1)}°C";
-    humidity = "${weatherData['humidity'] ?? '--'}%";
-    wind = "${weatherData['wind_speed'] ?? '--'} km/h";
-    uvIndex = weatherData['uv']?.toString() ?? "--";
-    aqi = aqiData['aqi']?.toString() ?? "--";
+      weatherCondition = weatherData['condition'] ?? "Unknown";
+      weatherIcon = weatherService.getWeatherIcon(weatherCondition);
+      backgroundImage =
+          weatherService.getBackgroundImage(weatherCondition);
 
-    weatherCondition = weatherData['condition'] ?? "Unknown";
-    weatherIcon = weatherService.getWeatherIcon(weatherCondition);
-    backgroundImage = weatherService.getBackgroundImage(weatherCondition);
+      lastUpdated =
+          DateFormat('hh:mm a').format(DateTime.now());
 
-    lastUpdated = DateFormat('hh:mm a').format(DateTime.now());
-    isLoading = false;
-  });
-} catch (e) {
-  debugPrint("🔥 Error: $e");
-  if (mounted) setState(() => isLoading = false);
+      isLoading = false;
+    });
+  } catch (e) {
+    debugPrint("🔥 Home fetch error: $e");
+    if (mounted) setState(() => isLoading = false);
+  }
 }
 
-}
 
 @override
 Widget build(BuildContext context) {
+  final bool locationReady = lat != 0.0 && lon != 0.0;
 return Scaffold(
 body: RefreshIndicator(
 onRefresh: _fetchHomeData,
@@ -217,15 +218,24 @@ const SizedBox(height: 20),
                                 RadarScreen(lat: lat, lon: lon)));
                   }),
 
-                  _quickButton("Alerts", Icons.warning, () {
-                    Navigator.push(
+                  _quickButton(
+                    "Alerts",
+                    Icons.warning,
+                    () {
+                      Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (_) => AnomaliesScreen(
-                              lat: lat,
-                              lon: lon,
-                            )));
-                  }),
+                          builder: (_) => AnomalyScreen(
+                            lat: lat,
+                            lon: lon,
+                          ),
+                        ),
+                      );
+                    },
+                    enabled: locationReady,
+                  ),
+
+
 
                   _quickButton("Panic", Icons.sos, () {
                     Navigator.push(
@@ -248,22 +258,31 @@ const SizedBox(height: 20),
 
 }
 
-Widget _quickButton(String label, IconData icon, VoidCallback onTap) {
-return GestureDetector(
-onTap: onTap,
-child: Column(
-children: [
-CircleAvatar(
-radius: 28,
-backgroundColor: Colors.white24,
-child: Icon(icon, color: Colors.white, size: 26),
-),
-const SizedBox(height: 6),
-Text(label, style: const TextStyle(color: Colors.white)),
-],
-),
-);
+Widget _quickButton(
+  String label,
+  IconData icon,
+  VoidCallback onTap, {
+  bool enabled = true,
+}) {
+  return GestureDetector(
+    onTap: enabled ? onTap : null,
+    child: Opacity(
+      opacity: enabled ? 1.0 : 0.4,
+      child: Column(
+        children: [
+          CircleAvatar(
+            radius: 28,
+            backgroundColor: enabled ? Colors.white24 : Colors.white12,
+            child: Icon(icon, color: Colors.white, size: 26),
+          ),
+          const SizedBox(height: 6),
+          Text(label, style: const TextStyle(color: Colors.white)),
+        ],
+      ),
+    ),
+  );
 }
+
 
 Widget _infoColumn(String label, String value,
 {double fontSize = 14, FontWeight fontWeight = FontWeight.normal}) {
