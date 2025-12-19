@@ -66,7 +66,7 @@ class AnomalyService {
     }
   }
 
-  /// 🧠 Offline-safe anomaly detection
+  /// 🧠 Offline-safe anomaly detections
   List<Map<String, dynamic>> detectFromWeather(WeatherData w) {
     final List<Map<String, dynamic>> alerts = [];
 
