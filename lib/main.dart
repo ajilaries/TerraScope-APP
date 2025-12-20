@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
-// import 'package:terra_scope_apk/Screens/main_page.dart';
 import 'package:terra_scope_apk/Screens/splash_screen.dart';
+import 'package:terra_scope_apk/Screens/farmer/farmer_dashboard.dart';
 import 'firebase_options.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'providers/mode_provider.dart';
-// import 'Screens/main_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -51,6 +50,11 @@ class MyApp extends StatelessWidget {
       ),
 
       home: const SplashScreen(),
+
+      // Add named routes
+      routes: {
+        '/farmer-dashboard': (context) => const FarmerDashboard(),
+      },
     );
   }
 }
