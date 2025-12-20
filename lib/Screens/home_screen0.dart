@@ -3,6 +3,7 @@ import 'package:terra_scope_apk/Screens/farmer/farmer_result_screen.dart';
 import 'package:terra_scope_apk/popups/farmer_intro_popup.dart';
 import 'package:terra_scope_apk/Screens/traveler/traveler_dashboard.dart';
 import 'package:terra_scope_apk/Screens/commute/commute_dashboard.dart';
+import 'Saftey/saftey_mode_screen.dart';
 
 class HomeScreen0 extends StatefulWidget {
   final Function(String) onModeSelected;
@@ -163,6 +164,12 @@ class _HomeScreen0State extends State<HomeScreen0> {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => CommuteDashboard()),
+          );
+        }
+        else if (mode == "safety") {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => SafetyModeScreen()),
           );
         } 
         else {
