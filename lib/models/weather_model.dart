@@ -22,4 +22,6 @@ class WeatherData {
       condition: json["condition"] ?? "Unknown",
     );
   }
+
+  static fromMap(Map<String, dynamic> weatherRaw) {}
 }
