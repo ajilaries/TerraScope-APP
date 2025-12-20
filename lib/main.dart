@@ -5,7 +5,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:terra_scope_apk/Screens/splash_screen.dart';
 import 'firebase_options.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-
 import 'providers/mode_provider.dart';
 // import 'Screens/main_page.dart';
 
