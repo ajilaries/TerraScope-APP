@@ -105,12 +105,17 @@ class FarmerIntroPopup extends StatelessWidget {
                   final double lon = loc["longitude"];
 
                   // 🌱 REAL SOIL TYPE
-                  final String soilType = await SoilService.getSoilType(lat, lon);
+                  final String soilType =
+                      await SoilService.getSoilType(lat, lon);
 
                   // 🚜 Send to dashboard
                   onSubmit(lat, lon, soilType);
 
-                  Navigator.pop(context);
+                  // Navigate to farmer dashboard
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, '/farmer-dashboard');
+                  }
                 } catch (e) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -119,7 +124,6 @@ class FarmerIntroPopup extends StatelessWidget {
                   );
                 }
               },
-
               child: const Text(
                 "Continue",
                 style: TextStyle(fontSize: 16, color: Colors.white),
@@ -153,9 +157,15 @@ class _FeatureItem extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
-        children: const [
-          Icon(Icons.check_circle, size: 18, color: Colors.green),
-          SizedBox(width: 8),
+        children: [
+          const Icon(Icons.check_circle, size: 18, color: Colors.green),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(fontSize: 13, color: Colors.black87),
+            ),
+          ),
         ],
       ),
     );
