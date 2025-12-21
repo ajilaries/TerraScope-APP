@@ -22,7 +22,6 @@ class _RadarScreenState extends State<RadarScreen> {
   late final MapController _mapController;
 
   bool _isLoading = true;
-  Map<String, dynamic>? _radarData;
   double _radarOpacity = 0.6;
   String _rainStatus = "No data";
 
@@ -42,7 +41,6 @@ class _RadarScreenState extends State<RadarScreen> {
       final rain = data['hourly']?[0]?['rain']?['1h'] ?? 0.0;
 
       setState(() {
-        _radarData = data;
         _rainStatus = _getRainStatus(rain);
       });
 
