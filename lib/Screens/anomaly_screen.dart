@@ -42,11 +42,10 @@ class _AnomalyScreenState extends State<AnomalyScreen> {
         lon: widget.lon,
       );
 
-      final weather = WeatherData.fromMap(weatherRaw);
+      final weather = WeatherData.fromJson(weatherRaw);
 
       // 🌪️ Backend anomalies
-      List<Map<String, dynamic>> anomalies =
-          await _anomalyService.getAnomalies(
+      List<Map<String, dynamic>> anomalies = await _anomalyService.getAnomalies(
         lat: widget.lat,
         lon: widget.lon,
       );
