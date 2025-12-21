@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:terra_scope_apk/Services/location_service.dart';
 import 'package:terra_scope_apk/Services/soil_service.dart';
+import 'package:terra_scope_apk/Screens/farmer/farmer_dashboard.dart';
 
 class FarmerIntroPopup extends StatelessWidget {
   final void Function(double lat, double lon, String soilType) onSubmit;
@@ -101,12 +102,16 @@ class FarmerIntroPopup extends StatelessWidget {
 
                   // 📍 REAL LOCATION
                   final loc = await locationService.getCurrentLocation();
-                  final double lat = loc["latitude"];
-                  final double lon = loc["longitude"];
+                  final double lat = loc["latitude"] as double;
+                  final double lon = loc["longitude"] as double;
+
+                  print("✅ Location fetched: lat=$lat, lon=$lon");
 
                   // 🌱 REAL SOIL TYPE
                   final String soilType =
                       await SoilService.getSoilType(lat, lon);
+
+                  print("✅ Soil type fetched: $soilType");
 
                   // 🚜 Send to dashboard
                   onSubmit(lat, lon, soilType);
@@ -114,14 +119,27 @@ class FarmerIntroPopup extends StatelessWidget {
                   // Navigate to farmer dashboard
                   if (context.mounted) {
                     Navigator.pop(context);
-                    Navigator.pushNamed(context, '/farmer-dashboard');
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => FarmerDashboard(
+                          latitude: lat,
+                          longitude: lon,
+                          soilType: soilType,
+                        ),
+                      ),
+                    );
                   }
                 } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("Failed to fetch farm location data"),
-                    ),
-                  );
+                  print("❌ Error in farmer mode: $e");
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text("Error: $e"),
+                        duration: const Duration(seconds: 4),
+                      ),
+                    );
+                  }
                 }
               },
               child: const Text(
