@@ -95,7 +95,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 class AIPredictModeScreen extends StatefulWidget {
-  const AIPredictModeScreen({Key? key}) : super(key: key);
+  const AIPredictModeScreen({super.key});
 
   @override
   State<AIPredictModeScreen> createState() => _AIPredictModeScreenState();
@@ -136,7 +136,11 @@ class _AIPredictModeScreenState extends State<AIPredictModeScreen> {
   void _toggleAutoUpdate(bool v) {
     setState(() {
       autoUpdate = v;
-      if (autoUpdate) _startAutoRefresh(); else _stopAutoRefresh();
+      if (autoUpdate) {
+        _startAutoRefresh();
+      } else {
+        _stopAutoRefresh();
+      }
     });
   }
 
@@ -265,8 +269,9 @@ class _AIPredictModeScreenState extends State<AIPredictModeScreen> {
   Widget _buildGauge(String label, double value) {
     final percent = (value * 100).round();
     Color col = Colors.green;
-    if (value > 0.6) col = Colors.red;
-    else if (value > 0.3) col = Colors.orange;
+    if (value > 0.6) {
+      col = Colors.red;
+    } else if (value > 0.3) col = Colors.orange;
 
     return Expanded(
       child: Column(
