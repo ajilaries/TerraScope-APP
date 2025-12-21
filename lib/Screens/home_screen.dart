@@ -96,12 +96,13 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
       });
     } catch (e) {
       print("Error fetching home data: $e");
-      if (mounted)
+      if (mounted) {
         setState(() {
           temp = "—°C";
           condition = "Error";
           isLoading = false;
         });
+      }
     }
   }
 
