@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
+import '../../Services/commute_service.dart';
 
 class CommuteRoutePlanner extends StatefulWidget {
   const CommuteRoutePlanner({super.key});
@@ -24,19 +25,25 @@ class _CommuteRoutePlannerState extends State<CommuteRoutePlanner> {
       eta = null;
       distance = null;
     });
-
-    await Future.delayed(const Duration(seconds: 1));
-
-    // Mock data
-    final random = Random();
-    final mins = 12 + random.nextInt(35); // 12–45 mins
-    final kms = (4 + random.nextInt(18)).toDouble(); // 4–22 km
-
-    setState(() {
-      eta = "$mins mins";
-      distance = "${kms.toStringAsFixed(1)} km";
-      planning = false;
-    });
+    try {
+      final res = await CommuteService.planRoute(fromCtrl.text, toCtrl.text);
+      setState(() {
+        eta = res['eta'];
+        distance = res['distance'];
+        planning = false;
+      });
+    } catch (_) {
+      // fallback to mock
+      await Future.delayed(const Duration(seconds: 1));
+      final random = Random();
+      final mins = 12 + random.nextInt(35); // 12–45 mins
+      final kms = (4 + random.nextInt(18)).toDouble(); // 4–22 km
+      setState(() {
+        eta = "$mins mins";
+        distance = "${kms.toStringAsFixed(1)} km";
+        planning = false;
+      });
+    }
   }
 
   @override
