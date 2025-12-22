@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:geocoding/geocoding.dart';
-import 'package:terra_scope_apk/Services/crop_service.dart';
 
 class FarmerPersonalizationScreen extends StatefulWidget {
   final double lat;
