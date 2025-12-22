@@ -22,7 +22,7 @@ class CommuteService {
       final locService = LocationService();
       final admin = await locService.getAdministrativeDetails(lat, lon);
       final parts = [admin['city'], admin['district'], admin['state']]
-          .where((s) => s != null && s !.isNotEmpty)
+          .where((s) => s?.isNotEmpty ?? false)
           .toList();
       if (parts.isNotEmpty) return parts.join(', ');
     } catch (_) {}
@@ -39,8 +39,9 @@ class CommuteService {
       final weatherSvc = WeatherService();
       final data =
           await weatherSvc.getWeatherData(token: token, lat: lat, lon: lon);
-      if (data.containsKey('temperature'))
+      if (data.containsKey('temperature')) {
         result['temp'] = (data['temperature'] as num?)?.toDouble();
+      }
 
       // Try AQI via WeatherService first, fallback to AQIService
       final aqiData = await weatherSvc.getAQIData(lat: lat, lon: lon);
