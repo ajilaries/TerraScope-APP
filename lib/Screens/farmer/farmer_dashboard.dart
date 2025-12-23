@@ -5,6 +5,9 @@ import 'crop_recommendation.dart';
 import 'farmer_soil_analysis.dart';
 import 'farmer_alerts_screen.dart';
 import 'farmer_crop_suitability.dart'; // ✅ FIXED IMPORT
+import 'package:terra_scope_apk/Services/weather_services.dart';
+import 'package:terra_scope_apk/Services/location_service.dart';
+import 'package:terra_scope_apk/Services/aqi_service.dart';
 
 class FarmerDashboard extends StatefulWidget {
   const FarmerDashboard({super.key});
@@ -14,6 +17,68 @@ class FarmerDashboard extends StatefulWidget {
 }
 
 class _FarmerDashboardState extends State<FarmerDashboard> {
+  bool _isLoading = true;
+  Map<String, dynamic>? _weatherData;
+  Map<String, dynamic>? _locationData;
+  List<Map<String, dynamic>>? _forecastData;
+  Map<String, dynamic>? _aqiData;
+  List<Map<String, dynamic>>? _anomaliesData;
+
+  final WeatherService _weatherService = WeatherService();
+  final LocationService _locationService = LocationService();
+  final AQIService _aqiService = AQIService();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    try {
+      // Get location
+      final location = await _locationService.getCurrentLocation();
+      if (location != null) {
+        _locationData = location;
+
+        // Get weather data
+        final weather = await _weatherService.getWeatherData(
+          token: "dummy_token",
+          lat: location['latitude'],
+          lon: location['longitude'],
+        );
+        _weatherData = weather;
+
+        // Get forecast data
+        final forecast = await _weatherService.getSevenDayForecast(
+          lat: location['latitude'],
+          lon: location['longitude'],
+        );
+        _forecastData = forecast;
+
+        // Get AQI data
+        final aqiValue = await _aqiService.getAQI(
+          location['latitude'],
+          location['longitude'],
+        );
+        _aqiData = {"aqi": aqiValue};
+
+        // Get anomalies
+        final anomalies = await _weatherService.getAnomalies(
+          location['latitude'],
+          location['longitude'],
+        );
+        _anomaliesData = anomalies;
+      }
+    } catch (e) {
+      print("Error loading data: $e");
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -56,13 +121,11 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
                 ],
               ),
             ),
-
             _drawerItem(
               icon: Icons.dashboard,
               label: "Dashboard",
               onTap: () => Navigator.pop(context),
             ),
-
             _drawerItem(
               icon: Icons.health_and_safety,
               label: "Crop Health",
@@ -73,7 +136,6 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
                 );
               },
             ),
-
             _drawerItem(
               icon: Icons.recommend,
               label: "Crop Recommendations",
@@ -88,26 +150,28 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
             ),
             _drawerItem(
               icon: Icons.notifications_active,
-               label: "alerts",
-                onTap: (){
-                  Navigator.push(context,
-                   MaterialPageRoute(
-                    builder: (_)=> const FarmerAlertsScreen(),
-                    ),
-                    );
-                },
-            ),
-            _drawerItem(icon: Icons.agriculture,
-             label:"Crop Suitability",
-              onTap: (){
-                Navigator.push(context,
-                 MaterialPageRoute(builder: (_)=> const FarmerCropSuitability(),
-                 ),
-                 );
+              label: "alerts",
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const FarmerAlertsScreen(),
+                  ),
+                );
               },
-              ),
-              
-
+            ),
+            _drawerItem(
+              icon: Icons.agriculture,
+              label: "Crop Suitability",
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const FarmerCropSuitability(),
+                  ),
+                );
+              },
+            ),
             _drawerItem(
               icon: Icons.wb_sunny,
               label: "Weather Details",
@@ -169,6 +233,26 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
 
   // WEATHER HEADER
   Widget _weatherHeader() {
+    if (_isLoading || _weatherData == null || _locationData == null) {
+      return Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: Colors.green.shade700,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: const Center(
+          child: CircularProgressIndicator(color: Colors.white),
+        ),
+      );
+    }
+
+    final temp = _weatherData!['temperature']?.toStringAsFixed(1) ?? '--';
+    final condition = _weatherData!['condition'] ?? 'Unknown';
+    final humidity = _weatherData!['humidity']?.toStringAsFixed(0) ?? '--';
+    final windSpeed = _weatherData!['wind_speed']?.toStringAsFixed(1) ?? '--';
+    final city = _locationData!['city'] ?? 'Unknown';
+    final state = _locationData!['state'] ?? '';
+
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -179,16 +263,16 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "Kottayam, Kerala",
+            "$city${state.isNotEmpty ? ', $state' : ''}",
             style: TextStyle(
               color: Colors.white.withOpacity(0.9),
               fontSize: 16,
             ),
           ),
           const SizedBox(height: 6),
-          const Text(
-            "29°C",
-            style: TextStyle(
+          Text(
+            "$temp°C",
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 42,
               fontWeight: FontWeight.bold,
@@ -196,26 +280,23 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
           ),
           const SizedBox(height: 4),
           Text(
-            "Partly Cloudy",
+            condition,
             style: TextStyle(
               color: Colors.white.withOpacity(0.9),
               fontSize: 18,
             ),
           ),
-
           const SizedBox(height: 16),
-
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _miniInfo(Icons.water_drop, "Humidity", "78%"),
-              _miniInfo(Icons.cloudy_snowing, "Rain Chance", "65%"),
-              _miniInfo(Icons.air, "Wind", "12 km/h"),
+              _miniInfo(Icons.water_drop, "Humidity", "$humidity%"),
+              _miniInfo(Icons.cloudy_snowing, "Rain Chance",
+                  "65%"), // TODO: Calculate from forecast
+              _miniInfo(Icons.air, "Wind", "$windSpeed km/h"),
             ],
           ),
-
           const SizedBox(height: 20),
-
           GestureDetector(
             onTap: () {
               Navigator.push(
@@ -366,13 +447,9 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
 
   // WEEKLY FORECAST
   Widget _forecastSection() {
-    List<Map<String, dynamic>> forecast = [
-      {"day": "Mon", "temp": "29°", "rain": "40%"},
-      {"day": "Tue", "temp": "31°", "rain": "55%"},
-      {"day": "Wed", "temp": "28°", "rain": "80%"},
-      {"day": "Thu", "temp": "30°", "rain": "20%"},
-      {"day": "Fri", "temp": "32°", "rain": "10%"},
-    ];
+    if (_isLoading || _forecastData == null) {
+      return const SizedBox.shrink();
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -382,15 +459,14 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 12),
-
         SizedBox(
           height: 110,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
-            itemCount: forecast.length,
+            itemCount: _forecastData!.length,
             separatorBuilder: (_, __) => const SizedBox(width: 12),
             itemBuilder: (context, index) {
-              final f = forecast[index];
+              final f = _forecastData![index];
               return Container(
                 width: 90,
                 padding: const EdgeInsets.all(12),
@@ -403,18 +479,19 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
                   children: [
                     Text(f["day"], style: const TextStyle(fontSize: 16)),
                     const SizedBox(height: 6),
-                    const Icon(Icons.cloud, size: 28),
+                    Icon(f["icon"] ?? Icons.cloud, size: 28),
                     const SizedBox(height: 6),
                     Text(
-                      f["temp"],
+                      "${f["temp"]}°",
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     Text(
-                      "${f["rain"]} rain",
-                      style: TextStyle(color: Colors.grey.shade600),
+                      "${f["humidity"]}% humidity",
+                      style:
+                          TextStyle(color: Colors.grey.shade600, fontSize: 12),
                     ),
                   ],
                 ),
@@ -443,11 +520,10 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children:const  [
+          children: const [
             Text(
               "soil status",
-              style: TextStyle(fontSize: 18,fontWeight: FontWeight.w700),
-
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
             ),
             SizedBox(height: 12),
             Text("Soil moisture:62"),
@@ -461,7 +537,6 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
                 fontWeight: FontWeight.bold,
               ),
             )
-
           ],
         ),
       ),
