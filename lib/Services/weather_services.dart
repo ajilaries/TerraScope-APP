@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:weather_icons/weather_icons.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class WeatherService {
   static const String backendUrl = "http://10.0.2.2:8000/update_weather";
@@ -14,7 +15,7 @@ class WeatherService {
   Future<Map<String, dynamic>>? _pendingFetch;
   final Duration cacheAlive = const Duration(seconds: 20);
 
-  /// ✅ Fetch real weather from backend
+  /// ✅ Fetch real weather from OpenWeatherMap API
   Future<Map<String, dynamic>> getWeatherData({
     required String token,
     required double lat,
@@ -28,7 +29,7 @@ class WeatherService {
 
     if (_pendingFetch != null) return await _pendingFetch!;
 
-    _pendingFetch = _fetchFromBackend(token: token, lat: lat, lon: lon);
+    _pendingFetch = _fetchFromOpenWeather(lat: lat, lon: lon);
 
     try {
       final data = await _pendingFetch!;
@@ -43,41 +44,42 @@ class WeatherService {
     }
   }
 
-  Future<Map<String, dynamic>> _fetchFromBackend({
-    required String token,
+  Future<Map<String, dynamic>> _fetchFromOpenWeather({
     required double lat,
     required double lon,
   }) async {
-    final response = await http
-        .post(
-          Uri.parse(backendUrl),
-          headers: {"Content-Type": "application/json"},
-          body: jsonEncode({"token": token, "lat": lat, "lon": lon}),
-        )
-        .timeout(const Duration(seconds: 5));
+    final apiKey = dotenv.env['OPENWEATHER_API_KEY'] ?? '';
+    if (apiKey.isEmpty) {
+      throw Exception("OpenWeather API key not found in .env");
+    }
+
+    final url = Uri.parse(
+      "https://api.openweathermap.org/data/2.5/weather?lat=$lat&lon=$lon&appid=$apiKey&units=metric",
+    );
+
+    final response = await http.get(url).timeout(const Duration(seconds: 10));
 
     if (response.statusCode != 200) {
       throw Exception("Failed to fetch weather: ${response.body}");
     }
 
     final data = json.decode(response.body);
-    if (data['status'] != 'success') {
-      throw Exception("Backend error: ${data['message']}");
-    }
+    final main = data['main'];
+    final weather = data['weather'][0];
+    final wind = data['wind'];
 
-    final weather = data['weather'];
-    final temp = (weather["temperature"] ?? 0).toDouble();
-    final rain = (weather["rainfall"] ?? 0).toDouble();
-    final humidity = (weather["humidity"] ?? 50).toDouble();
-    final wind = (weather["wind_speed"] ?? 3.5).toDouble();
-    final condition =
-        rain > 0 ? "Rain" : temp >= 30 ? "Clear" : "Cloudy";
+    final temp = (main['temp'] ?? 0).toDouble();
+    final humidity = (main['humidity'] ?? 50).toDouble();
+    final windSpeed =
+        (wind['speed'] ?? 0).toDouble() * 3.6; // Convert m/s to km/h
+    final condition = weather['main'] ?? 'Unknown';
+    final rain = (data['rain']?['1h'] ?? 0).toDouble();
 
     return {
       "temperature": temp,
       "rainfall": rain,
       "humidity": humidity,
-      "wind_speed": wind,
+      "wind_speed": windSpeed,
       "condition": condition,
     };
   }
@@ -100,68 +102,81 @@ class WeatherService {
     return "lib/assets/images/default.jpg";
   }
 
-  /// ✅ 7-day forecast (mocked for now)
-Future<List<Map<String, dynamic>>> getSevenDayForecast({
-  required double lat,
-  required double lon,
-}) async {
-  final response = await http.post(
-    Uri.parse("http://10.0.2.2:8000/forecast"),
-    headers: {"Content-Type": "application/json"},
-    body: jsonEncode({"lat": lat, "lon": lon}),
-  );
+  /// ✅ 7-day forecast from OpenWeather
+  Future<List<Map<String, dynamic>>> getSevenDayForecast({
+    required double lat,
+    required double lon,
+  }) async {
+    final apiKey = dotenv.env['OPENWEATHER_API_KEY'] ?? '';
+    if (apiKey.isEmpty) {
+      throw Exception("OpenWeather API key not found in .env");
+    }
 
-  if (response.statusCode != 200) {
-    throw Exception("Failed to fetch forecast");
+    final url = Uri.parse(
+      "https://api.openweathermap.org/data/2.5/onecall?lat=$lat&lon=$lon&exclude=current,minutely,hourly,alerts&appid=$apiKey&units=metric",
+    );
+
+    final response = await http.get(url).timeout(const Duration(seconds: 10));
+
+    if (response.statusCode != 200) {
+      throw Exception("Failed to fetch forecast: ${response.body}");
+    }
+
+    final data = jsonDecode(response.body);
+    final List daily = data["daily"];
+
+    return daily.map((d) {
+      return {
+        "day": DateFormat('EEE').format(
+          DateTime.fromMillisecondsSinceEpoch(d["dt"] * 1000),
+        ),
+        "temp": d["temp"]["day"],
+        "min": d["temp"]["min"],
+        "max": d["temp"]["max"],
+        "humidity": d["humidity"],
+        "wind": d["wind_speed"] * 3.6, // Convert m/s to km/h
+        "description": d["weather"][0]["main"],
+        "icon": getWeatherIcon(d["weather"][0]["main"]),
+      };
+    }).toList();
   }
 
-  final data = jsonDecode(response.body);
-  final List daily = data["daily"];
+  /// ✅ Hourly forecast from OpenWeather
+  Future<List<Map<String, dynamic>>> getHourlyForecast({
+    required double lat,
+    required double lon,
+  }) async {
+    final apiKey = dotenv.env['OPENWEATHER_API_KEY'] ?? '';
+    if (apiKey.isEmpty) {
+      throw Exception("OpenWeather API key not found in .env");
+    }
 
-  return daily.map((d) {
-    return {
-      "day": DateFormat('EEE').format(
-        DateTime.fromMillisecondsSinceEpoch(d["dt"] * 1000),
-      ),
-      "temp": d["temp"]["day"],
-      "min": d["temp"]["min"],
-      "max": d["temp"]["max"],
-      "humidity": d["humidity"],
-      "wind": d["wind_speed"],
-      "description": d["weather"][0]["main"],
-      "icon": getWeatherIcon(d["weather"][0]["main"]),
-    };
-  }).toList();
-}
+    final url = Uri.parse(
+      "https://api.openweathermap.org/data/2.5/onecall?lat=$lat&lon=$lon&exclude=current,minutely,daily,alerts&appid=$apiKey&units=metric",
+    );
 
+    final response = await http.get(url).timeout(const Duration(seconds: 10));
 
-  /// ✅ Hourly forecast (mocked for now)
-Future<List<Map<String, dynamic>>> getHourlyForecast({
-  required double lat,
-  required double lon,
-}) async {
-  final response = await http.post(
-    Uri.parse("http://10.0.2.2:8000/forecast"),
-    headers: {"Content-Type": "application/json"},
-    body: jsonEncode({"lat": lat, "lon": lon}),
-  );
+    if (response.statusCode != 200) {
+      throw Exception("Failed to fetch hourly forecast: ${response.body}");
+    }
 
-  final data = jsonDecode(response.body);
-  final List hourly = data["hourly"];
+    final data = jsonDecode(response.body);
+    final List hourly = data["hourly"];
 
-  return hourly.take(24).map((h) {
-    return {
-      "time": DateFormat('HH:mm').format(
-        DateTime.fromMillisecondsSinceEpoch(h["dt"] * 1000),
-      ),
-      "temp": h["temp"],
-      "humidity": h["humidity"],
-      "wind": h["wind_speed"],
-      "rain": h["rain"]?["1h"] ?? 0,
-      "icon": getWeatherIcon(h["weather"][0]["main"]),
-    };
-  }).toList();
-}
+    return hourly.take(24).map((h) {
+      return {
+        "time": DateFormat('HH:mm').format(
+          DateTime.fromMillisecondsSinceEpoch(h["dt"] * 1000),
+        ),
+        "temp": h["temp"],
+        "humidity": h["humidity"],
+        "wind": h["wind_speed"] * 3.6, // Convert m/s to km/h
+        "rain": (h["rain"]?["1h"] ?? 0).toDouble(),
+        "icon": getWeatherIcon(h["weather"][0]["main"]),
+      };
+    }).toList();
+  }
 
   /// ✅ AQI Data
   Future<Map<String, dynamic>> getAQIData({
@@ -191,7 +206,8 @@ Future<List<Map<String, dynamic>>> getHourlyForecast({
   }
 
   /// ✅ Anomalies (backend + fallback)
-  Future<List<Map<String, dynamic>>> getAnomalies(double lat, double lon) async {
+  Future<List<Map<String, dynamic>>> getAnomalies(
+      double lat, double lon) async {
     try {
       final anomalyUrl = Uri.parse("http://10.0.2.2:8000/get_anomalies");
       final resp = await http
@@ -212,8 +228,8 @@ Future<List<Map<String, dynamic>>> getHourlyForecast({
             list.add({
               "type": item['type'] ?? "Alert",
               "forecast": item['forecast']?.toString() ?? "",
-              "time": item['time']?.toString() ??
-                  DateTime.now().toIso8601String(),
+              "time":
+                  item['time']?.toString() ?? DateTime.now().toIso8601String(),
             });
           }
           if (list.isNotEmpty) return list;
