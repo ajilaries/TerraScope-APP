@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 import 'farmer_weather_details.dart';
 import 'farmer_crop_health.dart';
 import 'crop_recommendation.dart';
@@ -301,13 +299,6 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
         ),
       );
     }
-
-    final temp = _weatherData!['temperature']?.toStringAsFixed(1) ?? '--';
-    final condition = _weatherData!['condition'] ?? 'Unknown';
-    final humidity = _weatherData!['humidity']?.toStringAsFixed(0) ?? '--';
-    final windSpeed = _weatherData!['wind_speed']?.toStringAsFixed(1) ?? '--';
-    final city = _locationData!['city'] ?? 'Unknown';
-    final state = _locationData!['state'] ?? '';
 
     return Container(
       padding: const EdgeInsets.all(18),
