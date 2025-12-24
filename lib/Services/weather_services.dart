@@ -200,7 +200,7 @@ class WeatherService {
       final data = jsonDecode(response.body);
       return {"aqi": data["aqi"] ?? "--"};
     } catch (e) {
-      print("Error fetching AQI: $e");
+      debugPrint("Error fetching AQI: $e");
       return {"aqi": "--"};
     }
   }
@@ -236,7 +236,7 @@ class WeatherService {
         }
       }
     } catch (e) {
-      print("getAnomalies backend error/fallback: $e");
+      debugPrint("getAnomalies backend error/fallback: $e");
     }
 
     // fallback local logic...
@@ -317,7 +317,7 @@ class WeatherService {
 
       return results;
     } catch (e) {
-      print("getAnomalies fallback error: $e");
+      debugPrint("getAnomalies fallback error: $e");
       return [
         {
           "type": "Unknown",
@@ -345,7 +345,7 @@ class WeatherService {
         throw Exception("Failed to fetch radar data: ${response.statusCode}");
       }
     } catch (e) {
-      print("Error fetching radar data: $e");
+      debugPrint("Error fetching radar data: $e");
       return {
         "status": "error",
         "message": e.toString(),
