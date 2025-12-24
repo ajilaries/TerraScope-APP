@@ -8,9 +8,8 @@ class SettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
-
       appBar: AppBar(
-        backgroundColor: Colors.black.withOpacity(0.5),
+        backgroundColor: Colors.black.withValues(alpha: 0.5),
         elevation: 0,
         flexibleSpace: ClipRect(
           child: BackdropFilter(
@@ -27,7 +26,6 @@ class SettingsScreen extends StatelessWidget {
           ),
         ),
       ),
-
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -37,21 +35,18 @@ class SettingsScreen extends StatelessWidget {
             subtitle: "Change app language",
             onTap: () {},
           ),
-
           _settingsTile(
             icon: Icons.notifications_active,
             title: "Notifications",
             subtitle: "Manage alert preferences",
             onTap: () {},
           ),
-
           _settingsTile(
             icon: Icons.privacy_tip_outlined,
             title: "Privacy & Permissions",
             subtitle: "Location, data use, permissions",
             onTap: () {},
           ),
-
           _settingsTile(
             icon: Icons.info_outline,
             title: "About Terrascope",
@@ -76,11 +71,11 @@ class SettingsScreen extends StatelessWidget {
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(18),
-          color: Colors.white.withOpacity(0.07),
-          border: Border.all(color: Colors.white.withOpacity(0.15)),
+          color: Colors.white.withValues(alpha: 0.07),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.4),
+              color: Colors.black.withValues(alpha: 0.4),
               blurRadius: 15,
               offset: const Offset(0, 8),
             )
@@ -106,7 +101,7 @@ class SettingsScreen extends StatelessWidget {
                   Text(
                     subtitle,
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.7),
+                      color: Colors.white.withValues(alpha: 0.7),
                       fontSize: 14,
                     ),
                   ),

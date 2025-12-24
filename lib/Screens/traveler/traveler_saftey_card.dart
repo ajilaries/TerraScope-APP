@@ -40,7 +40,7 @@ class TravelerSafetyCard extends StatelessWidget {
                         height: 64,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: color.withOpacity(0.12),
+                          color: color.withValues(alpha: 0.12),
                         ),
                         child: Center(
                           child: Text(
