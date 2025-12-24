@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:geocoding/geocoding.dart';
-import 'package:terra_scope_apk/Services/crop_service.dart';
 
 class FarmerPersonalizationScreen extends StatefulWidget {
   final double lat;
@@ -155,17 +153,16 @@ class _FarmerPersonalizationScreenState
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: cropType == null ||
-                        landSize == null ||
-                        irrigation == null
-                    ? null
-                    : () {
-                        Navigator.pop(context, {
-                          "crop": cropType,
-                          "land": landSize,
-                          "irrigation": irrigation,
-                        });
-                      },
+                onPressed:
+                    cropType == null || landSize == null || irrigation == null
+                        ? null
+                        : () {
+                            Navigator.pop(context, {
+                              "crop": cropType,
+                              "land": landSize,
+                              "irrigation": irrigation,
+                            });
+                          },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green.shade700,
                   padding: const EdgeInsets.symmetric(vertical: 14),
