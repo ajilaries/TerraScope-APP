@@ -1,6 +1,6 @@
 name: terra_scope_apk
 description: "Terrascope Pro - Advanced Weather & Safety Flutter App"
-publish_to: 'none'
+publish_to: "none"
 
 version: 1.0.0+1
 
