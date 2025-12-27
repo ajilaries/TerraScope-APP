@@ -36,11 +36,12 @@ class _AnomalyScreenState extends State<AnomalyScreen> {
 
     try {
       // 🌦️ Weather fetch (used for fallback)
-      final weatherRaw = await _weatherService.getWeatherData(
-        token: "public_token",
-        lat: widget.lat,
-        lon: widget.lon,
+      final weatherRaw = await WeatherService.getWeatherData(
+        widget.lat,
+        widget.lon,
       );
+
+      if (weatherRaw == null) return;
 
       final weather = WeatherData.fromJson(weatherRaw);
 
