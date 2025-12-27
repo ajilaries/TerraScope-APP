@@ -21,27 +21,32 @@ class _PanicScreenState extends State<PanicScreen> {
 
     try {
       // 1️⃣ Get current location
-      final loc = await LocationService().getCurrentLocation();
-      double lat = loc["latitude"];
-      double lon = loc["longitude"];
+      final loc = await LocationService.getCurrentLocation();
+      if (loc == null) {
+        setState(() {
+          statusMessage = "Error: Could not get location";
+          isSending = false;
+        });
+        return;
+      }
+      double lat = loc.latitude;
+      double lon = loc.longitude;
 
-      // 2️⃣ Get device token (optional, if needed for backend)
-      String? token = await NotificationService.getDeviceToken();
+      // 2️⃣ Get FCM token
+      String? token = await NotificationService.getFCMToken();
 
       if (token == null) {
         setState(() {
-          statusMessage = "Error: Device token not found";
+          statusMessage = "Error: FCM token not found";
           isSending = false;
         });
         return;
       }
 
-      // 3️⃣ Send emergency alert via backend
-      await NotificationService.sendEmergencyAlert(
-        message: "I need help! 🚨",
-        lat: lat,
-        lon: lon,
-        userId: token, // or any unique ID for the user
+      // 3️⃣ Send emergency alert via notification
+      await NotificationService.showNotification(
+        title: "Emergency Alert",
+        body: "I need help! Location: $lat, $lon 🚨",
       );
 
       setState(() {
