@@ -36,8 +36,10 @@ class _CommuteDashboardState extends State<CommuteDashboard> {
   Future<void> _initCommute() async {
     try {
       final pos = await CommuteService.getCurrentPosition();
-      _lastLat = pos.latitude;
-      _lastLon = pos.longitude;
+      if (pos != null) {
+        _lastLat = pos.latitude;
+        _lastLon = pos.longitude;
+      }
       final place = await CommuteService.reverseGeocode(_lastLat!, _lastLon!);
 
       final weather = await CommuteService.fetchWeather(_lastLat!, _lastLon!);
