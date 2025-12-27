@@ -378,6 +378,7 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
 
   Widget _miniInfo(IconData icon, String label, String value) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Icon(icon, size: 26, color: Colors.white),
         const SizedBox(height: 4),
@@ -453,6 +454,7 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
           ],
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, size: 30, color: Colors.green),
             const SizedBox(height: 10),
@@ -573,6 +575,7 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(f["day"], style: const TextStyle(fontSize: 16)),
                     const SizedBox(height: 6),

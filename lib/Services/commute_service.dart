@@ -6,25 +6,24 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:terra_scope_apk/Services/location_service.dart';
 import 'package:terra_scope_apk/Services/weather_services.dart';
 import 'package:terra_scope_apk/Services/aqi_service.dart';
-import 'package:terra_scope_apk/Services/device_service.dart';
 
 class CommuteService {
   /// Get current device position (requests permission if needed)
-  static Future<Position> getCurrentPosition() async {
+  static Future<Position?> getCurrentPosition() async {
     // Delegate to LocationService which handles permission and fast fetch
-    final locService = LocationService();
-    return await locService.getCurrentPositionFast();
+    return await LocationService.getCurrentPosition();
   }
 
   /// Reverse geocode to a human readable place name
   static Future<String> reverseGeocode(double lat, double lon) async {
     try {
-      final locService = LocationService();
-      final admin = await locService.getAdministrativeDetails(lat, lon);
-      final parts = [admin['city'], admin['district'], admin['state']]
-          .where((s) => s?.isNotEmpty ?? false)
-          .toList();
-      if (parts.isNotEmpty) return parts.join(', ');
+      final admin = await LocationService.getAdministrativeDetails(lat, lon);
+      if (admin != null) {
+        final parts = [admin['city'], admin['district'], admin['state']]
+            .where((s) => s?.isNotEmpty ?? false)
+            .toList();
+        if (parts.isNotEmpty) return parts.join(', ');
+      }
     } catch (_) {}
     return "Current Location";
   }
@@ -35,17 +34,14 @@ class CommuteService {
       double lat, double lon) async {
     final result = <String, dynamic>{};
     try {
-      final token = await DeviceService.getDeviceToken();
-      final weatherSvc = WeatherService();
-      final data =
-          await weatherSvc.getWeatherData(token: token, lat: lat, lon: lon);
-      if (data.containsKey('temperature')) {
-        result['temp'] = (data['temperature'] as num?)?.toDouble();
+      final data = await WeatherService.getWeatherData(lat, lon);
+      if (data != null && data.containsKey('main')) {
+        result['temp'] = (data['main']['temp'] as num?)?.toDouble();
       }
 
       // Try AQI via WeatherService first, fallback to AQIService
-      final aqiData = await weatherSvc.getAQIData(lat: lat, lon: lon);
-      if (aqiData.containsKey('aqi')) {
+      final aqiData = await WeatherService.getAQIData(lat, lon);
+      if (aqiData != null && aqiData.containsKey('aqi')) {
         final a = aqiData['aqi'];
         if (a is int) result['aqi'] = a;
       } else {

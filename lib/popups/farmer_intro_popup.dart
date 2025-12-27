@@ -98,12 +98,13 @@ class FarmerIntroPopup extends StatelessWidget {
               ),
               onPressed: () async {
                 try {
-                  final locationService = LocationService();
-
                   // 📍 REAL LOCATION
-                  final loc = await locationService.getCurrentLocation();
-                  final double lat = loc["latitude"] as double;
-                  final double lon = loc["longitude"] as double;
+                  final loc = await LocationService.getCurrentLocation();
+                  if (loc == null) {
+                    throw Exception("Could not get location");
+                  }
+                  final double lat = loc.latitude;
+                  final double lon = loc.longitude;
 
                   print("✅ Location fetched: lat=$lat, lon=$lon");
 
