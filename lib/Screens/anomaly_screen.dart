@@ -19,7 +19,6 @@ class AnomalyScreen extends StatefulWidget {
 
 class _AnomalyScreenState extends State<AnomalyScreen> {
   final AnomalyService _anomalyService = AnomalyService();
-  final WeatherService _weatherService = WeatherService();
 
   bool _isLoading = true;
   List<Map<String, dynamic>> _alerts = [];
@@ -36,11 +35,12 @@ class _AnomalyScreenState extends State<AnomalyScreen> {
 
     try {
       // 🌦️ Weather fetch (used for fallback)
-      final weatherRaw = await _weatherService.getWeatherData(
-        token: "public_token",
-        lat: widget.lat,
-        lon: widget.lon,
+      final weatherRaw = await WeatherService.getWeatherData(
+        widget.lat,
+        widget.lon,
       );
+
+      if (weatherRaw == null) return;
 
       final weather = WeatherData.fromJson(weatherRaw);
 
@@ -76,7 +76,7 @@ class _AnomalyScreenState extends State<AnomalyScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
       appBar: AppBar(
-        backgroundColor: Colors.black.withOpacity(0.7),
+        backgroundColor: Colors.black.withValues(alpha: 0.7),
         elevation: 0,
         title: const Text(
           "Anomaly Alerts",
@@ -205,7 +205,7 @@ class _AnomalyScreenState extends State<AnomalyScreen> {
           Text(
             alert['message'] ?? "",
             style: TextStyle(
-              color: Colors.white.withOpacity(0.8),
+              color: Colors.white.withValues(alpha: 0.8),
               fontSize: 14,
             ),
           ),
@@ -219,7 +219,7 @@ class _AnomalyScreenState extends State<AnomalyScreen> {
       child: Text(
         "No anomalies detected 🎉",
         style: TextStyle(
-          color: Colors.white.withOpacity(0.6),
+          color: Colors.white.withValues(alpha: 0.6),
           fontSize: 15,
         ),
       ),

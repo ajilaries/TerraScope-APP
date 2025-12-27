@@ -24,10 +24,10 @@ class _AnomaliesScreenState extends State<AnomaliesScreen> {
   Future<void> _fetchAnomalies() async {
     setState(() => isLoading = true);
     try {
-      anomalies = await WeatherService().getAnomalies(widget.lat, widget.lon);
+      anomalies = await WeatherService.getAnomalies(widget.lat, widget.lon);
       setState(() => isLoading = false);
     } catch (e) {
-      print("Error fetching anomalies: $e");
+      debugPrint("Error fetching anomalies: $e");
       setState(() => isLoading = false);
     }
   }
@@ -44,7 +44,7 @@ class _AnomaliesScreenState extends State<AnomaliesScreen> {
               itemBuilder: (context, index) {
                 final a = anomalies[index];
                 return Card(
-                  color: Colors.redAccent.withOpacity(0.2),
+                  color: Colors.redAccent.withValues(alpha: 0.2),
                   child: ListTile(
                     leading: Icon(Icons.warning, color: Colors.red),
                     title: Text(a['type']),

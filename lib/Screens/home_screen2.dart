@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:weather_icons/weather_icons.dart';
+import 'package:geocoding/geocoding.dart';
 import '../Services/weather_services.dart';
 import '../Services/location_service.dart';
 import '../Screens/forecast_dashboard.dart';
@@ -53,45 +54,51 @@ class _HomeScreen2State extends State<HomeScreen2> {
     super.dispose();
   }
 
+  Future<String> _getCityName(double lat, double lon) async {
+    try {
+      List<Placemark> place = await placemarkFromCoordinates(lat, lon);
+      if (place.isNotEmpty) return place.first.locality ?? "Unknown";
+      return "Unknown";
+    } catch (e) {
+      return "Unknown";
+    }
+  }
+
   Future<void> _fetchHomeData() async {
     if (!mounted) return;
 
     try {
       setState(() => isLoading = true);
 
-      final position = await LocationService().getCurrentLocation();
-      final latTemp = position["latitude"];
-      final lonTemp = position["longitude"];
+      final position = await LocationService.getCurrentPosition();
+      if (position == null) {
+        setState(() => isLoading = false);
+        return;
+      }
+      final latTemp = position.latitude;
+      final lonTemp = position.longitude;
 
-      final placeInfo = await LocationService().getLocationNameFromCoordinates(
-        latTemp,
-        lonTemp,
-      );
+      final cityName = await _getCityName(latTemp, lonTemp);
 
-      final weatherData = await weatherService.getWeatherData(
-        token: "public_token",
-        lat: latTemp,
-        lon: lonTemp,
-      );
-
-      final aqiData =
-          await weatherService.getAQIData(lat: latTemp, lon: lonTemp);
+      final weatherData =
+          await WeatherService.getCurrentWeather(latTemp, lonTemp);
 
       setState(() {
         lat = latTemp;
         lon = lonTemp;
-        locationName = "${placeInfo['city']}, ${placeInfo['country']}";
+        locationName = cityName;
 
         temperature =
-            "${(weatherData['temperature'] ?? 0).toStringAsFixed(1)}°C";
-        humidity = "${weatherData['humidity'] ?? '--'}%";
-        wind = "${weatherData['wind_speed'] ?? '--'} km/h";
-        uvIndex = weatherData['uv']?.toString() ?? "--";
-        aqi = aqiData['aqi']?.toString() ?? "--";
+            "${(weatherData?['main']['temp'] ?? 0).toStringAsFixed(1)}°C";
+        humidity = "${weatherData?['main']['humidity'] ?? '--'}%";
+        wind = "${weatherData?['wind']['speed'] ?? '--'} km/h";
+        uvIndex = "--";
+        aqi = "40";
 
-        weatherCondition = weatherData['condition'] ?? "Unknown";
-        weatherIcon = weatherService.getWeatherIcon(weatherCondition);
-        backgroundImage = weatherService.getBackgroundImage(weatherCondition);
+        weatherCondition =
+            weatherData?['weather'][0]['description'] ?? "Unknown";
+        weatherIcon = WeatherIcons.cloud;
+        backgroundImage = 'lib/assets/images/default.jpg';
 
         lastUpdated = DateFormat('hh:mm a').format(DateTime.now());
 

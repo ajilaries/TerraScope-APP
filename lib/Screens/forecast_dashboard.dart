@@ -42,9 +42,9 @@ class _ForecastDashboardState extends State<ForecastDashboard> {
     setState(() => isLoading = true);
 
     try {
-      final data = await weatherService.getHourlyForecast(
-        lat: widget.lat,
-        lon: widget.lon,
+      final data = await WeatherService.getHourlyForecast(
+        widget.lat,
+        widget.lon,
       );
 
       setState(() {
@@ -134,8 +134,8 @@ class _ForecastDashboardState extends State<ForecastDashboard> {
                           response.lineBarSpots != null &&
                           response.lineBarSpots!.isNotEmpty) {
                         setState(() {
-                          highlightedIndex = response.lineBarSpots!.first.x
-                              .toInt();
+                          highlightedIndex =
+                              response.lineBarSpots!.first.x.toInt();
                         });
                       }
                     },
