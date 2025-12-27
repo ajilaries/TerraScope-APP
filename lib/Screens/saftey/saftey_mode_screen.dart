@@ -2,13 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/safety_provider.dart';
 import '../../Services/saftey_service.dart';
-import '../../Services/weather_services.dart';
-import '../../Services/location_service.dart';
-import '../../Services/notification_service.dart';
 import '../../Widgets/detailed_safety_card.dart';
 import '../../Widgets/emergency_contact_card.dart';
 import '../../Widgets/safety_history_card.dart';
-import '../../utils/safety_utils.dart';
 
 class SafetyModeScreen extends StatefulWidget {
   const SafetyModeScreen({super.key});

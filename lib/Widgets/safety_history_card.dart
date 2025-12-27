@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import '../models/saftey_status.dart';
 import '../models/safety_alert.dart';
 import '../utils/safety_utils.dart';
-import '../providers/safety_provider.dart';
 
 class SafetyHistoryCard extends StatelessWidget {
   final SafetyAlert alert;
