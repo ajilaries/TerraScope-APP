@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../providers/safety_provider.dart';
 import '../../models/emergency_contact.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -61,7 +62,6 @@ class _SOSScreenState extends State<SOSScreen> with TickerProviderStateMixin {
 
   Future<void> _triggerSOS() async {
     _cancelCountdown();
-    final safetyProvider = context.read<SafetyProvider>();
 
     // Show SOS triggered dialog
     showDialog(
@@ -83,24 +83,26 @@ class _SOSScreenState extends State<SOSScreen> with TickerProviderStateMixin {
             SizedBox(height: 12),
             CircularProgressIndicator(),
             SizedBox(height: 12),
-            Text('Calling emergency contacts...'),
+            Text('Calling emergency contact...'),
           ],
         ),
       ),
     );
 
-    // Auto-call first emergency contact
-    if (safetyProvider.emergencyContacts.isNotEmpty) {
-      final contact = safetyProvider.emergencyContacts.first;
-      final Uri launchUri = Uri(scheme: 'tel', path: contact.phoneNumber);
+    // Get emergency contact from SharedPreferences (entered during signup)
+    final prefs = await SharedPreferences.getInstance();
+    final emergencyContact = prefs.getString('emergency_contact') ??
+        "+919072805856"; // Default fallback
 
-      await Future.delayed(const Duration(seconds: 2));
+    // Auto-call emergency contact from signup
+    final Uri launchUri = Uri(scheme: 'tel', path: emergencyContact);
 
-      try {
-        await launchUrl(launchUri);
-      } catch (e) {
-        print('Error calling: $e');
-      }
+    await Future.delayed(const Duration(seconds: 2));
+
+    try {
+      await launchUrl(launchUri);
+    } catch (e) {
+      print('Error calling emergency contact: $e');
     }
 
     await Future.delayed(const Duration(seconds: 2));
