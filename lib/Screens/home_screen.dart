@@ -29,6 +29,10 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
   List<Map<String, dynamic>> forecast7 = [];
   List<Map<String, dynamic>> forecast24 = [];
   bool isLoading = true;
+  int humidity = 0;
+  double windSpeed = 0.0;
+  int pressure = 0;
+  int visibility = 0;
 
   Timer? autoRefreshTimer;
 
@@ -88,8 +92,8 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
       if (forecastData != null && forecastData['list'] != null) {
         final list = forecastData['list'] as List;
         // 7-day forecast (every 24 hours)
-        for (int i = 0; i < list.length && i < 7; i += 8) {
-          final item = list[i];
+        for (int i = 0; i < 7 && i * 8 < list.length; i++) {
+          final item = list[i * 8];
           final dt = DateTime.fromMillisecondsSinceEpoch(item['dt'] * 1000);
           parsedForecast7.add({
             'day': DateFormat('EEE').format(dt),
@@ -116,6 +120,18 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
         condition = currentWeather != null
             ? currentWeather['weather'][0]['description']
             : "_";
+        humidity = currentWeather != null
+            ? (currentWeather['main']['humidity'] as num).toInt()
+            : 0;
+        windSpeed = currentWeather != null
+            ? (currentWeather['wind']['speed'] as num).toDouble()
+            : 0.0;
+        pressure = currentWeather != null
+            ? (currentWeather['main']['pressure'] as num).toInt()
+            : 0;
+        visibility = currentWeather != null
+            ? (currentWeather['visibility'] as num).toInt()
+            : 0;
         aqi = 40; // Mock AQI since no API
         forecast7 = parsedForecast7;
         forecast24 = parsedForecast24;
@@ -238,17 +254,19 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
               Text(
                 temp,
                 style: TextStyle(
-                  fontSize: 60,
+                  fontSize: 40,
                   fontWeight: FontWeight.bold,
                   color: dark ? Colors.white : Colors.black,
                 ),
               ),
               const SizedBox(width: 15),
-              Text(
-                condition,
-                style: TextStyle(
-                  fontSize: 20,
-                  color: dark ? Colors.white70 : Colors.black87,
+              Flexible(
+                child: Text(
+                  condition,
+                  style: TextStyle(
+                    fontSize: 20,
+                    color: dark ? Colors.white70 : Colors.black87,
+                  ),
                 ),
               ),
             ],
@@ -303,7 +321,9 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
                         "${forecast7[i]["max"]}° / ${forecast7[i]["min"]}°",
                         style: TextStyle(
                           color: dark ? Colors.white : Colors.black,
+                          fontSize: 10,
                         ),
+                        textAlign: TextAlign.center,
                       ),
                     ],
                   ),
@@ -374,13 +394,16 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
   }
 
   Widget _metricsGrid(bool dark) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
+    return Wrap(
+      spacing: 16,
+      runSpacing: 8,
+      alignment: WrapAlignment.spaceAround,
       children: [
-        _metric("Humidity", "62%", dark),
-        _metric("Wind", "12 km/h", dark),
-        _metric("Pressure", "1008 hPa", dark),
-        _metric("Visibility", "8 km", dark),
+        _metric("Humidity", "$humidity%", dark),
+        _metric("Wind", "${windSpeed.toStringAsFixed(1)} km/h", dark),
+        _metric("Pressure", "$pressure hPa", dark),
+        _metric(
+            "Visibility", "${(visibility / 1000).toStringAsFixed(1)} km", dark),
       ],
     );
   }

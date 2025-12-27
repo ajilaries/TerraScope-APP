@@ -7,7 +7,7 @@ import '../Services/weather_services.dart';
 import '../Services/location_service.dart';
 import '../Screens/forecast_dashboard.dart';
 import '../Screens/radar_screen.dart';
-import '../Screens/anomaly_screen.dart';
+import '../Screens/anomalies_screen.dart';
 import '../Screens/panic_screen.dart';
 
 class HomeScreen2 extends StatefulWidget {
@@ -223,7 +223,7 @@ class _HomeScreen2State extends State<HomeScreen2> {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (_) => AnomalyScreen(
+                                    builder: (_) => AnomaliesScreen(
                                       lat: lat,
                                       lon: lon,
                                     ),

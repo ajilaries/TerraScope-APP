@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../Services/notification_service.dart'; // For sending push alerts
 import '../Services/location_service.dart'; // For current location
 
@@ -16,7 +18,7 @@ class _PanicScreenState extends State<PanicScreen> {
   Future<void> _sendPanicAlert() async {
     setState(() {
       isSending = true;
-      statusMessage = "Sending alert...";
+      statusMessage = "Sending emergency alert...";
     });
 
     try {
@@ -32,27 +34,71 @@ class _PanicScreenState extends State<PanicScreen> {
       double lat = loc.latitude;
       double lon = loc.longitude;
 
-      // 2️⃣ Get FCM token
-      String? token = await NotificationService.getFCMToken();
+      // 2️⃣ Create emergency message
+      final emergencyMessage = "🚨 EMERGENCY ALERT 🚨\n"
+          "I need immediate help!\n"
+          "Location: $lat, $lon\n"
+          "Time: ${DateTime.now().toString()}\n"
+          "Please respond urgently!";
 
-      if (token == null) {
-        setState(() {
-          statusMessage = "Error: FCM token not found";
-          isSending = false;
-        });
-        return;
+      // 3️⃣ Get emergency contact from shared preferences
+      final prefs = await SharedPreferences.getInstance();
+      final emergencyContact = prefs.getString('emergency_contact') ??
+          ""; // Default fallback
+
+      // Send alert to emergency contact
+      final String testPhoneNumber =
+          emergencyContact; // Use saved emergency contact
+
+      int alertsSent = 0;
+      int alertsFailed = 0;
+
+      try {
+        // Send SMS to your own number for testing
+        final smsUri = Uri.parse(
+            'sms:$testPhoneNumber?body=${Uri.encodeComponent(emergencyMessage)}');
+        debugPrint("Attempting to launch SMS: $smsUri");
+
+        if (await canLaunchUrl(smsUri)) {
+          await launchUrl(smsUri, mode: LaunchMode.externalApplication);
+          alertsSent++;
+          debugPrint("Test alert sent to: $testPhoneNumber");
+        } else {
+          // Fallback: try without body parameter
+          final fallbackUri = Uri.parse('sms:$testPhoneNumber');
+          if (await canLaunchUrl(fallbackUri)) {
+            await launchUrl(fallbackUri, mode: LaunchMode.externalApplication);
+            alertsSent++;
+            debugPrint("Fallback SMS sent to: $testPhoneNumber (without body)");
+          } else {
+            alertsFailed++;
+            debugPrint("Could not launch SMS app - both URI formats failed");
+          }
+        }
+      } catch (e) {
+        alertsFailed++;
+        debugPrint("Failed to send test alert: $e");
       }
 
-      // 3️⃣ Send emergency alert via notification
+      // 4️⃣ Send local notification
       await NotificationService.showNotification(
-        title: "Emergency Alert",
-        body: "I need help! Location: $lat, $lon 🚨",
+        title: "Emergency Alert Sent",
+        body: "Test alert sent to your number. Location: $lat, $lon 🚨",
       );
 
-      setState(() {
-        statusMessage = "Alert sent successfully!";
-        isSending = false;
-      });
+      // 5️⃣ Update status message
+      if (alertsSent > 0) {
+        setState(() {
+          statusMessage = "Test alert sent to your phone number!\n"
+              "Check your SMS app for the emergency message.";
+        });
+      } else {
+        setState(() {
+          statusMessage = "Failed to send test alert. Check your phone number.";
+        });
+      }
+
+      setState(() => isSending = false);
     } catch (e) {
       setState(() {
         statusMessage = "Failed to send alert: $e";
@@ -65,8 +111,8 @@ class _PanicScreenState extends State<PanicScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Panic / Safety"),
-        backgroundColor: Colors.redAccent,
+        title: const Text("Panic / Safety (TEST MODE)"),
+        backgroundColor: Colors.orangeAccent,
       ),
       body: Center(
         child: Padding(
@@ -80,10 +126,14 @@ class _PanicScreenState extends State<PanicScreen> {
                 size: 100,
               ),
               const SizedBox(height: 20),
-              Text(
-                statusMessage,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 18),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Text(
+                    statusMessage,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 18),
+                  ),
+                ),
               ),
               const SizedBox(height: 40),
               ElevatedButton(
