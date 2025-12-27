@@ -3,7 +3,8 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
-  final String baseUrl = "http://10.0.2.2:8000"; // Android emulator -> localhost. Use 127.0.0.1 on real device or device IP.
+  final String baseUrl =
+      "http://10.0.2.2:8000"; // Android emulator -> localhost. Use 127.0.0.1 on real device or device IP.
 
   Future<Map<String, dynamic>> signup({
     required String name,
@@ -11,6 +12,9 @@ class AuthService {
     required String password,
     required String gender,
     required String userMode,
+    String? emergencyContact,
+    bool? enableNotifications,
+    bool? enableLocationSharing,
   }) async {
     final url = Uri.parse("$baseUrl/auth/signup");
     final resp = await http.post(
@@ -21,7 +25,10 @@ class AuthService {
         "email": email,
         "password": password,
         "gender": gender,
-        "user_mode": userMode
+        "user_mode": userMode,
+        "emergency_contact": emergencyContact,
+        "enable_notifications": enableNotifications,
+        "enable_location_sharing": enableLocationSharing,
       }),
     );
     return {
