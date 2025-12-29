@@ -1,11 +1,12 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-
+import '../../Services/location_service.dart';
 import 'commute_weather_mini.dart';
 import 'commute_quick_actions.dart';
 import 'commute_alerts.dart';
 import 'commute_route_preview.dart';
 import 'commute_saftey_card.dart';
+import '../../Services/weather_services.dart';
 import '../../Services/commute_service.dart';
 
 class CommuteDashboard extends StatefulWidget {
@@ -16,12 +17,15 @@ class CommuteDashboard extends StatefulWidget {
 }
 
 class _CommuteDashboardState extends State<CommuteDashboard> {
-  String currentPlace = "Kochi, Kerala";
-  double temp = 30;
-  int aqi = 95;
-  int commuteSafety = 88;
+  String currentPlace = "Loading...";
+  double temp = 0.0;
+  int aqi = 0;
+  int commuteSafety = 0;
   double? _lastLat;
   double? _lastLon;
+  double? _destinationLat;
+  double? _destinationLon;
+  String? _destinationAddress;
 
 // ✔️ Updated list type
   List<CommuteAlert> commuteAlerts = [];
@@ -29,29 +33,50 @@ class _CommuteDashboardState extends State<CommuteDashboard> {
   @override
   void initState() {
     super.initState();
-    _generateMockAlerts();
     _initCommute();
   }
 
   Future<void> _initCommute() async {
-    try {
-      final pos = await CommuteService.getCurrentPosition();
-      if (pos != null) {
-        _lastLat = pos.latitude;
-        _lastLon = pos.longitude;
-      }
-      final place = await CommuteService.reverseGeocode(_lastLat!, _lastLon!);
-
-      final weather = await CommuteService.fetchWeather(_lastLat!, _lastLon!);
+    // Use real data from existing services
+    final pos = await LocationService.getCurrentPosition();
+    if (pos != null) {
+      _lastLat = pos.latitude;
+      _lastLon = pos.longitude;
+      final place = await LocationService.getAddressFromCoordinates(
+          pos.latitude, pos.longitude);
+      final weather =
+          await WeatherService.getWeatherData(pos.latitude, pos.longitude);
+      final aqiData =
+          await WeatherService.getAQIData(pos.latitude, pos.longitude);
+      final safetyScore = await CommuteService.calculateSafetyScore(
+          pos.latitude, pos.longitude);
+      final realAlerts =
+          await CommuteService.getRealAlerts(pos.latitude, pos.longitude);
 
       setState(() {
-        currentPlace = place;
-        if (weather.containsKey('temp'))
-          temp = (weather['temp'] as double?) ?? temp;
-        if (weather.containsKey('aqi')) aqi = (weather['aqi'] as int?) ?? aqi;
+        currentPlace = place ?? "Current Location";
+        temp = weather != null
+            ? (weather['main']['temp'] as num).toDouble()
+            : 25.0;
+        aqi = aqiData != null ? (aqiData['aqi'] as num).toInt() : 50;
+        commuteSafety = safetyScore;
+        commuteAlerts = realAlerts
+            .map((alert) => CommuteAlert(
+                  title: alert['title'],
+                  description: alert['description'],
+                  time: alert['time'],
+                  type: _getAlertTypeFromString(alert['type']),
+                ))
+            .toList();
       });
-    } catch (_) {
-      // keep mock values on failure
+    } else {
+      setState(() {
+        currentPlace = "Location unavailable";
+        temp = 25.0;
+        aqi = 50;
+        commuteSafety = 50;
+        commuteAlerts = [];
+      });
     }
   }
 
@@ -74,38 +99,63 @@ class _CommuteDashboardState extends State<CommuteDashboard> {
     ];
   }
 
-  void _refreshData() {
-    // Try to refresh real data if possible, else fallback to mock
-    if (_lastLat != null && _lastLon != null) {
-      CommuteService.fetchWeather(_lastLat!, _lastLon!).then((weather) {
-        setState(() {
-          if (weather.containsKey('temp'))
-            temp = (weather['temp'] as double?) ?? temp;
-          if (weather.containsKey('aqi')) aqi = (weather['aqi'] as int?) ?? aqi;
-          commuteSafety = 70 + Random().nextInt(25);
-          _generateMockAlerts();
-        });
-      }).catchError((_) {
-        // fallback
-        setState(() {
-          temp = (26 + Random().nextInt(6)).toDouble();
-          aqi = 60 + Random().nextInt(60);
-          commuteSafety = 70 + Random().nextInt(25);
-          _generateMockAlerts();
-        });
-      });
-    } else {
+  void _refreshData() async {
+    // Use real data for refresh
+    final pos = await LocationService.getCurrentPosition();
+    if (pos != null) {
+      _lastLat = pos.latitude;
+      _lastLon = pos.longitude;
+      final weather =
+          await WeatherService.getWeatherData(pos.latitude, pos.longitude);
+      final aqiData =
+          await WeatherService.getAQIData(pos.latitude, pos.longitude);
+      final safetyScore = await CommuteService.calculateSafetyScore(
+          pos.latitude, pos.longitude);
+      final realAlerts =
+          await CommuteService.getRealAlerts(pos.latitude, pos.longitude);
+
       setState(() {
-        temp = (26 + Random().nextInt(6)).toDouble();
-        aqi = 60 + Random().nextInt(60);
-        commuteSafety = 70 + Random().nextInt(25);
-        _generateMockAlerts();
+        temp = weather != null
+            ? (weather['main']['temp'] as num).toDouble()
+            : 25.0;
+        aqi = aqiData != null ? (aqiData['aqi'] as num).toInt() : 50;
+        commuteSafety = safetyScore;
+        commuteAlerts = realAlerts
+            .map((alert) => CommuteAlert(
+                  title: alert['title'],
+                  description: alert['description'],
+                  time: alert['time'],
+                  type: _getAlertTypeFromString(alert['type']),
+                ))
+            .toList();
       });
     }
   }
 
+  AlertType _getAlertTypeFromString(String type) {
+    switch (type) {
+      case 'weather':
+        return AlertType.weather;
+      case 'traffic':
+        return AlertType.traffic;
+      case 'safety':
+        return AlertType.safety;
+      default:
+        return AlertType.weather;
+    }
+  }
+
   void _openQuickActions() {
-    CommuteQuickActions.show(context);
+    CommuteQuickActions.show(
+        context, _destinationLat, _destinationLon, _destinationAddress);
+  }
+
+  void _onDestinationChanged(double? lat, double? lon, String? address) {
+    setState(() {
+      _destinationLat = lat;
+      _destinationLon = lon;
+      _destinationAddress = address;
+    });
   }
 
   @override
@@ -139,7 +189,7 @@ class _CommuteDashboardState extends State<CommuteDashboard> {
               aqi: aqi,
             ),
             const SizedBox(height: 12),
-            const CommuteRoutePlanner(),
+            CommuteRoutePlanner(onDestinationChanged: _onDestinationChanged),
             const SizedBox(height: 12),
             CommuteSafetyCard(score: commuteSafety),
             const SizedBox(height: 14),

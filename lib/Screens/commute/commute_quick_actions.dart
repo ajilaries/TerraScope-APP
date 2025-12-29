@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import '../../Services/commute_service.dart';
+import '../../Services/location_service.dart';
 
 class CommuteQuickActions {
-  static Future<void> show(BuildContext context) async {
+  static Future<void> show(BuildContext context, double? destLat,
+      double? destLon, String? destAddress) async {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
@@ -27,9 +30,7 @@ class CommuteQuickActions {
                 subtitle: "Next train & route schedule",
                 onTap: () {
                   Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Metro Timings — demo")),
-                  );
+                  _showRealMetroTimings(context, destLat, destLon, destAddress);
                 },
               ),
               const SizedBox(height: 10),
@@ -41,9 +42,7 @@ class CommuteQuickActions {
                 subtitle: "Live bus arrival & delays",
                 onTap: () {
                   Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Bus Status — demo")),
-                  );
+                  _showRealBusStatus(context, destLat, destLon, destAddress);
                 },
               ),
               const SizedBox(height: 10),
@@ -55,9 +54,7 @@ class CommuteQuickActions {
                 subtitle: "Auto/Taxi/OLA/UBER approx fare",
                 onTap: () {
                   Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Cab Fare — demo")),
-                  );
+                  _showRealCabFare(context, destLat, destLon, destAddress);
                 },
               ),
               const SizedBox(height: 10),
@@ -69,9 +66,8 @@ class CommuteQuickActions {
                 subtitle: "Slow / Moderate / Heavy traffic",
                 onTap: () {
                   Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Traffic Report — demo")),
-                  );
+                  _showRealTrafficDensity(
+                      context, destLat, destLon, destAddress);
                 },
               ),
 
@@ -103,7 +99,8 @@ class CommuteQuickActions {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+                Text(title,
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
                 const SizedBox(height: 3),
                 Text(subtitle, style: TextStyle(color: Colors.grey.shade600)),
               ],
@@ -113,5 +110,154 @@ class CommuteQuickActions {
         ],
       ),
     );
+  }
+
+  static void _showRealMetroTimings(BuildContext context, double? destLat,
+      double? destLon, String? destAddress) async {
+    // Use destination coordinates if available, otherwise current location
+    final lat =
+        destLat ?? (await LocationService.getCurrentPosition())?.latitude;
+    final lon =
+        destLon ?? (await LocationService.getCurrentPosition())?.longitude;
+
+    if (lat != null && lon != null) {
+      final data = await CommuteService.getMetroTimings(lat, lon);
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(
+              "Metro Timings ${destAddress != null ? 'to $destAddress' : 'at Current Location'}"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: data.containsKey('nextTrainAluva')
+                ? [
+                    Text("Next train to Aluva: ${data['nextTrainAluva']}"),
+                    Text(
+                        "Next train to Fort Kochi: ${data['nextTrainFortKochi']}"),
+                    Text("Frequency: ${data['frequency']}"),
+                  ]
+                : [
+                    Text(data['nextTrain'] ?? 'No metro service available'),
+                  ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text("OK"),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  static void _showRealBusStatus(BuildContext context, double? destLat,
+      double? destLon, String? destAddress) async {
+    // Use destination coordinates if available, otherwise current location
+    final lat =
+        destLat ?? (await LocationService.getCurrentPosition())?.latitude;
+    final lon =
+        destLon ?? (await LocationService.getCurrentPosition())?.longitude;
+
+    if (lat != null && lon != null) {
+      final data = await CommuteService.getBusStatus(lat, lon);
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(
+              "Bus Status ${destAddress != null ? 'to $destAddress' : 'at Current Location'}"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: data.containsKey('bus15C')
+                ? [
+                    Text("Location: ${data['location']}"),
+                    Text("Bus 15C: ${data['bus15C']}"),
+                    Text("Bus 12A: ${data['bus12A']}"),
+                    Text("Bus 8B: ${data['bus8B']}"),
+                  ]
+                : [
+                    Text(data['status'] ?? 'No bus data available'),
+                    if (data.containsKey('location'))
+                      Text("Location: ${data['location']}"),
+                    if (data.containsKey('nextBus'))
+                      Text("Next bus: ${data['nextBus']}"),
+                  ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text("OK"),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  static void _showRealCabFare(BuildContext context, double? destLat,
+      double? destLon, String? destAddress) async {
+    final pos = await LocationService.getCurrentPosition();
+    if (pos != null) {
+      // Use destination coordinates if available, otherwise assume 5km away
+      final finalDestLat = destLat ?? pos.latitude + 0.045; // approx 5km
+      final finalDestLon = destLon ?? pos.longitude + 0.045;
+      final data = await CommuteService.getCabFareEstimate(
+          pos.latitude, pos.longitude, finalDestLat, finalDestLon);
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(
+              "Cab Fare Estimate ${destAddress != null ? 'to $destAddress' : 'for 5km trip'}"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text("Auto Rickshaw: ${data['autoRickshaw']}"),
+              Text("Uber/Ola Mini: ${data['uberOlaMini']}"),
+              Text("Uber/Ola Sedan: ${data['uberOlaSedan']}"),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text("OK"),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  static void _showRealTrafficDensity(BuildContext context, double? destLat,
+      double? destLon, String? destAddress) async {
+    // Use destination coordinates if available, otherwise current location
+    final lat =
+        destLat ?? (await LocationService.getCurrentPosition())?.latitude;
+    final lon =
+        destLon ?? (await LocationService.getCurrentPosition())?.longitude;
+
+    if (lat != null && lon != null) {
+      final data = await CommuteService.getTrafficDensity(lat, lon);
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(
+              "Traffic Density ${destAddress != null ? 'to $destAddress' : 'at Current Location'}"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text("Current Traffic: ${data['density']}"),
+              Text("Current Speed: ${data['currentSpeed']}"),
+              Text("Free Flow Speed: ${data['freeFlowSpeed']}"),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text("OK"),
+            ),
+          ],
+        ),
+      );
+    }
   }
 }
