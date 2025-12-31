@@ -1,4 +1,12 @@
-enum EmergencyContactType { police, ambulance, fire, family, friend, custom }
+enum EmergencyContactType {
+  police,
+  ambulance,
+  fire,
+  family,
+  friend,
+  work,
+  custom
+}
 
 class EmergencyContact {
   final String id;
@@ -29,6 +37,8 @@ class EmergencyContact {
         return '👨‍👩‍👧';
       case EmergencyContactType.friend:
         return '👥';
+      case EmergencyContactType.work:
+        return '💼';
       case EmergencyContactType.custom:
         return '📞';
     }
