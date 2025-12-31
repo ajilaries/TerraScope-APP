@@ -43,15 +43,14 @@ class _PanicScreenState extends State<PanicScreen> {
 
       // 3️⃣ Get emergency contact from shared preferences
       final prefs = await SharedPreferences.getInstance();
-      final emergencyContact = prefs.getString('emergency_contact') ??
-          ""; // Default fallback
+      final emergencyContact =
+          prefs.getString('emergency_contact') ?? ""; // Default fallback
 
       // Send alert to emergency contact
       final String testPhoneNumber =
           emergencyContact; // Use saved emergency contact
 
-      int alertsSent = 0;
-      int alertsFailed = 0;
+      bool alertSent = false;
 
       try {
         // Send SMS to your own number for testing
@@ -61,22 +60,20 @@ class _PanicScreenState extends State<PanicScreen> {
 
         if (await canLaunchUrl(smsUri)) {
           await launchUrl(smsUri, mode: LaunchMode.externalApplication);
-          alertsSent++;
+          alertSent = true;
           debugPrint("Test alert sent to: $testPhoneNumber");
         } else {
           // Fallback: try without body parameter
           final fallbackUri = Uri.parse('sms:$testPhoneNumber');
           if (await canLaunchUrl(fallbackUri)) {
             await launchUrl(fallbackUri, mode: LaunchMode.externalApplication);
-            alertsSent++;
+            alertSent = true;
             debugPrint("Fallback SMS sent to: $testPhoneNumber (without body)");
           } else {
-            alertsFailed++;
             debugPrint("Could not launch SMS app - both URI formats failed");
           }
         }
       } catch (e) {
-        alertsFailed++;
         debugPrint("Failed to send test alert: $e");
       }
 
@@ -87,7 +84,7 @@ class _PanicScreenState extends State<PanicScreen> {
       );
 
       // 5️⃣ Update status message
-      if (alertsSent > 0) {
+      if (alertSent) {
         setState(() {
           statusMessage = "Test alert sent to your phone number!\n"
               "Check your SMS app for the emergency message.";
