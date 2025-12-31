@@ -3,6 +3,9 @@ import '../models/saftey_status.dart';
 import '../models/emergency_contact.dart';
 import '../models/safety_alert.dart';
 import '../Services/saftey_service.dart';
+import '../Services/weather_services.dart';
+import '../Services/location_service.dart';
+import 'dart:async';
 
 class SafetyProvider extends ChangeNotifier {
   bool _isSafetyModeEnabled = false;
@@ -11,6 +14,7 @@ class SafetyProvider extends ChangeNotifier {
   List<SafetyAlert> _safetyHistory = [];
   bool _isLoading = false;
   String? _errorMessage;
+  Timer? _safetyUpdateTimer;
 
   // Getters
   bool get isSafetyModeEnabled => _isSafetyModeEnabled;
@@ -43,26 +47,61 @@ class SafetyProvider extends ChangeNotifier {
     _isSafetyModeEnabled = value;
     if (value) {
       await checkCurrentSafety();
+      _startPeriodicSafetyUpdates();
+    } else {
+      _stopPeriodicSafetyUpdates();
     }
     notifyListeners();
   }
 
-  // Check current safety status
+  // Check current safety status with real weather data
   Future<void> checkCurrentSafety({
-    double rainMm = 0,
-    double windSpeed = 0,
-    int visibility = 1000,
-    double temperature = 25,
-    int humidity = 60,
+    double? rainMm,
+    double? windSpeed,
+    int? visibility,
+    double? temperature,
+    int? humidity,
   }) async {
     _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
     try {
+      // Get current location
+      final position = await LocationService.getCurrentPosition();
+      if (position == null) {
+        throw Exception(
+            'Unable to get current location. Please check location permissions.');
+      }
+
+      // Fetch real weather data
+      final weatherData = await WeatherService.getCurrentWeather(
+          position.latitude, position.longitude);
+      if (weatherData == null) {
+        throw Exception(
+            'Unable to fetch weather data. Please check internet connection.');
+      }
+
+      // Parse weather data
+      final parsedWeather = WeatherService.parseWeatherData(weatherData);
+
+      // Use real weather data or fallback to provided/default values
+      final actualRainMm =
+          rainMm ?? (parsedWeather['rainMm'] as num).toDouble();
+      final actualWindSpeed =
+          windSpeed ?? (parsedWeather['windSpeed'] as num).toDouble();
+      final actualVisibility =
+          visibility ?? (parsedWeather['visibility'] as int);
+      final actualTemperature =
+          temperature ?? (parsedWeather['temperature'] as num).toDouble();
+      final actualHumidity = humidity ?? (parsedWeather['humidity'] as int);
+
       _currentStatus = SafetyService.checkSafety(
-        rainMm: rainMm,
-        windSpeed: windSpeed,
-        visibility: visibility,
-        temperature: temperature,
-        humidity: humidity,
+        rainMm: actualRainMm,
+        windSpeed: actualWindSpeed,
+        visibility: actualVisibility,
+        temperature: actualTemperature,
+        humidity: actualHumidity,
       );
 
       // Add to history if safety mode is on
@@ -73,10 +112,10 @@ class SafetyProvider extends ChangeNotifier {
             level: _currentStatus!.level,
             message: _currentStatus!.message,
             timestamp: DateTime.now(),
-            rainMm: rainMm,
-            windSpeed: windSpeed,
-            visibility: visibility,
-            temperature: temperature,
+            rainMm: actualRainMm,
+            windSpeed: actualWindSpeed,
+            visibility: actualVisibility,
+            temperature: actualTemperature,
           ),
         );
 
@@ -147,6 +186,22 @@ class SafetyProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Start periodic safety updates (every 5 minutes)
+  void _startPeriodicSafetyUpdates() {
+    _stopPeriodicSafetyUpdates(); // Cancel any existing timer
+    _safetyUpdateTimer = Timer.periodic(const Duration(minutes: 5), (timer) {
+      if (_isSafetyModeEnabled) {
+        checkCurrentSafety();
+      }
+    });
+  }
+
+  // Stop periodic safety updates
+  void _stopPeriodicSafetyUpdates() {
+    _safetyUpdateTimer?.cancel();
+    _safetyUpdateTimer = null;
+  }
+
   // Get safety score (0-100)
   int getSafetyScore() {
     if (_currentStatus == null) return 100;
@@ -159,5 +214,12 @@ class SafetyProvider extends ChangeNotifier {
       case HazardLevel.danger:
         return 20;
     }
+  }
+
+  // Dispose method to clean up resources
+  @override
+  void dispose() {
+    _stopPeriodicSafetyUpdates();
+    super.dispose();
   }
 }
