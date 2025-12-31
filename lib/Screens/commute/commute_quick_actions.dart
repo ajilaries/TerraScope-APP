@@ -22,8 +22,6 @@ class CommuteQuickActions {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 20),
-
-              // Metro Timings
               _actionTile(
                 icon: Icons.subway,
                 title: "Metro Timings",
@@ -34,8 +32,6 @@ class CommuteQuickActions {
                 },
               ),
               const SizedBox(height: 10),
-
-              // Bus Status
               _actionTile(
                 icon: Icons.directions_bus,
                 title: "Bus Status",
@@ -46,8 +42,6 @@ class CommuteQuickActions {
                 },
               ),
               const SizedBox(height: 10),
-
-              // Cab Fare Estimate
               _actionTile(
                 icon: Icons.local_taxi,
                 title: "Cab Fare Estimate",
@@ -58,8 +52,6 @@ class CommuteQuickActions {
                 },
               ),
               const SizedBox(height: 10),
-
-              // Traffic Report
               _actionTile(
                 icon: Icons.traffic,
                 title: "Traffic Density",
@@ -70,7 +62,26 @@ class CommuteQuickActions {
                       context, destLat, destLon, destAddress);
                 },
               ),
-
+              const SizedBox(height: 10),
+              _actionTile(
+                icon: Icons.subway,
+                title: "Nearest Metro",
+                subtitle: "Find closest metro station",
+                onTap: () {
+                  Navigator.pop(context);
+                  _showNearestMetro(context);
+                },
+              ),
+              const SizedBox(height: 10),
+              _actionTile(
+                icon: Icons.directions_bus,
+                title: "Nearest Bus Stop",
+                subtitle: "Find closest bus stop",
+                onTap: () {
+                  Navigator.pop(context);
+                  _showNearestBusStop(context);
+                },
+              ),
               const SizedBox(height: 20),
             ],
           ),
@@ -112,152 +123,221 @@ class CommuteQuickActions {
     );
   }
 
+  // ===================== METRO =====================
   static void _showRealMetroTimings(BuildContext context, double? destLat,
       double? destLon, String? destAddress) async {
-    // Use destination coordinates if available, otherwise current location
-    final lat =
-        destLat ?? (await LocationService.getCurrentPosition())?.latitude;
-    final lon =
-        destLon ?? (await LocationService.getCurrentPosition())?.longitude;
+    final pos = await LocationService.getCurrentPosition();
+    if (pos == null) return;
 
-    if (lat != null && lon != null) {
-      final data = await CommuteService.getMetroTimings(lat, lon);
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: Text(
-              "Metro Timings ${destAddress != null ? 'to $destAddress' : 'at Current Location'}"),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: data.containsKey('nextTrainAluva')
-                ? [
-                    Text("Next train to Aluva: ${data['nextTrainAluva']}"),
-                    Text(
-                        "Next train to Fort Kochi: ${data['nextTrainFortKochi']}"),
-                    Text("Frequency: ${data['frequency']}"),
-                  ]
-                : [
-                    Text(data['nextTrain'] ?? 'No metro service available'),
-                  ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text("OK"),
-            ),
-          ],
-        ),
-      );
-    }
+    final data = await CommuteService.getMetroTimings(
+      pos.latitude,
+      pos.longitude,
+      destLat ?? pos.latitude,
+      destLon ?? pos.longitude,
+    );
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(
+            "Metro Timings ${destAddress != null ? 'to $destAddress' : ''}"),
+        content: data.isNotEmpty
+            ? Column(
+                mainAxisSize: MainAxisSize.min,
+                children: data.entries
+                    .map((e) => Text("${e.key}: ${e.value}"))
+                    .toList(),
+              )
+            : const Text("No metro service available"),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text("OK"))
+        ],
+      ),
+    );
   }
 
+  // ===================== BUS =====================
   static void _showRealBusStatus(BuildContext context, double? destLat,
       double? destLon, String? destAddress) async {
-    // Use destination coordinates if available, otherwise current location
-    final lat =
-        destLat ?? (await LocationService.getCurrentPosition())?.latitude;
-    final lon =
-        destLon ?? (await LocationService.getCurrentPosition())?.longitude;
+    final pos = await LocationService.getCurrentPosition();
+    if (pos == null) return;
 
-    if (lat != null && lon != null) {
-      final data = await CommuteService.getBusStatus(lat, lon);
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: Text(
-              "Bus Status ${destAddress != null ? 'to $destAddress' : 'at Current Location'}"),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: data.containsKey('bus15C')
-                ? [
-                    Text("Location: ${data['location']}"),
-                    Text("Bus 15C: ${data['bus15C']}"),
-                    Text("Bus 12A: ${data['bus12A']}"),
-                    Text("Bus 8B: ${data['bus8B']}"),
-                  ]
-                : [
-                    Text(data['status'] ?? 'No bus data available'),
-                    if (data.containsKey('location'))
-                      Text("Location: ${data['location']}"),
-                    if (data.containsKey('nextBus'))
-                      Text("Next bus: ${data['nextBus']}"),
-                  ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text("OK"),
-            ),
-          ],
-        ),
-      );
-    }
+    final data = await CommuteService.getBusStatus(
+      pos.latitude,
+      pos.longitude,
+      destLat ?? pos.latitude,
+      destLon ?? pos.longitude,
+    );
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title:
+            Text("Bus Status ${destAddress != null ? 'to $destAddress' : ''}"),
+        content: data.isNotEmpty
+            ? Column(
+                mainAxisSize: MainAxisSize.min,
+                children: data.entries
+                    .map((e) => Text("${e.key}: ${e.value}"))
+                    .toList(),
+              )
+            : const Text("No bus service available"),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text("OK"))
+        ],
+      ),
+    );
   }
 
+  // ===================== CAB =====================
   static void _showRealCabFare(BuildContext context, double? destLat,
       double? destLon, String? destAddress) async {
     final pos = await LocationService.getCurrentPosition();
-    if (pos != null) {
-      // Use destination coordinates if available, otherwise assume 5km away
-      final finalDestLat = destLat ?? pos.latitude + 0.045; // approx 5km
-      final finalDestLon = destLon ?? pos.longitude + 0.045;
-      final data = await CommuteService.getCabFareEstimate(
-          pos.latitude, pos.longitude, finalDestLat, finalDestLon);
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: Text(
-              "Cab Fare Estimate ${destAddress != null ? 'to $destAddress' : 'for 5km trip'}"),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text("Auto Rickshaw: ${data['autoRickshaw']}"),
-              Text("Uber/Ola Mini: ${data['uberOlaMini']}"),
-              Text("Uber/Ola Sedan: ${data['uberOlaSedan']}"),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text("OK"),
-            ),
-          ],
+    if (pos == null) return;
+
+    final data = await CommuteService.getCabFareEstimate(
+      pos.latitude,
+      pos.longitude,
+      destLat ?? pos.latitude + 0.05,
+      destLon ?? pos.longitude + 0.05,
+    );
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(
+            "Cab Fare Estimate ${destAddress != null ? 'to $destAddress' : ''}"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children:
+              data.entries.map((e) => Text("${e.key}: ${e.value}")).toList(),
         ),
-      );
-    }
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text("OK"))
+        ],
+      ),
+    );
   }
 
+  // ===================== TRAFFIC =====================
   static void _showRealTrafficDensity(BuildContext context, double? destLat,
       double? destLon, String? destAddress) async {
-    // Use destination coordinates if available, otherwise current location
-    final lat =
-        destLat ?? (await LocationService.getCurrentPosition())?.latitude;
-    final lon =
-        destLon ?? (await LocationService.getCurrentPosition())?.longitude;
+    final pos = await LocationService.getCurrentPosition();
+    if (pos == null) return;
 
-    if (lat != null && lon != null) {
-      final data = await CommuteService.getTrafficDensity(lat, lon);
+    final data = await CommuteService.getTrafficDensity(
+      pos.latitude,
+      pos.longitude,
+      destLat ?? pos.latitude + 0.05,
+      destLon ?? pos.longitude + 0.05,
+    );
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(
+            "Traffic Density ${destAddress != null ? 'to $destAddress' : ''}"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children:
+              data.entries.map((e) => Text("${e.key}: ${e.value}")).toList(),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text("OK"))
+        ],
+      ),
+    );
+  }
+
+  // ===================== NEAREST METRO =====================
+  static void _showNearestMetro(BuildContext context) async {
+    final pos = await LocationService.getCurrentPosition();
+    if (pos == null) {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: Text(
-              "Traffic Density ${destAddress != null ? 'to $destAddress' : 'at Current Location'}"),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text("Current Traffic: ${data['density']}"),
-              Text("Current Speed: ${data['currentSpeed']}"),
-              Text("Free Flow Speed: ${data['freeFlowSpeed']}"),
-            ],
-          ),
+          title: const Text("Error"),
+          content: const Text("Unable to get current location"),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text("OK"),
-            ),
+                onPressed: () => Navigator.pop(ctx), child: const Text("OK"))
           ],
         ),
       );
+      return;
     }
+
+    final nearestMetro =
+        await CommuteService.getNearestMetro(pos.latitude, pos.longitude);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Nearest Metro Station"),
+        content: nearestMetro != null
+            ? Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text("Name: ${nearestMetro['name']}"),
+                  const SizedBox(height: 8),
+                  Text("Lat: ${nearestMetro['lat']}"),
+                  Text("Lon: ${nearestMetro['lon']}"),
+                ],
+              )
+            : const Text("No metro station found nearby"),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text("OK"))
+        ],
+      ),
+    );
+  }
+
+  // ===================== NEAREST BUS STOP =====================
+  static void _showNearestBusStop(BuildContext context) async {
+    final pos = await LocationService.getCurrentPosition();
+    if (pos == null) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text("Error"),
+          content: const Text("Unable to get current location"),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx), child: const Text("OK"))
+          ],
+        ),
+      );
+      return;
+    }
+
+    final nearestBus =
+        await CommuteService.getNearestBusStop(pos.latitude, pos.longitude);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Nearest Bus Stop"),
+        content: nearestBus != null
+            ? Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text("Name: ${nearestBus['name']}"),
+                  const SizedBox(height: 8),
+                  Text("Lat: ${nearestBus['lat']}"),
+                  Text("Lon: ${nearestBus['lon']}"),
+                ],
+              )
+            : const Text("No bus stop found nearby"),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text("OK"))
+        ],
+      ),
+    );
   }
 }

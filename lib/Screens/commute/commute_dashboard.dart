@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import '../../Services/location_service.dart';
 import 'commute_weather_mini.dart';
@@ -8,6 +7,134 @@ import 'commute_route_preview.dart';
 import 'commute_saftey_card.dart';
 import '../../Services/weather_services.dart';
 import '../../Services/commute_service.dart';
+
+class NearestTransitCard extends StatefulWidget {
+  const NearestTransitCard({super.key});
+
+  @override
+  State<NearestTransitCard> createState() => _NearestTransitCardState();
+}
+
+class _NearestTransitCardState extends State<NearestTransitCard> {
+  Map<String, dynamic>? nearestMetro;
+  Map<String, dynamic>? nearestBus;
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNearestTransit();
+  }
+
+  Future<void> _loadNearestTransit() async {
+    final pos = await LocationService.getCurrentPosition();
+    if (pos != null) {
+      final metro =
+          await CommuteService.getNearestMetro(pos.latitude, pos.longitude);
+      final bus =
+          await CommuteService.getNearestBusStop(pos.latitude, pos.longitude);
+      setState(() {
+        nearestMetro = metro;
+        nearestBus = bus;
+        isLoading = false;
+      });
+    } else {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.directions_transit, color: Colors.indigo.shade700),
+                const SizedBox(width: 8),
+                const Text(
+                  "Nearest Transit",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (isLoading)
+              const Center(child: CircularProgressIndicator())
+            else
+              Row(
+                children: [
+                  Expanded(
+                    child: _transitItem(
+                      icon: Icons.subway,
+                      title: "Metro",
+                      name: nearestMetro?['name'] ?? "Not found",
+                      color: Colors.blue.shade600,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _transitItem(
+                      icon: Icons.directions_bus,
+                      title: "Bus",
+                      name: nearestBus?['name'] ?? "Not found",
+                      color: Colors.green.shade600,
+                    ),
+                  ),
+                ],
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _transitItem({
+    required IconData icon,
+    required String title,
+    required String name,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            name.length > 15 ? "${name.substring(0, 15)}..." : name,
+            style: TextStyle(
+              fontSize: 10,
+              color: Colors.grey.shade700,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class CommuteDashboard extends StatefulWidget {
   const CommuteDashboard({super.key});
@@ -21,8 +148,6 @@ class _CommuteDashboardState extends State<CommuteDashboard> {
   double temp = 0.0;
   int aqi = 0;
   int commuteSafety = 0;
-  double? _lastLat;
-  double? _lastLon;
   double? _destinationLat;
   double? _destinationLon;
   String? _destinationAddress;
@@ -40,8 +165,6 @@ class _CommuteDashboardState extends State<CommuteDashboard> {
     // Use real data from existing services
     final pos = await LocationService.getCurrentPosition();
     if (pos != null) {
-      _lastLat = pos.latitude;
-      _lastLon = pos.longitude;
       final place = await LocationService.getAddressFromCoordinates(
           pos.latitude, pos.longitude);
       final weather =
@@ -80,31 +203,10 @@ class _CommuteDashboardState extends State<CommuteDashboard> {
     }
   }
 
-// ✔️ Updated to CommuteAlert model
-  void _generateMockAlerts() {
-    commuteAlerts = [
-      CommuteAlert(
-        title: "Traffic congestion",
-        description:
-            "Heavy traffic near Vyttila Junction. Expect ~15 min delay.",
-        time: "Just now",
-        type: AlertType.traffic,
-      ),
-      CommuteAlert(
-        title: "Rain patch expected",
-        description: "Light rain expected between 5 PM – 6 PM.",
-        time: "5 mins ago",
-        type: AlertType.weather,
-      ),
-    ];
-  }
-
   void _refreshData() async {
     // Use real data for refresh
     final pos = await LocationService.getCurrentPosition();
     if (pos != null) {
-      _lastLat = pos.latitude;
-      _lastLon = pos.longitude;
       final weather =
           await WeatherService.getWeatherData(pos.latitude, pos.longitude);
       final aqiData =
@@ -188,6 +290,8 @@ class _CommuteDashboardState extends State<CommuteDashboard> {
               temp: temp,
               aqi: aqi,
             ),
+            const SizedBox(height: 12),
+            const NearestTransitCard(),
             const SizedBox(height: 12),
             CommuteRoutePlanner(onDestinationChanged: _onDestinationChanged),
             const SizedBox(height: 12),
