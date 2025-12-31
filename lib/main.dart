@@ -14,6 +14,7 @@ void main() async {
 
   //load the .env file
   await dotenv.load(fileName: ".env");
+  final googleApiKey = dotenv.env['GOOGLE_API_KEY'];
   //initialize firebase
 
   await Firebase.initializeApp(
