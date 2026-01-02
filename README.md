@@ -1,4 +1,4 @@
-# 🌍 TeraScope - Advanced Weather & Safety App
+# 🌍 TerraScope - Advanced Weather & Safety App
 
 **TeraScope Pro** is a comprehensive Flutter mobile application designed to provide real-time weather monitoring, environmental intelligence, and location-based services. The app features intelligent AI-powered predictions, farmer-specific agricultural insights, traveler safety tools, and commute optimization.
 
