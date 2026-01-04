@@ -274,15 +274,50 @@ class CommuteService {
     final key = dotenv.env['GOOGLE_MAPS_API_KEY'];
     if (key == null) return null;
 
-    final url = Uri.parse(
+    // First try with metro keyword
+    var url = Uri.parse(
       'https://maps.googleapis.com/maps/api/place/nearbysearch/json'
-      '?location=$lat,$lon&radius=1500&type=transit_station&keyword=metro&key=$key',
+      '?location=$lat,$lon&radius=2000&type=transit_station&keyword=metro&key=$key',
     );
 
-    final res = await http.get(url);
+    var res = await http.get(url);
     if (res.statusCode == 200) {
       final data = jsonDecode(res.body);
       if (data['results'] != null && data['results'].isNotEmpty) {
+        final stop = data['results'][0];
+        return {
+          'name': stop['name'],
+          'lat': stop['geometry']['location']['lat'],
+          'lon': stop['geometry']['location']['lng'],
+        };
+      }
+    }
+
+    // Fallback: search for any transit station without keyword
+    url = Uri.parse(
+      'https://maps.googleapis.com/maps/api/place/nearbysearch/json'
+      '?location=$lat,$lon&radius=2000&type=transit_station&key=$key',
+    );
+
+    res = await http.get(url);
+    if (res.statusCode == 200) {
+      final data = jsonDecode(res.body);
+      if (data['results'] != null && data['results'].isNotEmpty) {
+        // Filter results to find metro-like stations
+        final results = data['results'] as List;
+        for (final result in results) {
+          final name = result['name'].toString().toLowerCase();
+          if (name.contains('metro') ||
+              name.contains('subway') ||
+              name.contains('underground')) {
+            return {
+              'name': result['name'],
+              'lat': result['geometry']['location']['lat'],
+              'lon': result['geometry']['location']['lng'],
+            };
+          }
+        }
+        // If no metro found, return the first transit station
         final stop = data['results'][0];
         return {
           'name': stop['name'],
@@ -300,15 +335,50 @@ class CommuteService {
     final key = dotenv.env['GOOGLE_MAPS_API_KEY'];
     if (key == null) return null;
 
-    final url = Uri.parse(
+    // First try with bus keyword
+    var url = Uri.parse(
       'https://maps.googleapis.com/maps/api/place/nearbysearch/json'
-      '?location=$lat,$lon&radius=1500&type=transit_station&keyword=bus&key=$key',
+      '?location=$lat,$lon&radius=2000&type=transit_station&keyword=bus&key=$key',
     );
 
-    final res = await http.get(url);
+    var res = await http.get(url);
     if (res.statusCode == 200) {
       final data = jsonDecode(res.body);
       if (data['results'] != null && data['results'].isNotEmpty) {
+        final stop = data['results'][0];
+        return {
+          'name': stop['name'],
+          'lat': stop['geometry']['location']['lat'],
+          'lon': stop['geometry']['location']['lng'],
+        };
+      }
+    }
+
+    // Fallback: search for any transit station without keyword
+    url = Uri.parse(
+      'https://maps.googleapis.com/maps/api/place/nearbysearch/json'
+      '?location=$lat,$lon&radius=2000&type=transit_station&key=$key',
+    );
+
+    res = await http.get(url);
+    if (res.statusCode == 200) {
+      final data = jsonDecode(res.body);
+      if (data['results'] != null && data['results'].isNotEmpty) {
+        // Filter results to find bus-like stations
+        final results = data['results'] as List;
+        for (final result in results) {
+          final name = result['name'].toString().toLowerCase();
+          if (name.contains('bus') ||
+              name.contains('stop') ||
+              name.contains('station')) {
+            return {
+              'name': result['name'],
+              'lat': result['geometry']['location']['lat'],
+              'lon': result['geometry']['location']['lng'],
+            };
+          }
+        }
+        // If no bus stop found, return the first transit station
         final stop = data['results'][0];
         return {
           'name': stop['name'],

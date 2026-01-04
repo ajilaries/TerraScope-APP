@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
-import '../models/emergency_contact.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../models/emergency_contact.dart';
 
 class EmergencyContactCard extends StatelessWidget {
   final EmergencyContact contact;
+  final VoidCallback? onCall;
+  final VoidCallback? onMessage;
+  final VoidCallback? onEdit;
   final VoidCallback? onDelete;
   final VoidCallback? onCall;
   final VoidCallback? onMessage;
@@ -13,6 +16,9 @@ class EmergencyContactCard extends StatelessWidget {
   const EmergencyContactCard({
     super.key,
     required this.contact,
+    this.onCall,
+    this.onMessage,
+    this.onEdit,
     this.onDelete,
     this.onCall,
     this.onMessage,
@@ -188,6 +194,62 @@ class EmergencyContactCard extends StatelessWidget {
                 ),
               ),
             ],
+
+            // Action buttons
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                if (onCall != null)
+                  ElevatedButton.icon(
+                    onPressed: onCall,
+                    icon: const Icon(Icons.call, size: 16),
+                    label: const Text('Call'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                    ),
+                  ),
+                if (onMessage != null)
+                  ElevatedButton.icon(
+                    onPressed: onMessage,
+                    icon: const Icon(Icons.message, size: 16),
+                    label: const Text('Message'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                    ),
+                  ),
+                if (onEdit != null)
+                  ElevatedButton.icon(
+                    onPressed: onEdit,
+                    icon: const Icon(Icons.edit, size: 16),
+                    label: const Text('Edit'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                    ),
+                  ),
+                if (onSetPrimary != null)
+                  ElevatedButton.icon(
+                    onPressed: onSetPrimary,
+                    icon: const Icon(Icons.star, size: 16),
+                    label: const Text('Set Primary'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.purple,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                    ),
+                  ),
+              ],
+            ),
           ],
         ),
       ),

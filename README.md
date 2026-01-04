@@ -1,4 +1,4 @@
-# 🌍 TeraScope - Advanced Weather & Safety App
+# 🌍 TerraScope - Advanced Weather & Safety App
 
 **TeraScope Pro** is a comprehensive Flutter mobile application designed to provide real-time weather monitoring, environmental intelligence, and location-based services. The app features intelligent AI-powered predictions, farmer-specific agricultural insights, traveler safety tools, and commute optimization.
 
@@ -28,11 +28,22 @@
 - Location-based travel safety information
 - Weather impact on travel routes
 
-### 🚗 **Commute Mode**
+### 📅 **Daily Planner Mode**
 
-- Commute optimization based on weather conditions
-- Real-time traffic and weather integration
-- Safe departure time recommendations
+- Daily activity planning based on weather conditions
+- Real-time weather integration for outdoor activities
+- Safe timing recommendations for daily tasks
+- Weather-optimized scheduling for work and leisure
+
+### 🚨 **Safety Mode**
+
+- **Emergency Contacts Management** – Add, edit, and manage emergency contacts with quick dial functionality
+- **Real-time Safety Monitoring** – Continuous monitoring of user safety status based on location and environmental factors
+- **Safety Recommendations** – AI-driven safety suggestions and alerts based on weather, location, and user activity
+- **Firebase Cloud Messaging (FCM)** – Push notifications for safety alerts and emergency communications
+- **Offline Safety Features** – Emergency functionality available without internet connection
+- **Safety History & Status Tracking** – Log and review past safety incidents and current safety status
+- **Emergency Service Integration** – Direct access to emergency services and providers
 
 ### 🤖 **AI Predictions**
 
@@ -66,6 +77,7 @@
 | **Location**         | Geolocator, Geocoding               |
 | **Charts**           | FL Chart                            |
 | **Storage**          | Firebase Storage, SharedPreferences |
+
 <div align="center">
 
 <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=28&duration=3000&pause=800&color=3DDC84&center=true&vCenter=true&width=800&lines=TerraScope+🌍;Explore+Earth+%7C+Understand+Climate;Flutter-powered+Climate+Intelligence+App" />
@@ -89,11 +101,11 @@ TerraScope is a **Flutter-powered mobile app** that lets users explore and monit
 
 ## ✨ Highlights
 
-* 🚀 Fast, smooth Flutter UI
-* 📍 Smart location-based environmental data
-* ☁️ Real-time API-driven weather insights
-* 🎨 Minimal, modern design language
-* 🧩 Built to scale with advanced features
+- 🚀 Fast, smooth Flutter UI
+- 📍 Smart location-based environmental data
+- ☁️ Real-time API-driven weather insights
+- 🎨 Minimal, modern design language
+- 🧩 Built to scale with advanced features
 
 ---
 
@@ -117,33 +129,36 @@ TerraScope is a **Flutter-powered mobile app** that lets users explore and monit
 
 ### ✅ Current
 
-* 🏠 **Home Dashboard**
+- 🏠 **Home Dashboard**
   Displays essential weather & climate information at a glance
 
-* 📍 **Location-Based Data**
+- 📍 **Location-Based Data**
   Automatically fetches environmental stats for the user’s current location
 
-* ☁️ **Live API Integration**
+- ☁️ **Live API Integration**
   Real-time data such as:
 
-  * Temperature
-  * Humidity
-  * Weather conditions
-  * Air quality (API dependent)
+  - Temperature
+  - Humidity
+  - Weather conditions
+  - Air quality (API dependent)
 
-* 🎨 **Minimal UI/UX**
+- 🚨 **Safety Mode**
+  Comprehensive safety features including emergency contacts, real-time monitoring, and offline capabilities
+
+- 🎨 **Minimal UI/UX**
   Clean layouts, smooth animations, and responsive design
 
 ---
 
 ### 🔮 Planned Features
 
-* 📊 Interactive climate graphs & historical trends
-* 🌙 Dark mode support
-* ⭐ Favorite & saved locations
-* 📴 Offline mode for cached locations
-* 🔔 Climate anomaly alerts & notifications
-* 🗺️ Advanced maps & radar layers
+- 📊 Interactive climate graphs & historical trends
+- 🌙 Dark mode support
+- ⭐ Favorite & saved locations
+- 📴 Offline mode for cached locations
+- 🔔 Climate anomaly alerts & notifications
+- 🗺️ Advanced maps & radar layers
 
 ---
 
@@ -151,31 +166,23 @@ TerraScope is a **Flutter-powered mobile app** that lets users explore and monit
 
 ```
 lib/
-├── main.dart                 # App entry point & Firebase setup
 ├── Screens/                  # UI Screens
-│   ├── home_screen.dart      # Main dashboard
 │   ├── farmer/               # Farmer mode screens
 │   ├── traveler/             # Traveler mode screens
-│   ├── commute/              # Commute mode screens
+│   ├── daily_planner/        # Daily planner mode screens
+│   ├── saftey/               # Safety mode screens
 │   ├── ai_mode/              # AI prediction screens
-│   ├── radar_screen.dart     # Weather radar
-│   ├── anomalies_screen.dart # Anomaly detection
-│   └── settings_screen.dart  # User preferences
+│   └── radar/                # Weather radar and anomalies
 ├── Services/                 # API & Business Logic
-│   ├── weather_services.dart       # Weather data fetching
-│   ├── crop_service.dart           # Crop recommendations
-│   ├── soil_service.dart           # Soil analysis
-│   ├── ai_predict_service.dart     # AI predictions
-│   ├── anomaly_service.dart        # Anomaly detection
-│   ├── aqi_service.dart            # Air quality index
-│   ├── location_service.dart       # Location services
-│   ├── notification_service.dart   # Push notifications
-│   └── radar_service.dart          # Weather radar
+│   ├── weather/              # Weather-related services
+│   ├── crop/                 # Crop and soil services
+│   ├── ai/                   # AI prediction services
+│   ├── location/             # Location services
+│   ├── safety/               # Safety monitoring services
+│   ├── notification/         # Notification services
+│   └── auth/                 # Authentication services
 ├── models/                   # Data Models
-│   ├── weather_model.dart
-│   └── forecast_model.dart
 ├── providers/                # State Management
-│   └── mode_provider.dart    # Theme & mode switching
 ├── Widgets/                  # Reusable UI Components
 ├── pages/                    # Detailed pages
 ├── popups/                   # Dialog & popup components
@@ -257,6 +264,30 @@ lib/
 - Reverse geocoding for city name retrieval
 - Permission handling for location access
 
+### Safety Monitoring Service
+
+- Real-time safety status monitoring based on location and environmental data
+- Continuous background safety checks and alerts
+- Integration with emergency services for rapid response
+
+### Safety Recommendation Service
+
+- AI-driven safety suggestions based on weather, location, and user activity
+- Personalized safety alerts and recommendations
+- Risk assessment for various scenarios
+
+### FCM Service
+
+- Firebase Cloud Messaging for push notifications
+- Safety alerts and emergency notifications
+- Real-time communication for critical updates
+
+### Offline Service
+
+- Emergency functionality without internet connectivity
+- Cached safety data and offline emergency contacts
+- Background safety monitoring in offline mode
+
 ---
 
 ## 🎨 UI/UX Features
@@ -320,7 +351,7 @@ This project is licensed under the MIT License – see the LICENSE file for deta
 ## 👨‍💻 Author
 
 **Ajilaries**  
-[GitHub](https://github.com/ajilaries) | [Email](mailto:your-email@example.com)
+[GitHub](https://github.com/ajilaries) | [Email](ajilaries20@gmail.com)
 
 ---
 
