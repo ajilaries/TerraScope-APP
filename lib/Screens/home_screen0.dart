@@ -3,7 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:terra_scope_apk/Screens/farmer/farmer_result_screen.dart';
 import 'package:terra_scope_apk/popups/farmer_intro_popup.dart';
 import 'package:terra_scope_apk/Screens/traveler/traveler_dashboard.dart';
-import 'package:terra_scope_apk/Screens/commute/commute_dashboard.dart';
+
+import 'package:terra_scope_apk/Screens/daily_planner/daily_planner_dashboard.dart';
 import 'package:terra_scope_apk/providers/mode_provider.dart';
 import 'Saftey/saftey_mode_screen.dart';
 
@@ -108,10 +109,10 @@ class _HomeScreen0State extends State<HomeScreen0> {
                     mode: "care",
                   ),
                   modeCard(
-                    title: "Commute",
-                    icon: Icons.commute,
-                    color: Colors.blue,
-                    mode: "commute",
+                    title: "Daily Planner",
+                    icon: Icons.calendar_today,
+                    color: Colors.orange,
+                    mode: "daily_planner",
                   ),
                 ],
               ),
@@ -166,15 +167,20 @@ class _HomeScreen0State extends State<HomeScreen0> {
             context,
             MaterialPageRoute(builder: (_) => TravelerDashboard()),
           );
-        } else if (mode == "commute") {
+        } else if (mode == "daily_planner") {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => CommuteDashboard()),
+            MaterialPageRoute(builder: (_) => DailyPlannerDashboard()),
           );
         } else if (mode == "safety") {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => SafetyModeScreen()),
+          );
+        } else if (mode == "daily_planner") {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => DailyPlannerDashboard()),
           );
         } else {
           widget.onModeSelected(mode);

@@ -8,6 +8,9 @@ class EmergencyContactCard extends StatelessWidget {
   final VoidCallback? onMessage;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
+  final VoidCallback? onCall;
+  final VoidCallback? onMessage;
+  final VoidCallback? onEdit;
   final VoidCallback? onSetPrimary;
 
   const EmergencyContactCard({
@@ -17,6 +20,9 @@ class EmergencyContactCard extends StatelessWidget {
     this.onMessage,
     this.onEdit,
     this.onDelete,
+    this.onCall,
+    this.onMessage,
+    this.onEdit,
     this.onSetPrimary,
   });
 
