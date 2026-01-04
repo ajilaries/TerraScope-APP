@@ -114,17 +114,17 @@ class SafetyService {
       double rainMm, double windSpeed, int visibility) {
     int percentage = 100;
 
-    if (rainMm > 50)
+    if (rainMm > 50) {
       percentage -= 60;
-    else if (rainMm > 10) percentage -= 20;
+    } else if (rainMm > 10) percentage -= 20;
 
-    if (windSpeed > 40)
+    if (windSpeed > 40) {
       percentage -= 60;
-    else if (windSpeed > 20) percentage -= 20;
+    } else if (windSpeed > 20) percentage -= 20;
 
-    if (visibility < 200)
+    if (visibility < 200) {
       percentage -= 60;
-    else if (visibility < 500) percentage -= 25;
+    } else if (visibility < 500) percentage -= 25;
 
     return percentage.clamp(0, 100);
   }

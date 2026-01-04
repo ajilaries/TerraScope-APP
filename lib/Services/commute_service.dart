@@ -229,9 +229,9 @@ class CommuteService {
       final distanceKm = route['distanceKm'] as double;
       final avgSpeed = distanceKm / (durationSec / 3600);
       String density;
-      if (avgSpeed > 40)
+      if (avgSpeed > 40) {
         density = 'Light';
-      else if (avgSpeed > 20)
+      } else if (avgSpeed > 20)
         density = 'Moderate';
       else
         density = 'Heavy';
