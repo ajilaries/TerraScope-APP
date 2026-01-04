@@ -5,11 +5,19 @@ import 'package:url_launcher/url_launcher.dart';
 class EmergencyContactCard extends StatelessWidget {
   final EmergencyContact contact;
   final VoidCallback? onDelete;
+  final VoidCallback? onCall;
+  final VoidCallback? onMessage;
+  final VoidCallback? onEdit;
+  final VoidCallback? onSetPrimary;
 
   const EmergencyContactCard({
     super.key,
     required this.contact,
     this.onDelete,
+    this.onCall,
+    this.onMessage,
+    this.onEdit,
+    this.onSetPrimary,
   });
 
   Future<void> _makePhoneCall(String phoneNumber) async {
