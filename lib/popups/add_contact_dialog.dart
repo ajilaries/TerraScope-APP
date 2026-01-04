@@ -113,7 +113,7 @@ class _AddContactDialogState extends State<AddContactDialog> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<EmergencyContactType>(
-                value: _selectedType,
+                initialValue: _selectedType,
                 decoration: const InputDecoration(
                   labelText: 'Contact Type',
                   border: OutlineInputBorder(),
