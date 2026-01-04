@@ -7,6 +7,7 @@ class EmergencyContact {
   final String email;
   final EmergencyContactType type;
   final String? notes;
+  bool isPrimary;
 
   EmergencyContact({
     required this.id,
@@ -15,6 +16,7 @@ class EmergencyContact {
     required this.email,
     required this.type,
     this.notes,
+    this.isPrimary = false,
   });
 
   String get icon {
