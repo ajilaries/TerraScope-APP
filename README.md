@@ -28,11 +28,12 @@
 - Location-based travel safety information
 - Weather impact on travel routes
 
-### 🚗 **Commute Mode**
+### 📅 **Daily Planner Mode**
 
-- Commute optimization based on weather conditions
-- Real-time traffic and weather integration
-- Safe departure time recommendations
+- Daily activity planning based on weather conditions
+- Real-time weather integration for outdoor activities
+- Safe timing recommendations for daily tasks
+- Weather-optimized scheduling for work and leisure
 
 ### 🚨 **Safety Mode**
 
@@ -165,56 +166,27 @@ TerraScope is a **Flutter-powered mobile app** that lets users explore and monit
 
 ```
 lib/
-├── main.dart                 # App entry point & Firebase setup
 ├── Screens/                  # UI Screens
-│   ├── home_screen.dart      # Main dashboard
 │   ├── farmer/               # Farmer mode screens
 │   ├── traveler/             # Traveler mode screens
-│   ├── commute/              # Commute mode screens
+│   ├── daily_planner/        # Daily planner mode screens
 │   ├── saftey/               # Safety mode screens
 │   ├── ai_mode/              # AI prediction screens
-│   ├── radar_screen.dart     # Weather radar
-│   ├── anomalies_screen.dart # Anomaly detection
-│   ├── emergency_contacts_screen.dart # Emergency contacts management
-│   └── settings_screen.dart  # User preferences
+│   └── radar/                # Weather radar and anomalies
 ├── Services/                 # API & Business Logic
-│   ├── weather_services.dart             # Weather data fetching
-│   ├── crop_service.dart                 # Crop recommendations
-│   ├── soil_service.dart                 # Soil analysis
-│   ├── ai_predict_service.dart           # AI predictions
-│   ├── anomaly_service.dart              # Anomaly detection
-│   ├── aqi_service.dart                  # Air quality index
-│   ├── location_service.dart             # Location services
-│   ├── notification_service.dart         # Push notifications
-│   ├── radar_service.dart                # Weather radar
-│   ├── safety_monitoring_service.dart    # Real-time safety monitoring
-│   ├── safety_recommendation_service.dart # Safety recommendations
-│   ├── saftey_service.dart               # Safety services
-│   ├── fcm_service.dart                  # Firebase Cloud Messaging
-│   ├── offline_service.dart              # Offline functionality
-│   └── auth_service.dart                 # Authentication services
+│   ├── weather/              # Weather-related services
+│   ├── crop/                 # Crop and soil services
+│   ├── ai/                   # AI prediction services
+│   ├── location/             # Location services
+│   ├── safety/               # Safety monitoring services
+│   ├── notification/         # Notification services
+│   └── auth/                 # Authentication services
 ├── models/                   # Data Models
-│   ├── weather_model.dart
-│   ├── forecast_model.dart
-│   ├── safety_alert.dart
-│   ├── saftey_status.dart
-│   └── emergency_contact.dart
 ├── providers/                # State Management
-│   ├── mode_provider.dart    # Theme & mode switching
-│   ├── safety_provider.dart  # Safety state management
-│   └── emergency_provider.dart # Emergency contacts provider
 ├── Widgets/                  # Reusable UI Components
-│   ├── safety_history_card.dart
-│   ├── saftey_card.dart
-│   ├── detailed_safety_card.dart
-│   ├── emergency_contact_card.dart
-│   └── add_contact_dialog.dart
 ├── pages/                    # Detailed pages
 ├── popups/                   # Dialog & popup components
 ├── utils/                    # Utilities & helpers
-│   ├── safety_notification_manager.dart
-│   ├── safety_utils.dart
-│   └── background_helper.dart
 └── assets/                   # Images, JSON, and resources
 ```
 
@@ -379,7 +351,7 @@ This project is licensed under the MIT License – see the LICENSE file for deta
 ## 👨‍💻 Author
 
 **Ajilaries**  
-[GitHub](https://github.com/ajilaries) | [Email](mailto:your-email@example.com)
+[GitHub](https://github.com/ajilaries) | [Email](ajilaries20@gmail.com)
 
 ---
 
