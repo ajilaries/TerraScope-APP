@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/emergency_provider.dart';
 import '../models/emergency_contact.dart';
-import '../widgets/emergency_contact_card.dart';
-import '../widgets/add_contact_dialog.dart';
+import '../Widgets/emergency_contact_card.dart';
+import '../popups/add_contact_dialog.dart';
 
 class EmergencyContactsScreen extends StatefulWidget {
   const EmergencyContactsScreen({super.key});
