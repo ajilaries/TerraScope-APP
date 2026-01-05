@@ -18,11 +18,9 @@ class RadarScreen extends StatefulWidget {
 }
 
 class _RadarScreenState extends State<RadarScreen> {
-  final WeatherService _weatherService = WeatherService();
   late final MapController _mapController;
 
   bool _isLoading = true;
-  Map<String, dynamic>? _radarData;
   double _radarOpacity = 0.6;
   String _rainStatus = "No data";
 
@@ -37,13 +35,12 @@ class _RadarScreenState extends State<RadarScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final data = await _weatherService.getRadarData(widget.lat, widget.lon);
+      final data = await WeatherService.getRadarData(widget.lat, widget.lon);
 
-      final rain = data['hourly']?[0]?['rain']?['1h'] ?? 0.0;
+      final precipitation = data?['precipitation'] ?? 0.0;
 
       setState(() {
-        _radarData = data;
-        _rainStatus = _getRainStatus(rain);
+        _rainStatus = _getRainStatus(precipitation);
       });
 
       _mapController.move(

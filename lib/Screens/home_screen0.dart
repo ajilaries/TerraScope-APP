@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:terra_scope_apk/Screens/farmer/farmer_result_screen.dart';
 import 'package:terra_scope_apk/popups/farmer_intro_popup.dart';
 import 'package:terra_scope_apk/Screens/traveler/traveler_dashboard.dart';
-import 'package:terra_scope_apk/Screens/commute/commute_dashboard.dart';
+
+import 'package:terra_scope_apk/Screens/daily_planner/daily_planner_dashboard.dart';
+import 'package:terra_scope_apk/providers/mode_provider.dart';
+import 'Saftey/saftey_mode_screen.dart';
 
 class HomeScreen0 extends StatefulWidget {
   final Function(String) onModeSelected;
@@ -18,8 +22,9 @@ class _HomeScreen0State extends State<HomeScreen0> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Provider.of<ModeProvider>(context).isDarkMode;
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
+      backgroundColor: isDark ? Colors.black : Colors.grey.shade100,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -54,9 +59,13 @@ class _HomeScreen0State extends State<HomeScreen0> {
 
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: const Text(
+              child: Text(
                 "Choose Your Experience",
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.white : Colors.black,
+                ),
               ),
             ),
 
@@ -100,10 +109,10 @@ class _HomeScreen0State extends State<HomeScreen0> {
                     mode: "care",
                   ),
                   modeCard(
-                    title: "Commute",
-                    icon: Icons.commute,
-                    color: Colors.blue,
-                    mode: "commute",
+                    title: "Daily Planner",
+                    icon: Icons.calendar_today,
+                    color: Colors.teal,
+                    mode: "daily_planner",
                   ),
                 ],
               ),
@@ -124,6 +133,7 @@ class _HomeScreen0State extends State<HomeScreen0> {
     required String mode,
   }) {
     final bool isSelected = selectedMode == mode;
+    final isDark = Provider.of<ModeProvider>(context).isDarkMode;
 
     return GestureDetector(
       onTap: () {
@@ -152,39 +162,48 @@ class _HomeScreen0State extends State<HomeScreen0> {
               },
             ),
           );
-        } 
-        else if (mode == "traveller") {
+        } else if (mode == "traveller") {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => TravelerDashboard()),
           );
-        } 
-        else if (mode == "commute") {
+        } else if (mode == "daily_planner") {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => CommuteDashboard()),
+            MaterialPageRoute(builder: (_) => DailyPlannerDashboard()),
           );
-        } 
-        else {
+        } else if (mode == "safety") {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => SafetyModeScreen()),
+          );
+        } else if (mode == "daily_planner") {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => DailyPlannerDashboard()),
+          );
+        } else {
           widget.onModeSelected(mode);
         }
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isDark ? Colors.white10 : Colors.white,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: isSelected ? color : Colors.transparent,
             width: 2.5,
           ),
-          boxShadow: const [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 8,
-              offset: Offset(0, 3),
-            ),
-          ],
+          boxShadow: isDark
+              ? null
+              : const [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 8,
+                    offset: Offset(0, 3),
+                  ),
+                ],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -193,9 +212,10 @@ class _HomeScreen0State extends State<HomeScreen0> {
             const SizedBox(height: 12),
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w600,
+                color: isDark ? Colors.white : Colors.black,
               ),
             ),
           ],

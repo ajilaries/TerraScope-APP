@@ -1,0 +1,17 @@
+- [ ] Create daily_planner_dashboard.dart with main dashboard structure
+- [ ] Implement Best Time Windows card (calculates optimal times based on weather)
+- [ ] Create Next Weather Countdown widget
+- [ ] Implement Quick Task Advisor with task selection
+- [ ] Add Today's Risk Score calculation
+- [ ] Create What to Carry suggestions based on weather
+- [ ] Implement Daily Summary card
+- [ ] # Update navigation in home_screen0.dart to open Daily Planner dashboard
+- [x] Create lib/Screens/daily_planner/ directory
+- [x] Create daily_planner_dashboard.dart with main dashboard structure
+- [x] Implement Best Time Windows card (calculates optimal times based on weather)
+- [x] Create Next Weather Countdown widget
+- [x] Implement Quick Task Advisor with task selection
+- [x] Add Today's Risk Score calculation
+- [x] Create What to Carry suggestions based on weather
+- [x] Implement Daily Summary card
+- [x] Update navigation in home_screen0.dart to open Daily Planner dashboard

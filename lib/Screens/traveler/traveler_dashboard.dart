@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'dart:async';
-import 'dart:math';
-
-import 'traveler_alerts.dart';
-import 'traveler_hourly_route.dart';
-import 'traveler_saftey_card.dart';
+import '../../Services/location_service.dart';
+import '../../Services/weather_services.dart';
+import '../../Services/aqi_service.dart';
 import 'traveler_quick_actions.dart';
-import 'traveler_sos_share.dart';
+import 'traveler_alerts.dart';
+import 'traveler_saftey_card.dart';
+import 'traveler_hourly_route.dart';
+import 'traveler_map_preview.dart';
 
 class TravelerDashboard extends StatefulWidget {
   const TravelerDashboard({super.key});
@@ -16,195 +16,304 @@ class TravelerDashboard extends StatefulWidget {
 }
 
 class _TravelerDashboardState extends State<TravelerDashboard> {
-  // ------------------------
-  // STATE VARIABLES
-  // ------------------------
-  String currentPlace = "Kochi, Kerala";
-  double currentTemp = 28.0;
-  double currentHumidity = 72;
-  double currentWind = 10.5;
-  int currentAQI = 85;
-
-  final TextEditingController _fromCtrl = TextEditingController(text: "Current Location");
-  final TextEditingController _toCtrl = TextEditingController(text: "Alleppey, Kerala");
-
-  bool _planning = false;
-  bool shareLocation = false;
-
-  int travelSafetyScore = 92;
-
-  List<Map<String, String>> hourlyRoute = [];
+  String currentPlace = "Loading...";
+  double temp = 0.0;
+  int aqi = 50;
+  bool isLoading = true;
+  List<Map<String, dynamic>> hourlyForecast = [];
+  Map<String, dynamic>? currentWeather;
+  int travelerSafety = 75;
   List<Map<String, String>> routeAlerts = [];
 
-  // ------------------------
-  // LIFECYCLE
-  // ------------------------
   @override
   void initState() {
     super.initState();
-    _generateMockData();
+    _initTraveler();
   }
 
-  // ------------------------
-  // MOCK DATA GENERATION
-  // ------------------------
-  void _generateMockData() {
-    hourlyRoute = List.generate(8, (i) {
-      final hour = "${6 + i}:00";
-      final weather = (i % 3 == 0) ? "Heavy rain" : (i % 2 == 0 ? "Cloudy" : "Clear");
-      final temp = "${26 + Random().nextInt(6)}°C";
-      return {"hour": hour, "weather": weather, "temp": temp};
-    });
+  Future<void> _initTraveler() async {
+    try {
+      final pos = await LocationService.getCurrentPosition();
+      if (pos != null) {
+        final weatherData =
+            await WeatherService.getCurrentWeather(pos.latitude, pos.longitude);
+        final forecastData = await WeatherService.getWeatherForecast(
+            pos.latitude, pos.longitude);
+        final aqiService = AQIService();
+        final aqiData = await aqiService.getAQI(pos.latitude, pos.longitude);
+        final alerts =
+            await WeatherService.getAnomalies(pos.latitude, pos.longitude);
 
-    routeAlerts = [
-      {
-        "title": "Heavy rain forecast on NH 66",
-        "desc": "Moderate to heavy rainfall expected between 2 PM - 5 PM on your route."
-      },
-      {
-        "title": "Low visibility patch",
-        "desc": "Fog reported near km 34-40. Drive slow and use fog lights."
+        if (weatherData != null) {
+          setState(() {
+            currentPlace = weatherData['name'] ?? "Unknown Location";
+            temp = (weatherData['main']['temp'] as num).toDouble();
+            currentWeather = WeatherService.parseWeatherData(weatherData);
+          });
+        }
+
+        if (forecastData != null && forecastData['list'] != null) {
+          setState(() {
+            hourlyForecast = (forecastData['list'] as List)
+                .take(24)
+                .map((item) => WeatherService.parseWeatherData(item))
+                .toList();
+          });
+        }
+
+        if (aqiData != null) {
+          setState(() {
+            aqi = aqiData;
+          });
+        }
+
+        // Calculate traveler safety score
+        setState(() {
+          travelerSafety = _calculateTravelerSafety();
+          routeAlerts = (alerts is List<dynamic>)
+              ? alerts
+                  .map((alert) => {
+                        'title':
+                            (alert)['event'] ?? 'Alert',
+                        'description':
+                            (alert)['description'] ??
+                                'Description',
+                        'time': 'Now',
+                        'type': 'weather'
+                      })
+                  .cast<Map<String, String>>()
+                  .toList()
+              : [];
+        });
+      } else {
+        setState(() {
+          currentPlace = "Location unavailable";
+          temp = 25.0;
+          aqi = 50;
+          travelerSafety = 50;
+        });
       }
-    ];
+    } catch (e) {
+      setState(() {
+        currentPlace = "Error loading location";
+        temp = 25.0;
+        aqi = 50;
+        travelerSafety = 50;
+      });
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 
-  // ------------------------
-  // PLAN ROUTE FUNCTION
-  // ------------------------
-  Future<void> _planRoute() async {
+  Future<void> _refreshData() async {
     setState(() {
-      _planning = true;
-      hourlyRoute.clear();
-      routeAlerts.clear();
+      isLoading = true;
     });
-
-    await Future.delayed(const Duration(seconds: 1));
-    setState(() {
-      _generateMockData();
-      travelSafetyScore = routeAlerts.isNotEmpty ? max(60, travelSafetyScore - 12) : 95;
-      _planning = false;
-    });
+    await _initTraveler();
   }
 
-  // ------------------------
-  // SOS / SHARE HANDLERS
-  // ------------------------
-  void _onSOS() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("SOS triggered — demo (backend not added)")),
+  int _calculateTravelerSafety() {
+    int score = 70; // Base score for travelers
+
+    if (currentWeather != null) {
+      final currentTemp = temp;
+      final wind = currentWeather!['windSpeed'] as double;
+      final rain = currentWeather!['rainMm'] as double;
+      final visibility = currentWeather!['visibility'] as double;
+
+      // Temperature risk for travel
+      if (currentTemp < 5 || currentTemp > 35) {
+        score -= 20;
+      } else if (currentTemp < 10 || currentTemp > 30) {
+        score -= 10;
+      }
+
+      // Wind risk
+      if (wind > 25) {
+        score -= 25;
+      } else if (wind > 15) {
+        score -= 15;
+      }
+
+      // Rain risk
+      if (rain > 10) {
+        score -= 20;
+      } else if (rain > 2) {
+        score -= 10;
+      }
+
+      // Visibility risk
+      if (visibility < 1000) {
+        score -= 15;
+      } else if (visibility < 5000) {
+        score -= 5;
+      }
+    }
+
+    // AQI risk
+    if (aqi > 150) {
+      score -= 25;
+    } else if (aqi > 100) {
+      score -= 15;
+    } else if (aqi > 50) {
+      score -= 5;
+    }
+
+    return score.clamp(0, 100);
+  }
+
+  void _openQuickActions() {
+    TravelerQuickActions.show(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.grey.shade100,
+      appBar: AppBar(
+        title: const Text("Traveler Mode"),
+        centerTitle: true,
+        backgroundColor: Colors.green.shade700,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded),
+            onPressed: _refreshData,
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _openQuickActions,
+        backgroundColor: Colors.green.shade700,
+        child: const Icon(Icons.flash_on_rounded, size: 28),
+      ),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Current Weather Header
+                  _buildCurrentWeatherHeader(),
+                  const SizedBox(height: 20),
+
+                  // Feature Cards
+                  TravelerSafetyCard(score: travelerSafety),
+                  const SizedBox(height: 16),
+                  _buildTravelRiskAssessment(),
+                  const SizedBox(height: 16),
+                  _buildBestTravelTimes(),
+                  const SizedBox(height: 16),
+                  TravelerHourlyRoute(hourlyRoute: _getHourlyRoute()),
+                  const SizedBox(height: 16),
+                  TravelerAlerts(routeAlerts: routeAlerts),
+                  const SizedBox(height: 16),
+                  _buildTravelTips(),
+                ],
+              ),
+            ),
     );
   }
 
-  void _toggleShare() {
-    setState(() => shareLocation = !shareLocation);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(shareLocation ? "Share enabled" : "Share disabled")),
-    );
-  }
-
-  // ------------------------
-  // TRAVEL TOOLS PANEL
-  // ------------------------
-  void _showTravelTools() => TravelerQuickActions.show(context);
-
-  // ------------------------
-  // WEATHER CARD WIDGET
-  // ------------------------
-  Widget _weatherCard() {
+  Widget _buildCurrentWeatherHeader() {
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      elevation: 2,
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
+            Icon(Icons.location_on, color: Colors.green.shade700),
+            const SizedBox(width: 8),
             Expanded(
               child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(currentPlace,
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 6),
-                    Text("Feels like ${currentTemp.toStringAsFixed(0)}°C • Humidity $currentHumidity%"),
-                    const SizedBox(height: 6),
-                    Text("Wind ${currentWind.toStringAsFixed(1)} km/h • AQI $currentAQI"),
-                  ]),
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    currentPlace,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    "${temp.toStringAsFixed(1)}°C • AQI: $aqi",
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
             ),
-            Column(
-              children: [
-                CircleAvatar(
-                  radius: 28,
-                  backgroundColor: Colors.indigo.shade50,
-                  child: Text("${currentTemp.toStringAsFixed(0)}°",
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            if (currentWeather != null)
+              Text(
+                currentWeather!['description'].toString().toUpperCase(),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.green.shade700,
+                  fontWeight: FontWeight.w500,
                 ),
-                const SizedBox(height: 8),
-                ElevatedButton.icon(
-                  onPressed: () => TravelerAlerts.show(context, routeAlerts),
-                  icon: const Icon(Icons.notifications_active),
-                  label: const Text("Alerts"),
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red.shade400),
-                ),
-              ],
-            )
+              ),
           ],
         ),
       ),
     );
   }
 
-  // ------------------------
-  // PLAN ROUTE CARD WIDGET
-  // ------------------------
-  Widget _planRouteCard() {
+  Widget _buildTravelRiskAssessment() {
+    final riskLevel = _getTravelRiskLevel(travelerSafety);
+    final riskColor = _getRiskColor(riskLevel);
+
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      elevation: 2,
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text("Plan Route", style: TextStyle(fontWeight: FontWeight.w700)),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _fromCtrl,
-              decoration: const InputDecoration(labelText: "From", prefixIcon: Icon(Icons.my_location)),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _toCtrl,
-              decoration: const InputDecoration(labelText: "To", prefixIcon: Icon(Icons.place)),
+            Row(
+              children: [
+                Icon(Icons.warning, color: riskColor),
+                const SizedBox(width: 8),
+                const Text(
+                  "Travel Risk Assessment",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ],
             ),
             const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: _planning ? null : _planRoute,
-                    icon: _planning
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                          )
-                        : const Icon(Icons.alt_route),
-                    label: Text(_planning ? "Planning..." : "Plan Route"),
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo.shade300),
+                  child: LinearProgressIndicator(
+                    value: travelerSafety / 100,
+                    backgroundColor: Colors.grey.shade300,
+                    valueColor: AlwaysStoppedAnimation<Color>(riskColor),
                   ),
                 ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: () {
-                    final t = _fromCtrl.text;
-                    _fromCtrl.text = _toCtrl.text;
-                    _toCtrl.text = t;
-                  },
-                  child: const Icon(Icons.swap_horiz),
-                )
+                const SizedBox(width: 12),
+                Text(
+                  "$travelerSafety/100",
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: riskColor,
+                  ),
+                ),
               ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              riskLevel,
+              style: TextStyle(
+                fontSize: 14,
+                color: riskColor,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ],
         ),
@@ -212,57 +321,200 @@ class _TravelerDashboardState extends State<TravelerDashboard> {
     );
   }
 
-  // ------------------------
-  // BUILD
-  // ------------------------
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Traveler Mode"),
-        centerTitle: true,
-        backgroundColor: Colors.indigo.shade300,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () {
-              setState(() {
-                currentTemp = (25 + Random().nextInt(8)).toDouble();
-                currentAQI = 50 + Random().nextInt(80);
-                _generateMockData();
-                travelSafetyScore = 80 + Random().nextInt(20);
-              });
-            },
-          )
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.indigo.shade300,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        onPressed: _showTravelTools,
-        child: const Icon(Icons.grid_view_rounded, size: 28),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(14),
+  Widget _buildBestTravelTimes() {
+    final bestTimes = _getBestTravelTimes();
+
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _weatherCard(),
-            _planRouteCard(),
-            TravelerSafetyCard(score: travelSafetyScore),
-            TravelerHourlyRoute(hourlyRoute: hourlyRoute),
-            TravelerAlerts(routeAlerts: routeAlerts, onViewAll: () {
-              TravelerAlerts.show(context, routeAlerts);
-            }),
-            const SizedBox(height: 10),
-            TravelerSOSShare(
-              shareLocation: shareLocation,
-              onSOS: _onSOS,
-              onToggleShare: _toggleShare,
+            Row(
+              children: [
+                Icon(Icons.access_time, color: Colors.green.shade700),
+                const SizedBox(width: 8),
+                const Text(
+                  "Best Travel Times",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
+            if (bestTimes.isNotEmpty)
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: bestTimes
+                    .map((time) => Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.green.shade100,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: Colors.green.shade300),
+                          ),
+                          child: Text(
+                            time,
+                            style: TextStyle(
+                              color: Colors.green.shade800,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ))
+                    .toList(),
+              )
+            else
+              const Text(
+                "No optimal travel times found for today",
+                style: TextStyle(color: Colors.grey),
+              ),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildTravelTips() {
+    final tips = _getTravelTips();
+
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.tips_and_updates, color: Colors.blue.shade700),
+                const SizedBox(width: 8),
+                const Text(
+                  "Travel Tips",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: tips
+                  .map((tip) => Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade100,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.blue.shade300),
+                        ),
+                        child: Text(
+                          tip,
+                          style: TextStyle(
+                            color: Colors.blue.shade800,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ))
+                  .toList(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Map<String, String>> _getHourlyRoute() {
+    if (hourlyForecast.isEmpty) {
+      return [
+        {'time': 'Now', 'temp': '${temp.toInt()}°C', 'weather': 'Clear'},
+        {'time': '1h', 'temp': '${(temp + 1).toInt()}°C', 'weather': 'Cloudy'},
+        {'time': '2h', 'temp': '${(temp + 2).toInt()}°C', 'weather': 'Rain'},
+      ];
+    }
+
+    return hourlyForecast.take(6).map((forecast) {
+      final time =
+          DateTime.now().add(Duration(hours: hourlyForecast.indexOf(forecast)));
+      return {
+        'time': '${time.hour.toString().padLeft(2, '0')}:00',
+        'temp': '${forecast['temperature'].toStringAsFixed(0)}°C',
+        'weather': forecast['description'].toString(),
+      };
+    }).toList();
+  }
+
+  List<String> _getBestTravelTimes() {
+    if (hourlyForecast.isEmpty) return [];
+
+    final bestTimes = <String>[];
+    final now = DateTime.now();
+
+    for (int i = 0; i < hourlyForecast.length && bestTimes.length < 4; i++) {
+      final forecast = hourlyForecast[i];
+      final temp = forecast['temperature'] as double;
+      final rain = forecast['rainMm'] as double;
+      final wind = forecast['windSpeed'] as double;
+
+      if (temp >= 10 && temp <= 30 && rain < 2.0 && wind < 15) {
+        final time = now.add(Duration(hours: i));
+        bestTimes.add("${time.hour.toString().padLeft(2, '0')}:00");
+      }
+    }
+
+    return bestTimes;
+  }
+
+  List<String> _getTravelTips() {
+    final tips = <String>["Check weather before departure"];
+
+    if (currentWeather != null) {
+      final currentTemp = temp;
+      final rain = currentWeather!['rainMm'] as double;
+      final wind = currentWeather!['windSpeed'] as double;
+
+      if (currentTemp < 15) {
+        tips.add("Dress warmly for cold weather");
+      } else if (currentTemp > 25) {
+        tips.add("Stay hydrated in hot weather");
+      }
+
+      if (rain > 2) {
+        tips.add("Carry rain protection");
+      }
+
+      if (wind > 10) {
+        tips.add("Be cautious of strong winds");
+      }
+
+      if (aqi > 50) {
+        tips.add("Wear mask for poor air quality");
+      }
+    }
+
+    return tips.take(6).toList();
+  }
+
+  String _getTravelRiskLevel(int score) {
+    if (score >= 80) return "Very Safe";
+    if (score >= 60) return "Safe";
+    if (score >= 40) return "Moderate Risk";
+    return "High Risk";
+  }
+
+  Color _getRiskColor(String level) {
+    switch (level) {
+      case "Very Safe":
+        return Colors.green;
+      case "Safe":
+        return Colors.blue;
+      case "Moderate Risk":
+        return Colors.orange;
+      default:
+        return Colors.red;
+    }
   }
 }

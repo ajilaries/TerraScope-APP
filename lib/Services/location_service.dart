@@ -1,114 +1,169 @@
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
-import 'package:terra_scope_apk/Services/notification_service.dart';
-import 'package:terra_scope_apk/Services/device_service.dart';
 
 class LocationService {
-  String? _deviceToken;
-
-  String? get deviceToke => _deviceToken;
-  set deviceToken(String? token) {
-    _deviceToken = token;
-  }
-
-  /// 👉 Fast + accurate location fetch
-  Future<Position> getCurrentPositionFast() async {
-    if (!await Geolocator.isLocationServiceEnabled()) {
-      throw Exception("Location services are disabled.");
-    }
-
+  static Future<bool> requestPermission() async {
     LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
-
       if (permission == LocationPermission.denied) {
-        throw Exception("Location permissions are denied.");
+        return false;
       }
     }
 
     if (permission == LocationPermission.deniedForever) {
-      throw Exception(
-          "Location permissions are permanently denied. Enable them in settings.");
+      return false;
     }
 
-    Position? lastPos = await Geolocator.getLastKnownPosition();
-
-    Future<Position> accuratePos = Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.bestForNavigation,
-      timeLimit: const Duration(seconds: 10),
-    );
-
-    return lastPos ?? await accuratePos;
+    return true;
   }
 
-  /// 👉 Convert lat/lon → city + state + district + country (MOST IMPORTANT)
-  Future<Map<String, String>> getAdministrativeDetails(
+  static Future<Position?> getCurrentPosition() async {
+    try {
+      final hasPermission = await requestPermission();
+      if (!hasPermission) return null;
+
+      LocationSettings locationSettings = LocationSettings(
+        accuracy: LocationAccuracy.best,
+        distanceFilter: 0,
+        timeLimit: const Duration(seconds: 30), // Timeout after 30 seconds
+      );
+
+      // Try to get position with best accuracy first
+      try {
+        return await Geolocator.getCurrentPosition(
+          locationSettings: locationSettings,
+        );
+      } catch (e) {
+        // Fallback to platform-specific settings based on platform
+        try {
+          // Try Android settings first (works on both platforms but optimized for Android)
+          AndroidSettings androidSettings = AndroidSettings(
+            accuracy: LocationAccuracy.best,
+            distanceFilter: 0, // Get all location updates
+            forceLocationManager: true, // Use GPS over network
+            intervalDuration: const Duration(seconds: 1),
+            foregroundNotificationConfig: const ForegroundNotificationConfig(
+              notificationText:
+                  "TerraScope is getting your location for safety monitoring",
+              notificationTitle: "Location Access",
+              enableWakeLock: true,
+            ),
+          );
+          return await Geolocator.getCurrentPosition(
+            locationSettings: androidSettings,
+          );
+        } catch (androidError) {
+          try {
+            // Try Apple settings
+            AppleSettings appleSettings = AppleSettings(
+              accuracy: LocationAccuracy.best,
+              activityType: ActivityType.fitness,
+              distanceFilter: 0,
+              pauseLocationUpdatesAutomatically: false,
+              showBackgroundLocationIndicator: true,
+            );
+            return await Geolocator.getCurrentPosition(
+              locationSettings: appleSettings,
+            );
+          } catch (appleError) {
+            // Final fallback with updated settings
+            LocationSettings fallbackSettings = LocationSettings(
+              accuracy: LocationAccuracy.high,
+            );
+            return await Geolocator.getCurrentPosition(
+              locationSettings: fallbackSettings,
+            );
+          }
+        }
+      }
+    } catch (e) {
+      print('Error getting location: $e');
+      return null;
+    }
+  }
+
+  static Future<String?> getAddressFromCoordinates(
       double lat, double lon) async {
     try {
       List<Placemark> placemarks = await placemarkFromCoordinates(lat, lon);
-
-      final place = placemarks.first;
-
-      return {
-        "city": place.locality ?? "Unknown",
-        "district": place.subAdministrativeArea ?? "Unknown",
-        "state": place.administrativeArea ?? "Unknown",
-        "country": place.country ?? "Unknown",
-      };
+      if (placemarks.isNotEmpty) {
+        Placemark place = placemarks[0];
+        return '${place.locality}, ${place.country}';
+      }
+      return null;
     } catch (e) {
-      print("❌ Error getting admin details: $e");
-      return {
-        "city": "Unknown",
-        "district": "Unknown",
-        "state": "Unknown",
-        "country": "Unknown",
-      };
+      print('Error getting address: $e');
+      return null;
     }
   }
 
-  /// 👉 Friendly wrapper for HomeScreen2
-  Future<Map<String, dynamic>> getCurrentLocation() async {
-    Position pos = await getCurrentPositionFast();
-
-    final place = await getAdministrativeDetails(pos.latitude, pos.longitude);
-
-    return {
-      "latitude": pos.latitude,
-      "longitude": pos.longitude,
-      "city": place["city"],
-      "district": place["district"],
-      "state": place["state"],
-      "country": place["country"],
-    };
+  static Future<List<Location>?> getCoordinatesFromAddress(
+      String address) async {
+    try {
+      return await locationFromAddress(address);
+    } catch (e) {
+      print('Error getting coordinates: $e');
+      return null;
+    }
   }
 
-  /// 👉 Simple city+country lookup (old method, still used somewhere)
-  Future<Map<String, String>> getLocationNameFromCoordinates(
+  static Stream<Position> getPositionStream() {
+    // Enhanced position stream for safety monitoring
+    LocationSettings locationSettings = LocationSettings(
+      accuracy: LocationAccuracy.best,
+      distanceFilter: 50, // Update every 50 meters
+      timeLimit: const Duration(seconds: 30),
+    );
+
+    return Geolocator.getPositionStream(
+      locationSettings: locationSettings,
+    );
+  }
+
+  static Future<Position?> getCurrentLocation() async {
+    return await getCurrentPosition();
+  }
+
+  static Future<String?> getLocationNameFromCoordinates(
+      double lat, double lon) async {
+    return await getAddressFromCoordinates(lat, lon);
+  }
+
+  static Future<Position?> getCurrentPositionFast() async {
+    try {
+      final hasPermission = await requestPermission();
+      if (!hasPermission) return null;
+
+      LocationSettings locationSettings = LocationSettings(
+        accuracy: LocationAccuracy.medium,
+      );
+      return await Geolocator.getCurrentPosition(
+        locationSettings: locationSettings,
+      );
+    } catch (e) {
+      print('Error getting fast location: $e');
+      return null;
+    }
+  }
+
+  static Future<Map<String, String>?> getAdministrativeDetails(
       double lat, double lon) async {
     try {
-      return await getAdministrativeDetails(lat, lon);
+      List<Placemark> placemarks = await placemarkFromCoordinates(lat, lon);
+      if (placemarks.isNotEmpty) {
+        Placemark place = placemarks[0];
+        return {
+          'country': place.country ?? '',
+          'state': place.administrativeArea ?? '',
+          'city': place.locality ?? '',
+          'district': place.subAdministrativeArea ?? '',
+        };
+      }
+      return null;
     } catch (e) {
-      print("Error: $e");
-      return {"city": "Unknown", "country": "Unknown"};
-    }
-  }
-
-  /// 👉 Update backend
-  Future<void> updateDeviceLocationToBackend() async {
-    try {
-      final loc = await getCurrentLocation();
-
-      double lat = loc["latitude"];
-      double lon = loc["longitude"];
-
-      String? token = await NotificationService.getDeviceToken();
-      token ??= await DeviceService.getDeviceToken();
-
-      await DeviceService.registerDevice(lat: lat, lon: lon);
-
-      print("✅ Device location updated to backend (token: $token)");
-    } catch (e) {
-      print("❌ Failed to update device location: $e");
+      print('Error getting administrative details: $e');
+      return null;
     }
   }
 }

@@ -1,339 +1,313 @@
-import 'dart:async';
 import 'dart:convert';
-import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:intl/intl.dart';
-import 'package:weather_icons/weather_icons.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class WeatherService {
-  static const String backendUrl = "http://10.0.2.2:8000/update_weather";
+  static const String _baseUrl = 'https://api.openweathermap.org/data/2.5';
 
-  /// ✅ In-memory cache for snappy UI
-  Map<String, dynamic>? _cache;
-  DateTime? _cacheTime;
-  Future<Map<String, dynamic>>? _pendingFetch;
-  final Duration cacheAlive = const Duration(seconds: 20);
-
-  /// ✅ Fetch real weather from backend
-  Future<Map<String, dynamic>> getWeatherData({
-    required String token,
-    required double lat,
-    required double lon,
-  }) async {
-    if (_cache != null &&
-        _cacheTime != null &&
-        DateTime.now().difference(_cacheTime!) < cacheAlive) {
-      return _cache!;
-    }
-
-    if (_pendingFetch != null) return await _pendingFetch!;
-
-    _pendingFetch = _fetchFromBackend(token: token, lat: lat, lon: lon);
-
+  static Future<Map<String, dynamic>?> getCurrentWeather(
+      double lat, double lon) async {
     try {
-      final data = await _pendingFetch!;
-      _pendingFetch = null;
-      _cache = data;
-      _cacheTime = DateTime.now();
-      return data;
-    } catch (e) {
-      _pendingFetch = null;
-      if (_cache != null) return _cache!;
-      rethrow;
-    }
-  }
+      final apiKey = dotenv.env['OPENWEATHER_API_KEY'];
+      if (apiKey == null) return null;
 
-  Future<Map<String, dynamic>> _fetchFromBackend({
-    required String token,
-    required double lat,
-    required double lon,
-  }) async {
-    final response = await http
-        .post(
-          Uri.parse(backendUrl),
-          headers: {"Content-Type": "application/json"},
-          body: jsonEncode({"token": token, "lat": lat, "lon": lon}),
-        )
-        .timeout(const Duration(seconds: 5));
-
-    if (response.statusCode != 200) {
-      throw Exception("Failed to fetch weather: ${response.body}");
-    }
-
-    final data = json.decode(response.body);
-    if (data['status'] != 'success') {
-      throw Exception("Backend error: ${data['message']}");
-    }
-
-    final weather = data['weather'];
-    final temp = (weather["temperature"] ?? 0).toDouble();
-    final rain = (weather["rainfall"] ?? 0).toDouble();
-    final humidity = (weather["humidity"] ?? 50).toDouble();
-    final wind = (weather["wind_speed"] ?? 3.5).toDouble();
-    final condition =
-        rain > 0 ? "Rain" : temp >= 30 ? "Clear" : "Cloudy";
-
-    return {
-      "temperature": temp,
-      "rainfall": rain,
-      "humidity": humidity,
-      "wind_speed": wind,
-      "condition": condition,
-    };
-  }
-
-  /// ✅ Weather icon helper
-  IconData getWeatherIcon(String c) {
-    final lc = c.toLowerCase();
-    if (lc.contains("rain")) return WeatherIcons.rain;
-    if (lc.contains("cloud")) return WeatherIcons.cloudy;
-    if (lc.contains("clear")) return WeatherIcons.day_sunny;
-    return WeatherIcons.na;
-  }
-
-  /// ✅ Background image helper
-  String getBackgroundImage(String condition) {
-    final c = condition.toLowerCase();
-    if (c.contains("rain")) return "lib/assets/images/rainy.jpeg";
-    if (c.contains("cloud")) return "lib/assets/images/cloudy.jpeg";
-    if (c.contains("clear")) return "lib/assets/images/sunny.jpeg";
-    return "lib/assets/images/default.jpg";
-  }
-
-  /// ✅ 7-day forecast (mocked for now)
-Future<List<Map<String, dynamic>>> getSevenDayForecast({
-  required double lat,
-  required double lon,
-}) async {
-  final response = await http.post(
-    Uri.parse("http://10.0.2.2:8000/forecast"),
-    headers: {"Content-Type": "application/json"},
-    body: jsonEncode({"lat": lat, "lon": lon}),
-  );
-
-  if (response.statusCode != 200) {
-    throw Exception("Failed to fetch forecast");
-  }
-
-  final data = jsonDecode(response.body);
-  final List daily = data["daily"];
-
-  return daily.map((d) {
-    return {
-      "day": DateFormat('EEE').format(
-        DateTime.fromMillisecondsSinceEpoch(d["dt"] * 1000),
-      ),
-      "temp": d["temp"]["day"],
-      "min": d["temp"]["min"],
-      "max": d["temp"]["max"],
-      "humidity": d["humidity"],
-      "wind": d["wind_speed"],
-      "description": d["weather"][0]["main"],
-      "icon": getWeatherIcon(d["weather"][0]["main"]),
-    };
-  }).toList();
-}
-
-
-  /// ✅ Hourly forecast (mocked for now)
-Future<List<Map<String, dynamic>>> getHourlyForecast({
-  required double lat,
-  required double lon,
-}) async {
-  final response = await http.post(
-    Uri.parse("http://10.0.2.2:8000/forecast"),
-    headers: {"Content-Type": "application/json"},
-    body: jsonEncode({"lat": lat, "lon": lon}),
-  );
-
-  final data = jsonDecode(response.body);
-  final List hourly = data["hourly"];
-
-  return hourly.take(24).map((h) {
-    return {
-      "time": DateFormat('HH:mm').format(
-        DateTime.fromMillisecondsSinceEpoch(h["dt"] * 1000),
-      ),
-      "temp": h["temp"],
-      "humidity": h["humidity"],
-      "wind": h["wind_speed"],
-      "rain": h["rain"]?["1h"] ?? 0,
-      "icon": getWeatherIcon(h["weather"][0]["main"]),
-    };
-  }).toList();
-}
-
-  /// ✅ AQI Data
-  Future<Map<String, dynamic>> getAQIData({
-    required double lat,
-    required double lon,
-  }) async {
-    try {
-      final url = "http://10.0.2.2:8000/get_aqi";
-      final response = await http
-          .post(
-            Uri.parse(url),
-            headers: {"Content-Type": "application/json"},
-            body: jsonEncode({"lat": lat, "lon": lon}),
-          )
-          .timeout(const Duration(seconds: 5));
-
-      if (response.statusCode != 200) {
-        throw Exception("Failed to fetch AQI");
-      }
-
-      final data = jsonDecode(response.body);
-      return {"aqi": data["aqi"] ?? "--"};
-    } catch (e) {
-      print("Error fetching AQI: $e");
-      return {"aqi": "--"};
-    }
-  }
-
-  /// ✅ Anomalies (backend + fallback)
-  Future<List<Map<String, dynamic>>> getAnomalies(double lat, double lon) async {
-    try {
-      final anomalyUrl = Uri.parse("http://10.0.2.2:8000/get_anomalies");
-      final resp = await http
-          .post(
-            anomalyUrl,
-            headers: {"Content-Type": "application/json"},
-            body: jsonEncode({"lat": lat, "lon": lon}),
-          )
-          .timeout(const Duration(seconds: 5));
-
-      if (resp.statusCode == 200) {
-        final decoded = jsonDecode(resp.body);
-        if (decoded is Map &&
-            decoded['status'] == 'success' &&
-            decoded['anomalies'] != null) {
-          final list = <Map<String, dynamic>>[];
-          for (final item in decoded['anomalies']) {
-            list.add({
-              "type": item['type'] ?? "Alert",
-              "forecast": item['forecast']?.toString() ?? "",
-              "time": item['time']?.toString() ??
-                  DateTime.now().toIso8601String(),
-            });
-          }
-          if (list.isNotEmpty) return list;
-        }
-      }
-    } catch (e) {
-      print("getAnomalies backend error/fallback: $e");
-    }
-
-    // fallback local logic...
-    try {
-      final now =
-          await getWeatherData(token: "dummy_token", lat: lat, lon: lon);
-      final temp = (now['temperature'] ?? 0).toDouble();
-      final rain = (now['rainfall'] ?? 0).toDouble();
-      final humidity = (now['humidity'] ?? 0).toDouble();
-      final wind = (now['wind_speed'] ?? 0).toDouble();
-
-      final List<Map<String, dynamic>> results = [];
-
-      if (rain > 20) {
-        results.add({
-          "type": "Heavy Rain",
-          "forecast":
-              "High chance of heavy rain (${rain.toStringAsFixed(1)} mm)",
-          "time": DateTime.now().toLocal().toString(),
-        });
-      } else if (rain > 0) {
-        results.add({
-          "type": "Rain",
-          "forecast": "Light to moderate rain expected",
-          "time": DateTime.now().toLocal().toString(),
-        });
-      }
-
-      if (temp >= 40) {
-        results.add({
-          "type": "Heat Alert",
-          "forecast": "Extreme temperature: ${temp.toStringAsFixed(1)}°C",
-          "time": DateTime.now().toLocal().toString(),
-        });
-      } else if (temp >= 35) {
-        results.add({
-          "type": "High Temp",
-          "forecast": "Hot day: ${temp.toStringAsFixed(1)}°C",
-          "time": DateTime.now().toLocal().toString(),
-        });
-      } else if (temp <= 2) {
-        results.add({
-          "type": "Cold Alert",
-          "forecast": "Very low temperature: ${temp.toStringAsFixed(1)}°C",
-          "time": DateTime.now().toLocal().toString(),
-        });
-      }
-
-      if (wind >= 60) {
-        results.add({
-          "type": "Wind Storm",
-          "forecast": "Very strong winds: ${wind.toStringAsFixed(1)} km/h",
-          "time": DateTime.now().toLocal().toString(),
-        });
-      } else if (wind >= 30) {
-        results.add({
-          "type": "Strong Wind",
-          "forecast": "Strong winds expected: ${wind.toStringAsFixed(1)} km/h",
-          "time": DateTime.now().toLocal().toString(),
-        });
-      }
-
-      if (humidity >= 95) {
-        results.add({
-          "type": "High Humidity",
-          "forecast": "Very humid conditions: ${humidity.toStringAsFixed(0)}%",
-          "time": DateTime.now().toLocal().toString(),
-        });
-      }
-
-      if (results.isEmpty) {
-        results.add({
-          "type": "No Anomalies",
-          "forecast": "No significant anomalies detected right now.",
-          "time": DateTime.now().toLocal().toString(),
-        });
-      }
-
-      return results;
-    } catch (e) {
-      print("getAnomalies fallback error: $e");
-      return [
-        {
-          "type": "Unknown",
-          "forecast": "Could not determine anomalies.",
-          "time": DateTime.now().toLocal().toString(),
-        },
-      ];
-    }
-  }
-
-  /// ✅ Radar / Weather Map Layer
-  Future<Map<String, dynamic>> getRadarData(double lat, double lon) async {
-    const String apiKey = "a5465304ed7d80bb3a52de825be8e7";
-
-    final url = Uri.parse(
-      "https://api.openweathermap.org/data/2.5/weather?lat=$lat&lon=$lon&appid=$apiKey",
-    );
-
-    try {
-      final response = await http.get(url).timeout(const Duration(seconds: 5));
+      final url = Uri.parse(
+          '$_baseUrl/weather?lat=$lat&lon=$lon&appid=$apiKey&units=metric');
+      final response = await http.get(url);
 
       if (response.statusCode == 200) {
         return json.decode(response.body);
-      } else {
-        throw Exception("Failed to fetch radar data: ${response.statusCode}");
       }
+      return null;
     } catch (e) {
-      print("Error fetching radar data: $e");
-      return {
-        "status": "error",
-        "message": e.toString(),
-      };
+      print('Error fetching weather: $e');
+      return null;
     }
+  }
+
+  static Future<Map<String, dynamic>?> getWeatherForecast(
+      double lat, double lon) async {
+    try {
+      final apiKey = dotenv.env['OPENWEATHER_API_KEY'];
+      if (apiKey == null) return null;
+
+      final url = Uri.parse(
+          '$_baseUrl/forecast?lat=$lat&lon=$lon&appid=$apiKey&units=metric');
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+      return null;
+    } catch (e) {
+      print('Error fetching forecast: $e');
+      return null;
+    }
+  }
+
+  static Map<String, dynamic> parseWeatherData(Map<String, dynamic> data) {
+    return {
+      'temperature': data['main']['temp'],
+      'humidity': data['main']['humidity'],
+      'windSpeed': data['wind']['speed'],
+      'visibility': data['visibility'] ?? 10000,
+      'rainMm': data['rain']?['1h'] ?? 0.0,
+      'description': data['weather'][0]['description'],
+      'icon': data['weather'][0]['icon'],
+    };
+  }
+
+  static Future<List<Map<String, dynamic>>> getAnomalies(
+      double lat, double lon) async {
+    try {
+      final apiKey = dotenv.env['OPENWEATHER_API_KEY'];
+      if (apiKey == null) return [];
+
+      // Use One Call API 3.0 for weather alerts
+      final url = Uri.parse(
+          'https://api.openweathermap.org/data/3.0/onecall?lat=$lat&lon=$lon&exclude=minutely,hourly,daily&appid=$apiKey');
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final alerts = data['alerts'] as List? ?? [];
+
+        return alerts.map((alert) {
+          return {
+            'type': alert['event'] ?? 'Weather Alert',
+            'forecast': alert['description'] ?? 'Weather alert issued',
+            'time': _formatAlertTime(alert['start'], alert['end']),
+          };
+        }).toList();
+      }
+
+      // Fallback to current weather analysis if alerts API fails
+      final weatherData = await getCurrentWeather(lat, lon);
+      if (weatherData != null) {
+        final parsed = parseWeatherData(weatherData);
+        final anomalies = <Map<String, dynamic>>[];
+
+        if ((parsed['rainMm'] as num) > 10) {
+          anomalies.add({
+            'type': 'Heavy Rain Alert',
+            'forecast': 'Heavy rainfall detected (${parsed['rainMm']}mm)',
+            'time': 'Current',
+          });
+        }
+
+        if ((parsed['windSpeed'] as num) > 20) {
+          anomalies.add({
+            'type': 'High Wind Warning',
+            'forecast': 'Strong winds detected (${parsed['windSpeed']} km/h)',
+            'time': 'Current',
+          });
+        }
+
+        if ((parsed['visibility'] as num) < 1000) {
+          anomalies.add({
+            'type': 'Poor Visibility',
+            'forecast': 'Reduced visibility (${parsed['visibility']}m)',
+            'time': 'Current',
+          });
+        }
+
+        return anomalies;
+      }
+
+      return [];
+    } catch (e) {
+      print('Error fetching anomalies: $e');
+      return [];
+    }
+  }
+
+  static String _formatAlertTime(int? start, int? end) {
+    if (start == null || end == null) return 'Unknown';
+
+    final startTime = DateTime.fromMillisecondsSinceEpoch(start * 1000);
+    final endTime = DateTime.fromMillisecondsSinceEpoch(end * 1000);
+    final now = DateTime.now();
+
+    if (startTime.isAfter(now)) {
+      final hours = startTime.difference(now).inHours;
+      return 'In $hours hours';
+    } else if (endTime.isAfter(now)) {
+      final hours = endTime.difference(now).inHours;
+      return '$hours hours remaining';
+    } else {
+      return 'Expired';
+    }
+  }
+
+  static Future<Map<String, dynamic>?> getWeatherData(
+      double lat, double lon) async {
+    return await getCurrentWeather(lat, lon);
+  }
+
+  static Future<List<Map<String, dynamic>>> getHourlyForecast(
+      double lat, double lon) async {
+    try {
+      final forecastData = await getWeatherForecast(lat, lon);
+      if (forecastData == null || forecastData['list'] == null) return [];
+
+      final list = forecastData['list'] as List;
+      return list.take(8).map((item) {
+        final dt = DateTime.fromMillisecondsSinceEpoch(item['dt'] * 1000);
+        return {
+          'time': '${dt.hour.toString().padLeft(2, '0')}:00',
+          'temp': (item['main']['temp'] as num).toDouble(),
+          'wind': (item['wind']['speed'] as num).toDouble(),
+          'rain': item['rain']?['3h'] ?? 0.0,
+        };
+      }).toList();
+    } catch (e) {
+      print('Error fetching hourly forecast: $e');
+      return [];
+    }
+  }
+
+  static Future<Map<String, dynamic>?> getAQIData(
+      double lat, double lon) async {
+    try {
+      final apiKey = dotenv.env['OPENWEATHER_API_KEY'];
+      if (apiKey == null) return null;
+
+      final url = Uri.parse(
+          'https://api.openweathermap.org/data/2.5/air_pollution?lat=$lat&lon=$lon&appid=$apiKey');
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final components = data['list'][0]['components'];
+        final aqi = data['list'][0]['main']['aqi'];
+
+        return {
+          'aqi': aqi,
+          'pm25': components['pm2_5'] ?? 0.0,
+          'pm10': components['pm10'] ?? 0.0,
+          'o3': components['o3'] ?? 0.0,
+          'no2': components['no2'] ?? 0.0,
+          'so2': components['so2'] ?? 0.0,
+          'co': components['co'] ?? 0.0,
+        };
+      }
+      return null;
+    } catch (e) {
+      print('Error fetching AQI data: $e');
+      return null;
+    }
+  }
+
+  static String getWeatherIcon(String iconCode) {
+    // Map OpenWeather icon codes to weather icons
+    switch (iconCode) {
+      case '01d':
+        return '☀️';
+      case '01n':
+        return '🌙';
+      case '02d':
+      case '02n':
+        return '⛅';
+      case '03d':
+      case '03n':
+        return '☁️';
+      case '04d':
+      case '04n':
+        return '☁️';
+      case '09d':
+      case '09n':
+        return '🌧️';
+      case '10d':
+      case '10n':
+        return '🌦️';
+      case '11d':
+      case '11n':
+        return '⛈️';
+      case '13d':
+      case '13n':
+        return '❄️';
+      case '50d':
+      case '50n':
+        return '🌫️';
+      default:
+        return '☀️';
+    }
+  }
+
+  static String getBackgroundImage(String condition) {
+    // Return asset path based on weather condition
+    if (condition.toLowerCase().contains('rain')) {
+      return 'lib/assets/images/rainy.jpeg';
+    } else if (condition.toLowerCase().contains('cloud')) {
+      return 'lib/assets/images/cloudy.jpeg';
+    } else if (condition.toLowerCase().contains('clear')) {
+      return 'lib/assets/images/sunny.jpeg';
+    } else if (condition.toLowerCase().contains('mist') ||
+        condition.toLowerCase().contains('fog')) {
+      return 'lib/assets/images/mist.jpg';
+    } else if (condition.toLowerCase().contains('storm')) {
+      return 'lib/assets/images/strom.jpg';
+    } else {
+      return 'lib/assets/images/default.jpg';
+    }
+  }
+
+  static Future<Map<String, dynamic>?> getRadarData(
+      double lat, double lon) async {
+    try {
+      // Use RainViewer API for real radar data
+      final radarUrl =
+          Uri.parse('https://api.rainviewer.com/public/weather-maps.json');
+      final radarResponse = await http.get(radarUrl);
+
+      if (radarResponse.statusCode == 200) {
+        final radarData = json.decode(radarResponse.body);
+        final radarList = radarData['radar'] as List;
+
+        if (radarList.isNotEmpty) {
+          final latestRadar = radarList.last;
+          final radarImageUrl =
+              'https://tilecache.rainviewer.com${latestRadar['path']}/512/4/${lat.round()}/${lon.round()}/1/1_1.png';
+
+          // Get current weather for precipitation data
+          final weatherData = await getCurrentWeather(lat, lon);
+          final precipitation = weatherData?['rain']?['1h'] ?? 0.0;
+          final intensity = _getPrecipitationIntensity(precipitation);
+
+          return {
+            'radarImageUrl': radarImageUrl,
+            'precipitation': precipitation,
+            'intensity': intensity,
+            'timestamp': latestRadar['time'],
+          };
+        }
+      }
+
+      // Fallback to current weather analysis
+      final weatherData = await getCurrentWeather(lat, lon);
+      if (weatherData != null) {
+        final precipitation = weatherData['rain']?['1h'] ?? 0.0;
+        final intensity = _getPrecipitationIntensity(precipitation);
+
+        return {
+          'radarImageUrl': null, // No radar image available
+          'precipitation': precipitation,
+          'intensity': intensity,
+          'timestamp': DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        };
+      }
+
+      return null;
+    } catch (e) {
+      print('Error fetching radar data: $e');
+      return null;
+    }
+  }
+
+  static String _getPrecipitationIntensity(double precipitation) {
+    if (precipitation >= 7.6) return 'heavy';
+    if (precipitation >= 2.5) return 'moderate';
+    if (precipitation >= 0.1) return 'light';
+    return 'none';
   }
 }

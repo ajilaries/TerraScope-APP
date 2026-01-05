@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
 import '../providers/mode_provider.dart';
 
@@ -16,8 +17,11 @@ class _SignupScreenState extends State<SignupScreen> {
   final TextEditingController nameC = TextEditingController();
   final TextEditingController emailC = TextEditingController();
   final TextEditingController passC = TextEditingController();
+  final TextEditingController emergencyContactC = TextEditingController();
   String gender = "male";
   bool loading = false;
+  bool enableNotifications = true;
+  bool enableLocationSharing = true;
 
   final AuthService _auth = AuthService();
 
@@ -31,23 +35,46 @@ class _SignupScreenState extends State<SignupScreen> {
       password: passC.text,
       gender: gender,
       userMode: widget.selectedMode,
+      emergencyContact: emergencyContactC.text.trim(),
+      enableNotifications: enableNotifications,
+      enableLocationSharing: enableLocationSharing,
     );
 
     if (res['statusCode'] == 200 || res['statusCode'] == 201) {
       // Auto login after signup
-      final loginRes = await _auth.login(email: emailC.text.trim(), password: passC.text);
+      final loginRes =
+          await _auth.login(email: emailC.text.trim(), password: passC.text);
+      if (!mounted) return;
       if (loginRes['ok']) {
         // set provider mode
-        Provider.of<ModeProvider>(context, listen: false).setMode(widget.selectedMode);
+        Provider.of<ModeProvider>(context, listen: false)
+            .setMode(widget.selectedMode);
+        // Save user preferences locally
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(
+            'emergency_contact', emergencyContactC.text.trim());
+        await prefs.setBool('enable_notifications', enableNotifications);
+        await prefs.setBool('enable_location_sharing', enableLocationSharing);
         // go to main app/home for this mode
-        Navigator.of(context).popUntil((route) => route.isFirst);
+        if (mounted) {
+          Navigator.of(context).popUntil((route) => route.isFirst);
+        }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Signup succeeded but login failed")));
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text("Signup succeeded but login failed")));
+        }
       }
     } else {
+      if (!mounted) return;
       final body = res['body'] ?? {};
-      final msg = body is Map && body['detail'] != null ? body['detail'] : res['body'] ?? 'Signup failed';
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg.toString())));
+      final msg = body is Map && body['detail'] != null
+          ? body['detail']
+          : res['body'] ?? 'Signup failed';
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(msg.toString())));
+      }
     }
 
     setState(() => loading = false);
@@ -65,23 +92,28 @@ class _SignupScreenState extends State<SignupScreen> {
           key: _formKey,
           child: Column(
             children: [
-              Text("Selected mode: ${widget.selectedMode}", style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text("Selected mode: ${widget.selectedMode}",
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
               TextFormField(
                 controller: nameC,
                 decoration: const InputDecoration(labelText: "Full name"),
-                validator: (v) => (v == null || v.trim().isEmpty) ? "Enter name" : null,
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? "Enter name" : null,
               ),
               TextFormField(
                 controller: emailC,
                 decoration: const InputDecoration(labelText: "Email"),
-                validator: (v) => (v == null || !v.contains('@')) ? "Enter valid email" : null,
+                validator: (v) => (v == null || !v.contains('@'))
+                    ? "Enter valid email"
+                    : null,
               ),
               TextFormField(
                 controller: passC,
                 decoration: const InputDecoration(labelText: "Password"),
                 obscureText: true,
-                validator: (v) => (v == null || v.length < 6) ? "Min 6 chars" : null,
+                validator: (v) =>
+                    (v == null || v.length < 6) ? "Min 6 chars" : null,
               ),
               const SizedBox(height: 12),
               Row(
@@ -98,10 +130,41 @@ class _SignupScreenState extends State<SignupScreen> {
                   ),
                 ],
               ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: emergencyContactC,
+                decoration: const InputDecoration(
+                    labelText: "Emergency Contact Number"),
+                keyboardType: TextInputType.phone,
+                validator: (v) => (v == null || v.trim().isEmpty)
+                    ? "Enter emergency contact number"
+                    : null,
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  const Text("Enable Notifications: "),
+                  Switch(
+                    value: enableNotifications,
+                    onChanged: (v) => setState(() => enableNotifications = v),
+                  ),
+                ],
+              ),
+              Row(
+                children: [
+                  const Text("Enable Location Sharing: "),
+                  Switch(
+                    value: enableLocationSharing,
+                    onChanged: (v) => setState(() => enableLocationSharing = v),
+                  ),
+                ],
+              ),
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: loading ? null : signup,
-                child: loading ? const CircularProgressIndicator(color: Colors.white) : const Text("Signup & Activate Mode"),
+                child: loading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text("Signup & Activate Mode"),
               )
             ],
           ),

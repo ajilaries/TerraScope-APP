@@ -24,7 +24,7 @@ class TravelerHourlyRoute extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(h["hour"] ?? ""),
+                Text(h["time"] ?? ""),
                 const SizedBox(height: 6),
                 Text(h["weather"] ?? "", style: const TextStyle(fontSize: 12)),
                 const SizedBox(height: 6),

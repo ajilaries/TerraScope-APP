@@ -17,6 +17,7 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -43,6 +44,9 @@ flutter {
 }
 
 dependencies {
+    // ✅ Core library desugaring for Java 8+ features
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:1.2.2")
+
     // ✅ Firebase BoM (versionless)
     implementation(platform("com.google.firebase:firebase-bom:34.5.0"))
 

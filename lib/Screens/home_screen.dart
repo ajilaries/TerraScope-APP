@@ -7,8 +7,10 @@ import 'package:geocoding/geocoding.dart';
 import 'package:terra_scope_apk/pages/ai_predict_page.dart';
 import '../Services/location_service.dart';
 import '../Services/weather_services.dart';
-import '../Services/notification_service.dart';
 import '../providers/mode_provider.dart';
+import 'radar_screen.dart';
+import 'anomalies_screen.dart';
+import 'forecast_dashboard.dart';
 
 class MainHomeScreen extends StatefulWidget {
   const MainHomeScreen({super.key});
@@ -27,8 +29,11 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
   List<Map<String, dynamic>> forecast7 = [];
   List<Map<String, dynamic>> forecast24 = [];
   bool isLoading = true;
+  int humidity = 0;
+  double windSpeed = 0.0;
+  int pressure = 0;
+  int visibility = 0;
 
-  final WeatherService weatherService = WeatherService();
   Timer? autoRefreshTimer;
 
   @override
@@ -61,47 +66,86 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
 
     try {
       // 🔥 Get fresh high-accuracy location
-      final loc = await LocationService().getCurrentLocation();
-      await LocationService().updateDeviceLocationToBackend();
+      final position = await LocationService.getCurrentPosition();
+      if (position == null) {
+        setState(() => isLoading = false);
+        return;
+      }
 
-      currentLat = loc["latitude"];
-      currentLon = loc["longitude"];
+      currentLat = position.latitude;
+      currentLon = position.longitude;
 
-      final token = await NotificationService.getDeviceToken() ?? "";
-
-      // 🔥 Fetch weather
-      final weather = await weatherService.getWeatherData(
-        token: token,
-        lat: currentLat,
-        lon: currentLon,
-      );
-
-      // 🔥 Fetch AQI separately
-      final aqiData = await weatherService.getAQIData(
-        lat: currentLat,
-        lon: currentLon,
-      );
+      // 🔥 Fetch current weather
+      final currentWeather =
+          await WeatherService.getCurrentWeather(currentLat, currentLon);
+      final forecastData =
+          await WeatherService.getWeatherForecast(currentLat, currentLon);
 
       String cityName = await _getCityName(currentLat, currentLon);
 
       if (!mounted) return;
+
+      // Parse forecast data
+      List<Map<String, dynamic>> parsedForecast7 = [];
+      List<Map<String, dynamic>> parsedForecast24 = [];
+
+      if (forecastData != null && forecastData['list'] != null) {
+        final list = forecastData['list'] as List;
+        // 7-day forecast (every 24 hours)
+        for (int i = 0; i < 7 && i * 8 < list.length; i++) {
+          final item = list[i * 8];
+          final dt = DateTime.fromMillisecondsSinceEpoch(item['dt'] * 1000);
+          parsedForecast7.add({
+            'day': DateFormat('EEE').format(dt),
+            'max': (item['main']['temp_max'] as num).toDouble(),
+            'min': (item['main']['temp_min'] as num).toDouble(),
+          });
+        }
+        // 24-hour forecast (every 3 hours)
+        for (int i = 0; i < list.length && i < 8; i++) {
+          final item = list[i];
+          final dt = DateTime.fromMillisecondsSinceEpoch(item['dt'] * 1000);
+          parsedForecast24.add({
+            'time': DateFormat('HH:mm').format(dt),
+            'temp': (item['main']['temp'] as num).toDouble(),
+          });
+        }
+      }
+
       setState(() {
         city = cityName;
-        temp = "${weather["temperature"]?.toStringAsFixed(1) ?? '--'}°C";
-        condition = weather["condition"] ?? "_";
-        aqi = aqiData['aqi'] ?? 40;
-        forecast7 = weather["forecast7"] ?? [];
-        forecast24 = weather["forecast24"] ?? [];
+        temp = currentWeather != null
+            ? "${currentWeather['main']['temp'].toStringAsFixed(1)}°C"
+            : "—°C";
+        condition = currentWeather != null
+            ? currentWeather['weather'][0]['description']
+            : "_";
+        humidity = currentWeather != null
+            ? (currentWeather['main']['humidity'] as num).toInt()
+            : 0;
+        windSpeed = currentWeather != null
+            ? (currentWeather['wind']['speed'] as num).toDouble()
+            : 0.0;
+        pressure = currentWeather != null
+            ? (currentWeather['main']['pressure'] as num).toInt()
+            : 0;
+        visibility = currentWeather != null
+            ? (currentWeather['visibility'] as num).toInt()
+            : 0;
+        aqi = 40; // Mock AQI since no API
+        forecast7 = parsedForecast7;
+        forecast24 = parsedForecast24;
         isLoading = false;
       });
     } catch (e) {
-      print("Error fetching home data: $e");
-      if (mounted)
+      debugPrint("Error fetching home data: $e");
+      if (mounted) {
         setState(() {
           temp = "—°C";
           condition = "Error";
           isLoading = false;
         });
+      }
     }
   }
 
@@ -146,6 +190,16 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
               );
             },
           ),
+          IconButton(
+            icon: const Icon(
+              Icons.shield,
+              color: Colors.red,
+              size: 28,
+            ),
+            onPressed: () {
+              Navigator.pushNamed(context, '/safety-mode');
+            },
+          ),
           const SizedBox(width: 10),
         ],
       ),
@@ -165,6 +219,8 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
                   _metricsGrid(isDark),
                   const SizedBox(height: 20),
                   _aqiCard(isDark),
+                  const SizedBox(height: 20),
+                  _quickAccessGrid(isDark),
                 ],
               ),
             ),
@@ -172,7 +228,6 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
   }
 
   // ---------------- UI Widgets ----------------
-
 
   Widget _currentWeatherCard(bool dark) {
     return Container(
@@ -199,17 +254,19 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
               Text(
                 temp,
                 style: TextStyle(
-                  fontSize: 60,
+                  fontSize: 40,
                   fontWeight: FontWeight.bold,
                   color: dark ? Colors.white : Colors.black,
                 ),
               ),
               const SizedBox(width: 15),
-              Text(
-                condition,
-                style: TextStyle(
-                  fontSize: 20,
-                  color: dark ? Colors.white70 : Colors.black87,
+              Flexible(
+                child: Text(
+                  condition,
+                  style: TextStyle(
+                    fontSize: 20,
+                    color: dark ? Colors.white70 : Colors.black87,
+                  ),
                 ),
               ),
             ],
@@ -264,7 +321,9 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
                         "${forecast7[i]["max"]}° / ${forecast7[i]["min"]}°",
                         style: TextStyle(
                           color: dark ? Colors.white : Colors.black,
+                          fontSize: 10,
                         ),
+                        textAlign: TextAlign.center,
                       ),
                     ],
                   ),
@@ -335,13 +394,16 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
   }
 
   Widget _metricsGrid(bool dark) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
+    return Wrap(
+      spacing: 16,
+      runSpacing: 8,
+      alignment: WrapAlignment.spaceAround,
       children: [
-        _metric("Humidity", "62%", dark),
-        _metric("Wind", "12 km/h", dark),
-        _metric("Pressure", "1008 hPa", dark),
-        _metric("Visibility", "8 km", dark),
+        _metric("Humidity", "$humidity%", dark),
+        _metric("Wind", "${windSpeed.toStringAsFixed(1)} km/h", dark),
+        _metric("Pressure", "$pressure hPa", dark),
+        _metric(
+            "Visibility", "${(visibility / 1000).toStringAsFixed(1)} km", dark),
       ],
     );
   }
@@ -403,13 +465,103 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
     );
   }
 
+  Widget _quickAccessGrid(bool dark) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: _boxDecoration(dark),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Quick Access",
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: dark ? Colors.white : Colors.black,
+            ),
+          ),
+          const SizedBox(height: 15),
+          GridView.count(
+            crossAxisCount: 3,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            children: [
+              _quickAccessButton("Radar", Icons.radar, Colors.blue, () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) =>
+                          RadarScreen(lat: currentLat, lon: currentLon)),
+                );
+              }),
+              _quickAccessButton("Anomalies", Icons.warning, Colors.orange, () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) =>
+                          AnomaliesScreen(lat: currentLat, lon: currentLon)),
+                );
+              }),
+              _quickAccessButton(
+                  "Forecast", Icons.calendar_view_day, Colors.green, () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ForecastDashboard(
+                      lat: currentLat,
+                      lon: currentLon,
+                      locationName: city,
+                      selectedDay: DateTime.now(),
+                      token: "",
+                    ),
+                  ),
+                );
+              }),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _quickAccessButton(
+      String title, IconData icon, Color color, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: color, size: 32),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   BoxDecoration _boxDecoration(bool dark) => BoxDecoration(
-    color: dark ? Colors.white10 : Colors.grey.shade100,
-    borderRadius: BorderRadius.circular(18),
-  );
+        color: dark ? Colors.white10 : Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(18),
+      );
 
   BoxDecoration _smallBox(bool dark) => BoxDecoration(
-    color: dark ? Colors.white12 : Colors.grey.shade200,
-    borderRadius: BorderRadius.circular(14),
-  );
+        color: dark ? Colors.white12 : Colors.grey.shade200,
+        borderRadius: BorderRadius.circular(14),
+      );
 }

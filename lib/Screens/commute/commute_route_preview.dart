@@ -3,7 +3,8 @@ import 'dart:math';
 import '../../Services/commute_service.dart';
 
 class CommuteRoutePlanner extends StatefulWidget {
-  const CommuteRoutePlanner({super.key});
+  final Function(double?, double?, String?)? onDestinationChanged;
+  const CommuteRoutePlanner({super.key, this.onDestinationChanged});
 
   @override
   State<CommuteRoutePlanner> createState() => _CommuteRoutePlannerState();
