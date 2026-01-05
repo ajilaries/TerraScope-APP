@@ -74,9 +74,9 @@ class _TravelerDashboardState extends State<TravelerDashboard> {
               ? alerts
                   .map((alert) => {
                         'title':
-                            (alert as Map<String, dynamic>)['event'] ?? 'Alert',
+                            (alert)['event'] ?? 'Alert',
                         'description':
-                            (alert as Map<String, dynamic>)['description'] ??
+                            (alert)['description'] ??
                                 'Description',
                         'time': 'Now',
                         'type': 'weather'

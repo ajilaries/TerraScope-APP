@@ -54,6 +54,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.13.1
 
 flutter:
   uses-material-design: true
@@ -61,10 +62,15 @@ flutter:
   assets:
     - .env
     - lib/assets/data/crops_india.json
-    - lib/assets/logo.png
     - lib/assets/images/cloudy.jpeg
     - lib/assets/images/mist.jpg
     - lib/assets/images/strom.jpg
     - lib/assets/images/sunny.jpeg
     - lib/assets/images/rainy.jpeg
     - lib/assets/images/default.jpg
+    - lib/assets/terrascope-512.png
+
+flutter_icons:
+  android: "launcher_icon"
+  ios: false
+  image_path: "lib/assets/terrascope-512.png"

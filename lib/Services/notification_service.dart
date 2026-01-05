@@ -68,7 +68,7 @@ class NotificationService {
       priority: Priority.high,
       showWhen: true,
       icon: '@mipmap/ic_launcher', // Explicitly set the icon
-      largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+      largeIcon: DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
     );
 
     const DarwinNotificationDetails iosDetails = DarwinNotificationDetails();

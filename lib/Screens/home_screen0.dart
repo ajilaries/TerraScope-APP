@@ -111,7 +111,7 @@ class _HomeScreen0State extends State<HomeScreen0> {
                   modeCard(
                     title: "Daily Planner",
                     icon: Icons.calendar_today,
-                    color: Colors.orange,
+                    color: Colors.teal,
                     mode: "daily_planner",
                   ),
                 ],

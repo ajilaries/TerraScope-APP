@@ -92,7 +92,7 @@ class _DailyPlannerDashboardState extends State<DailyPlannerDashboard> {
       appBar: AppBar(
         title: const Text("Daily Planner"),
         centerTitle: true,
-        backgroundColor: Colors.orange.shade700,
+        backgroundColor: Colors.teal.shade700,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
@@ -108,7 +108,7 @@ class _DailyPlannerDashboardState extends State<DailyPlannerDashboard> {
             builder: (context) => _buildQuickActions(),
           );
         },
-        backgroundColor: Colors.orange.shade700,
+        backgroundColor: Colors.teal.shade700,
         child: const Icon(Icons.flash_on_rounded, size: 28),
       ),
       body: isLoading
@@ -148,7 +148,7 @@ class _DailyPlannerDashboardState extends State<DailyPlannerDashboard> {
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
-            Icon(Icons.location_on, color: Colors.orange.shade700),
+            Icon(Icons.location_on, color: Colors.teal.shade700),
             const SizedBox(width: 8),
             Expanded(
               child: Column(
@@ -176,7 +176,7 @@ class _DailyPlannerDashboardState extends State<DailyPlannerDashboard> {
                 currentWeather!['description'].toString().toUpperCase(),
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.orange.shade700,
+                  color: Colors.teal.shade700,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -199,7 +199,7 @@ class _DailyPlannerDashboardState extends State<DailyPlannerDashboard> {
           children: [
             Row(
               children: [
-                Icon(Icons.access_time, color: Colors.orange.shade700),
+                Icon(Icons.access_time, color: Colors.teal.shade700),
                 const SizedBox(width: 8),
                 const Text(
                   "Best Time Windows",
@@ -217,14 +217,14 @@ class _DailyPlannerDashboardState extends State<DailyPlannerDashboard> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
-                            color: Colors.orange.shade100,
+                            color: Colors.teal.shade100,
                             borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: Colors.orange.shade300),
+                            border: Border.all(color: Colors.teal.shade300),
                           ),
                           child: Text(
                             time,
                             style: TextStyle(
-                              color: Colors.orange.shade800,
+                              color: Colors.teal.shade800,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -255,7 +255,7 @@ class _DailyPlannerDashboardState extends State<DailyPlannerDashboard> {
           children: [
             Row(
               children: [
-                Icon(Icons.timer, color: Colors.orange.shade700),
+                Icon(Icons.timer, color: Colors.teal.shade700),
                 const SizedBox(width: 8),
                 const Text(
                   "Next Weather Change",
@@ -494,7 +494,7 @@ class _DailyPlannerDashboardState extends State<DailyPlannerDashboard> {
       children: [
         FloatingActionButton(
           onPressed: onTap,
-          backgroundColor: Colors.orange.shade700,
+          backgroundColor: Colors.teal.shade700,
           child: Icon(icon),
         ),
         const SizedBox(height: 8),
@@ -671,7 +671,7 @@ class _DailyPlannerDashboardState extends State<DailyPlannerDashboard> {
       summary += "Expect ${rain.toStringAsFixed(1)}mm of precipitation. ";
     }
 
-    summary += "Humidity is at ${humidity}%. ";
+    summary += "Humidity is at $humidity%. ";
 
     if (currentTemp < 15) {
       summary += "Dress warmly and consider indoor activities.";

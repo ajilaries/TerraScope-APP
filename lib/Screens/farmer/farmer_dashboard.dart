@@ -22,7 +22,8 @@ class FarmerDashboard extends StatefulWidget {
   State<FarmerDashboard> createState() => _FarmerDashboardState();
 }
 
-class _FarmerDashboardState extends State<FarmerDashboard> {
+class _FarmerDashboardState extends State<FarmerDashboard>
+    with SingleTickerProviderStateMixin {
   bool isLoading = false;
   String errorMessage = '';
   bool _isLoading = false;
@@ -31,10 +32,30 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
   List<Map<String, dynamic>> cropRecommendations = [];
   List<Map<String, dynamic>>? _forecastData;
 
+  late AnimationController _animationController;
+  late Animation<double> _scaleAnimation;
+
   @override
   void initState() {
     super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.2).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.elasticOut,
+      ),
+    );
+    _animationController.repeat(reverse: true);
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -138,9 +159,28 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
         backgroundColor: Colors.green.shade700,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
-          "Farmer Mode",
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedBuilder(
+              animation: _animationController,
+              builder: (context, child) {
+                return Transform.scale(
+                  scale: _scaleAnimation.value,
+                  child: const Icon(
+                    Icons.agriculture,
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                );
+              },
+            ),
+            const SizedBox(width: 8),
+            const Text(
+              "Farmer Mode",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+            ),
+          ],
         ),
       ),
 
