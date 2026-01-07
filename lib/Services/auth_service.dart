@@ -12,7 +12,10 @@ class AuthService {
     required String password,
     required String gender,
     required String userMode,
-    String? emergencyContact,
+    required int age,
+    required String phoneNumber,
+    required String address,
+    List<Map<String, dynamic>>? emergencyContacts,
     bool? enableNotifications,
     bool? enableLocationSharing,
   }) async {
@@ -26,9 +29,62 @@ class AuthService {
         "password": password,
         "gender": gender,
         "user_mode": userMode,
-        "emergency_contact": emergencyContact,
+        "age": age,
+        "phone_number": phoneNumber,
+        "address": address,
+        "emergency_contacts": emergencyContacts,
         "enable_notifications": enableNotifications,
         "enable_location_sharing": enableLocationSharing,
+      }),
+    );
+    return {
+      "statusCode": resp.statusCode,
+      "body": resp.body.isEmpty ? null : jsonDecode(resp.body)
+    };
+  }
+
+  Future<Map<String, dynamic>> sendOtp({required String email}) async {
+    final url = Uri.parse("$baseUrl/auth/send-otp");
+    final resp = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({"email": email}),
+    );
+    return {
+      "statusCode": resp.statusCode,
+      "body": resp.body.isEmpty ? null : jsonDecode(resp.body)
+    };
+  }
+
+  Future<Map<String, dynamic>> verifyOtp({
+    required String email,
+    required String otp,
+  }) async {
+    final url = Uri.parse("$baseUrl/auth/verify-otp");
+    final resp = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({"email": email, "otp": otp}),
+    );
+    return {
+      "statusCode": resp.statusCode,
+      "body": resp.body.isEmpty ? null : jsonDecode(resp.body)
+    };
+  }
+
+  Future<Map<String, dynamic>> resetPassword({
+    required String email,
+    required String otp,
+    required String newPassword,
+  }) async {
+    final url = Uri.parse("$baseUrl/auth/reset-password");
+    final resp = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        "email": email,
+        "otp": otp,
+        "new_password": newPassword,
       }),
     );
     return {
