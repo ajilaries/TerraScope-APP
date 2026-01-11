@@ -8,9 +8,6 @@ class EmergencyContactCard extends StatelessWidget {
   final VoidCallback? onMessage;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
-  final VoidCallback? onCall;
-  final VoidCallback? onMessage;
-  final VoidCallback? onEdit;
   final VoidCallback? onSetPrimary;
 
   const EmergencyContactCard({
@@ -20,9 +17,6 @@ class EmergencyContactCard extends StatelessWidget {
     this.onMessage,
     this.onEdit,
     this.onDelete,
-    this.onCall,
-    this.onMessage,
-    this.onEdit,
     this.onSetPrimary,
   });
 
@@ -111,7 +105,7 @@ class EmergencyContactCard extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.blue.withValues(alpha: 0.1),
+                  color: Colors.blue.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -142,7 +136,7 @@ class EmergencyContactCard extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.orange.withValues(alpha: 0.1),
+                    color: Colors.orange.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -173,7 +167,7 @@ class EmergencyContactCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.grey.withValues(alpha: 0.1),
+                  color: Colors.grey.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
