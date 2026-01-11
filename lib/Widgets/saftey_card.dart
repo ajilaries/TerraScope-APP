@@ -31,7 +31,7 @@ class SafetyCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: color.withValues(alpha: 0.15),
+      color: color.withOpacity(0.15),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(20),
