@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/safety_provider.dart';
 import '../../Services/saftey_service.dart';
+import '../../models/saftey_status.dart';
 import '../../Widgets/detailed_safety_card.dart';
 import '../../Widgets/emergency_contact_card.dart';
 import '../../Widgets/safety_history_card.dart';
+import '../../popups/add_contact_dialog.dart';
 
 class SafetyModeScreen extends StatefulWidget {
   const SafetyModeScreen({super.key});
@@ -16,13 +18,7 @@ class SafetyModeScreen extends StatefulWidget {
 class _SafetyModeScreenState extends State<SafetyModeScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-
-  // Weather parameters
-  double _rainMm = 12;
-  double _windSpeed = 18;
-  int _visibility = 600;
-  double _temperature = 25;
-  int _humidity = 60;
+  SafetyStatus? _previousStatus;
 
   @override
   void initState() {
@@ -39,16 +35,6 @@ class _SafetyModeScreenState extends State<SafetyModeScreen>
   void dispose() {
     _tabController.dispose();
     super.dispose();
-  }
-
-  void _updateSafetyCheck() {
-    context.read<SafetyProvider>().checkCurrentSafety(
-          rainMm: _rainMm,
-          windSpeed: _windSpeed,
-          visibility: _visibility,
-          temperature: _temperature,
-          humidity: _humidity,
-        );
   }
 
   @override
@@ -69,6 +55,19 @@ class _SafetyModeScreenState extends State<SafetyModeScreen>
       ),
       body: Consumer<SafetyProvider>(
         builder: (context, safetyProvider, _) {
+          // Check for status changes and show alerts
+          if (safetyProvider.isSafetyModeEnabled &&
+              safetyProvider.currentStatus != null &&
+              _previousStatus != safetyProvider.currentStatus) {
+            // Status has changed, show alert if it's not safe
+            if (safetyProvider.currentStatus!.level != HazardLevel.safe) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                safetyProvider.showSafetyAlert(context);
+              });
+            }
+            _previousStatus = safetyProvider.currentStatus;
+          }
+
           return TabBarView(
             controller: _tabController,
             children: [
@@ -137,19 +136,19 @@ class _SafetyModeScreenState extends State<SafetyModeScreen>
                   if (provider.isSafetyModeEnabled) ...[
                     const SizedBox(height: 16),
                     Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.green.withValues(alpha: 0.1),
+                        color: Colors.green.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: Colors.green.withValues(alpha: 0.3),
+                          color: Colors.green.withOpacity(0.3),
                         ),
                       ),
                       child: Row(
                         children: [
                           const Icon(Icons.check_circle, color: Colors.green),
                           const SizedBox(width: 12),
-                          const Expanded(
+                          Expanded(
                             child: Text(
                               'Safety Mode is active. You will receive alerts.',
                               style: TextStyle(color: Colors.green),
@@ -167,14 +166,48 @@ class _SafetyModeScreenState extends State<SafetyModeScreen>
           const SizedBox(height: 20),
 
           // Safety Status Card
-          if (provider.currentStatus != null)
+          if (provider.currentStatus != null &&
+              provider.currentRainMm != null &&
+              provider.currentWindSpeed != null &&
+              provider.currentVisibility != null &&
+              provider.currentTemperature != null &&
+              provider.currentHumidity != null)
             DetailedSafetyCard(
               status: provider.currentStatus!,
-              rainMm: _rainMm,
-              windSpeed: _windSpeed,
-              visibility: _visibility,
-              temperature: _temperature,
-              humidity: _humidity,
+              rainMm: provider.currentRainMm!,
+              windSpeed: provider.currentWindSpeed!,
+              visibility: provider.currentVisibility!,
+              temperature: provider.currentTemperature!,
+              humidity: provider.currentHumidity!,
+            )
+          else if (provider.isLoading)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(32),
+                child: CircularProgressIndicator(),
+              ),
+            )
+          else if (provider.errorMessage != null)
+            Center(
+              child: Padding(
+                padding: EdgeInsets.all(32),
+                child: Column(
+                  children: [
+                    Icon(Icons.error, size: 64, color: Colors.red.shade300),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Unable to load safety data',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 16),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      provider.errorMessage!,
+                      style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
             ),
 
           const SizedBox(height: 20),
@@ -194,12 +227,12 @@ class _SafetyModeScreenState extends State<SafetyModeScreen>
               (rec) => Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.blue.withValues(alpha: 0.1),
+                    color: Colors.blue.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: Colors.blue.withValues(alpha: 0.3),
+                      color: Colors.blue.withOpacity(0.3),
                     ),
                   ),
                   child: Row(
@@ -244,7 +277,7 @@ class _SafetyModeScreenState extends State<SafetyModeScreen>
                   Icon(
                     Icons.phone_disabled,
                     size: 64,
-                    color: Colors.grey[300],
+                    color: Colors.grey.shade300,
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -273,9 +306,16 @@ class _SafetyModeScreenState extends State<SafetyModeScreen>
         const SizedBox(height: 16),
         ElevatedButton.icon(
           onPressed: () {
-            // TODO: Show add contact dialog
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Add contact feature coming soon')),
+            showDialog(
+              context: context,
+              builder: (context) => AddContactDialog(
+                onContactAdded: (contact) {
+                  provider.addEmergencyContact(contact);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('${contact.name} added to emergency contacts')),
+                  );
+                },
+              ),
             );
           },
           icon: const Icon(Icons.add),
@@ -332,7 +372,7 @@ class _SafetyModeScreenState extends State<SafetyModeScreen>
             onPressed: () {
               provider.clearSafetyHistory();
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('History cleared')),
+                SnackBar(content: const Text('History cleared')),
               );
             },
             icon: const Icon(Icons.delete),
@@ -354,7 +394,7 @@ class _SafetyModeScreenState extends State<SafetyModeScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Weather Parameters',
+            'Current Weather Data',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -362,202 +402,258 @@ class _SafetyModeScreenState extends State<SafetyModeScreen>
           ),
           const SizedBox(height: 16),
 
-          // Rainfall slider
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Rainfall',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        '${_rainMm.toStringAsFixed(1)} mm',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.blue,
+          // Refresh button
+          ElevatedButton.icon(
+            onPressed:
+                provider.isLoading ? null : () => provider.checkCurrentSafety(),
+            icon: provider.isLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.refresh),
+            label: Text(
+                provider.isLoading ? 'Refreshing...' : 'Refresh Weather Data'),
+          ),
+          const SizedBox(height: 20),
+
+          // Current weather parameters display
+          if (provider.currentRainMm != null &&
+              provider.currentWindSpeed != null &&
+              provider.currentVisibility != null &&
+              provider.currentTemperature != null &&
+              provider.currentHumidity != null) ...[
+            // Rainfall
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.cloud_queue, color: Colors.blue),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'Rainfall',
+                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
+                      ],
+                    ),
+                    Text(
+                      '${provider.currentRainMm!.toStringAsFixed(1)} mm',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.blue,
                       ),
-                    ],
-                  ),
-                  Slider(
-                    value: _rainMm,
-                    min: 0,
-                    max: 100,
-                    divisions: 100,
-                    onChanged: (value) {
-                      setState(() => _rainMm = value);
-                      _updateSafetyCheck();
-                    },
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 12),
+            const SizedBox(height: 12),
 
-          // Wind Speed slider
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Wind Speed',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        '${_windSpeed.toStringAsFixed(1)} km/h',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.cyan,
+            // Wind Speed
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.air, color: Colors.cyan),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'Wind Speed',
+                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
+                      ],
+                    ),
+                    Text(
+                      '${provider.currentWindSpeed!.toStringAsFixed(1)} km/h',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.cyan,
                       ),
-                    ],
-                  ),
-                  Slider(
-                    value: _windSpeed,
-                    min: 0,
-                    max: 60,
-                    divisions: 60,
-                    onChanged: (value) {
-                      setState(() => _windSpeed = value);
-                      _updateSafetyCheck();
-                    },
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 12),
+            const SizedBox(height: 12),
 
-          // Visibility slider
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Visibility',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        '$_visibility m',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.purple,
+            // Visibility
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.visibility, color: Colors.purple),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'Visibility',
+                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
+                      ],
+                    ),
+                    Text(
+                      '${provider.currentVisibility!} m',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.purple,
                       ),
-                    ],
-                  ),
-                  Slider(
-                    value: _visibility.toDouble(),
-                    min: 0,
-                    max: 10000,
-                    divisions: 100,
-                    onChanged: (value) {
-                      setState(() => _visibility = value.toInt());
-                      _updateSafetyCheck();
-                    },
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 12),
+            const SizedBox(height: 12),
 
-          // Temperature slider
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Temperature',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        '${_temperature.toStringAsFixed(1)}°C',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.red,
+            // Temperature
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.thermostat, color: Colors.red),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'Temperature',
+                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
+                      ],
+                    ),
+                    Text(
+                      '${provider.currentTemperature!.toStringAsFixed(1)}°C',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.red,
                       ),
-                    ],
-                  ),
-                  Slider(
-                    value: _temperature,
-                    min: -20,
-                    max: 50,
-                    divisions: 70,
-                    onChanged: (value) {
-                      setState(() => _temperature = value);
-                      _updateSafetyCheck();
-                    },
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 12),
+            const SizedBox(height: 12),
 
-          // Humidity slider
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Humidity',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        '$_humidity%',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.teal,
+            // Humidity
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.opacity, color: Colors.teal),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'Humidity',
+                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
+                      ],
+                    ),
+                    Text(
+                      '${provider.currentHumidity!}%',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.teal,
                       ),
-                    ],
-                  ),
-                  Slider(
-                    value: _humidity.toDouble(),
-                    min: 0,
-                    max: 100,
-                    divisions: 100,
-                    onChanged: (value) {
-                      setState(() => _humidity = value.toInt());
-                      _updateSafetyCheck();
-                    },
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
+            ),
+          ] else if (provider.isLoading)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(32),
+                child: CircularProgressIndicator(),
+              ),
+            )
+          else if (provider.errorMessage != null)
+            Center(
+              child: Padding(
+                padding: EdgeInsets.all(32),
+                child: Column(
+                  children: [
+                    Icon(Icons.error, size: 64, color: Colors.red.shade300),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Unable to load weather data',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 16),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      provider.errorMessage!,
+                      style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            Center(
+              child: Padding(
+                padding: EdgeInsets.all(32),
+                child: Column(
+                  children: [
+                    Icon(Icons.cloud_off, size: 64, color: Colors.grey[300]),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No weather data available',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 16),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Enable safety mode to load current weather data',
+                      style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+          const SizedBox(height: 20),
+
+          // Safety settings
+          const Text(
+            'Safety Settings',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Clear history button
+          ElevatedButton.icon(
+            onPressed: () {
+              provider.clearSafetyHistory();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: const Text('Safety history cleared')),
+              );
+            },
+            icon: const Icon(Icons.delete),
+            label: const Text('Clear Safety History'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
             ),
           ),
         ],
