@@ -73,7 +73,7 @@ class SafetyHistoryCard extends StatelessWidget {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: color.withValues(alpha: 0.2),
+                          color: color.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
