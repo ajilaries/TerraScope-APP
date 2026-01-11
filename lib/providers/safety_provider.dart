@@ -5,6 +5,8 @@ import '../models/safety_alert.dart';
 import '../Services/saftey_service.dart';
 import '../Services/weather_services.dart';
 import '../Services/location_service.dart';
+import '../Services/emergency_contact_service.dart';
+import '../utils/safety_notification_manager.dart';
 import 'dart:async';
 
 class SafetyProvider extends ChangeNotifier {
@@ -16,6 +18,13 @@ class SafetyProvider extends ChangeNotifier {
   String? _errorMessage;
   Timer? _safetyUpdateTimer;
 
+  // Current weather data
+  double? _currentRainMm;
+  double? _currentWindSpeed;
+  int? _currentVisibility;
+  double? _currentTemperature;
+  int? _currentHumidity;
+
   // Getters
   bool get isSafetyModeEnabled => _isSafetyModeEnabled;
   SafetyStatus? get currentStatus => _currentStatus;
@@ -23,6 +32,13 @@ class SafetyProvider extends ChangeNotifier {
   List<SafetyAlert> get safetyHistory => _safetyHistory;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+
+  // Weather data getters
+  double? get currentRainMm => _currentRainMm;
+  double? get currentWindSpeed => _currentWindSpeed;
+  int? get currentVisibility => _currentVisibility;
+  double? get currentTemperature => _currentTemperature;
+  int? get currentHumidity => _currentHumidity;
 
   // Initialize provider
   Future<void> initializeSafetyMode() async {
@@ -96,6 +112,13 @@ class SafetyProvider extends ChangeNotifier {
           temperature ?? (parsedWeather['temperature'] as num).toDouble();
       final actualHumidity = humidity ?? (parsedWeather['humidity'] as int);
 
+      // Store current weather data
+      _currentRainMm = actualRainMm;
+      _currentWindSpeed = actualWindSpeed;
+      _currentVisibility = actualVisibility;
+      _currentTemperature = actualTemperature;
+      _currentHumidity = actualHumidity;
+
       _currentStatus = SafetyService.checkSafety(
         rainMm: actualRainMm,
         windSpeed: actualWindSpeed,
@@ -135,42 +158,44 @@ class SafetyProvider extends ChangeNotifier {
 
   // Add emergency contact
   Future<void> addEmergencyContact(EmergencyContact contact) async {
-    _emergencyContacts.add(contact);
-    notifyListeners();
+    try {
+      await EmergencyContactService.addEmergencyContact(contact);
+      _emergencyContacts.add(contact);
+      notifyListeners();
+    } catch (e) {
+      throw Exception('Failed to add emergency contact: $e');
+    }
   }
 
   // Remove emergency contact
   Future<void> removeEmergencyContact(String id) async {
-    _emergencyContacts.removeWhere((contact) => contact.id == id);
-    notifyListeners();
+    try {
+      await EmergencyContactService.removeEmergencyContact(id);
+      _emergencyContacts.removeWhere((contact) => contact.id == id);
+      notifyListeners();
+    } catch (e) {
+      throw Exception('Failed to remove emergency contact: $e');
+    }
   }
 
   // Load emergency contacts
   Future<void> loadEmergencyContacts() async {
-    // TODO: Load from local storage or API
-    _emergencyContacts = [
-      EmergencyContact(
-        id: '1',
-        name: 'Police',
-        phoneNumber: '100',
-        email: '',
-        type: EmergencyContactType.police,
-      ),
-      EmergencyContact(
-        id: '2',
-        name: 'Ambulance',
-        phoneNumber: '102',
-        email: '',
-        type: EmergencyContactType.ambulance,
-      ),
-      EmergencyContact(
-        id: '3',
-        name: 'Fire Department',
-        phoneNumber: '101',
-        email: '',
-        type: EmergencyContactType.fire,
-      ),
-    ];
+    try {
+      final contacts = await EmergencyContactService.loadEmergencyContacts();
+
+      // If no contacts exist, load default ones
+      if (contacts.isEmpty) {
+        _emergencyContacts = EmergencyContactService.getDefaultContacts();
+        // Save the default contacts to storage
+        await EmergencyContactService.saveEmergencyContacts(_emergencyContacts);
+      } else {
+        _emergencyContacts = contacts;
+      }
+    } catch (e) {
+      // Fallback to default contacts if loading fails
+      _emergencyContacts = EmergencyContactService.getDefaultContacts();
+      throw Exception('Failed to load emergency contacts: $e');
+    }
   }
 
   // Load safety history
@@ -213,6 +238,25 @@ class SafetyProvider extends ChangeNotifier {
         return 60;
       case HazardLevel.danger:
         return 20;
+    }
+  }
+
+  // Show safety alert with context
+  void showSafetyAlert(BuildContext context) {
+    if (_currentStatus != null && _isSafetyModeEnabled) {
+      if (_currentStatus!.level == HazardLevel.danger) {
+        SafetyNotificationManager.showEmergencyAlert(
+          context,
+          title: 'DANGER ALERT',
+          message: _currentStatus!.message,
+          warnings: _currentStatus!.warnings,
+        );
+      } else if (_currentStatus!.level == HazardLevel.caution) {
+        SafetyNotificationManager.showWarning(
+          context,
+          _currentStatus!.message,
+        );
+      }
     }
   }
 
