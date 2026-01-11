@@ -31,13 +31,13 @@ class DetailedSafetyCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           gradient: LinearGradient(
             colors: [
-              color.withValues(alpha: 0.1),
-              color.withValues(alpha: 0.05),
+              color.withOpacity(0.1),
+              color.withOpacity(0.05),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          border: Border.all(color: color.withValues(alpha: 0.3), width: 2),
+          border: Border.all(color: color.withOpacity(0.3), width: 2),
         ),
         child: Padding(
           padding: const EdgeInsets.all(20),
@@ -87,7 +87,7 @@ class DetailedSafetyCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
+                  color: color.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -214,9 +214,9 @@ class _WeatherParamTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        border: Border.all(color: color.withOpacity(0.3)),
       ),
       padding: const EdgeInsets.all(12),
       child: Column(
