@@ -9,6 +9,9 @@ import '../Services/emergency_contact_service.dart';
 import '../utils/safety_notification_manager.dart';
 import 'dart:async';
 
+final EmergencyContactService _emergencyContactService =
+    EmergencyContactService();
+
 class SafetyProvider extends ChangeNotifier {
   bool _isSafetyModeEnabled = false;
   SafetyStatus? _currentStatus;
@@ -159,7 +162,7 @@ class SafetyProvider extends ChangeNotifier {
   // Add emergency contact
   Future<void> addEmergencyContact(EmergencyContact contact) async {
     try {
-      await EmergencyContactService.addEmergencyContact(contact);
+      await _emergencyContactService.addEmergencyContact(contact);
       _emergencyContacts.add(contact);
       notifyListeners();
     } catch (e) {
@@ -170,7 +173,7 @@ class SafetyProvider extends ChangeNotifier {
   // Remove emergency contact
   Future<void> removeEmergencyContact(String id) async {
     try {
-      await EmergencyContactService.removeEmergencyContact(id);
+      await _emergencyContactService.removeEmergencyContact(id);
       _emergencyContacts.removeWhere((contact) => contact.id == id);
       notifyListeners();
     } catch (e) {
@@ -181,13 +184,14 @@ class SafetyProvider extends ChangeNotifier {
   // Load emergency contacts
   Future<void> loadEmergencyContacts() async {
     try {
-      final contacts = await EmergencyContactService.loadEmergencyContacts();
+      final contacts = await _emergencyContactService.loadEmergencyContacts();
 
       // If no contacts exist, load default ones
       if (contacts.isEmpty) {
         _emergencyContacts = EmergencyContactService.getDefaultContacts();
         // Save the default contacts to storage
-        await EmergencyContactService.saveEmergencyContacts(_emergencyContacts);
+        await _emergencyContactService
+            .saveEmergencyContacts(_emergencyContacts);
       } else {
         _emergencyContacts = contacts;
       }
