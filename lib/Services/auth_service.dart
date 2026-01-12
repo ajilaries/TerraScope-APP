@@ -112,6 +112,10 @@ class AuthService {
       if (data['user'] != null && data['user']['mode'] != null) {
         await prefs.setString('user_mode', data['user']['mode']);
       }
+      // Save user ID for offline access
+      if (data['user'] != null && data['user']['id'] != null) {
+        await saveUserId(data['user']['id'].toString());
+      }
       return {"ok": true, "data": data};
     } else {
       return {"ok": false, "message": resp.body};
@@ -121,5 +125,15 @@ class AuthService {
   Future<String?> getSavedToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('jwt_token');
+  }
+
+  Future<void> saveUserId(String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user_id', userId);
+  }
+
+  Future<String?> getSavedUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('user_id');
   }
 }

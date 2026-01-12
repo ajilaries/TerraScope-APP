@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import '../../Services/location_service.dart';
 import '../../Services/weather_services.dart';
 import '../../Services/aqi_service.dart';
+import 'daily_planner_schedule.dart';
+import 'daily_planner_tasks.dart';
+import 'daily_planner_reminders.dart';
 
 class DailyPlannerDashboard extends StatefulWidget {
   const DailyPlannerDashboard({super.key});
@@ -479,9 +482,30 @@ class _DailyPlannerDashboardState extends State<DailyPlannerDashboard> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _quickActionButton(Icons.calendar_view_day, "Schedule", () {}),
-              _quickActionButton(Icons.checklist, "Tasks", () {}),
-              _quickActionButton(Icons.notifications, "Reminders", () {}),
+              _quickActionButton(Icons.calendar_view_day, "Schedule", () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const DailyPlannerSchedule(),
+                  ),
+                );
+              }),
+              _quickActionButton(Icons.checklist, "Tasks", () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const DailyPlannerTasks(),
+                  ),
+                );
+              }),
+              _quickActionButton(Icons.notifications, "Reminders", () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const DailyPlannerReminders(),
+                  ),
+                );
+              }),
             ],
           ),
         ],
@@ -658,6 +682,7 @@ class _DailyPlannerDashboardState extends State<DailyPlannerDashboard> {
 
   String _getDailySummary() {
     if (currentWeather == null) return "Weather data loading...";
+
 
     final currentTemp = temp;
     final desc = currentWeather!['description'].toString();

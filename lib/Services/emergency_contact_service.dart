@@ -1,15 +1,36 @@
 import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/emergency_contact.dart';
+import 'auth_service.dart';
 
 class EmergencyContactService {
-  static const String _emergencyContactsKey = 'emergency_contacts';
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final AuthService _authService = AuthService();
 
-  // Save emergency contacts to local storage
-  static Future<void> saveEmergencyContacts(
-      List<EmergencyContact> contacts) async {
+  Future<String?> _getUserId() async {
+    final token = await _authService.getSavedToken();
+    if (token != null) {
+      try {
+        Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
+        return decodedToken['user_id'] ??
+            decodedToken['id'] ??
+            decodedToken['sub'];
+      } catch (e) {
+        print('Error decoding JWT: $e');
+        return null;
+      }
+    }
+    return null;
+  }
+
+  // Save emergency contacts to Firestore
+  Future<void> saveEmergencyContacts(List<EmergencyContact> contacts) async {
+    final userId = await _getUserId();
+    if (userId == null) return;
+
     try {
-      final prefs = await SharedPreferences.getInstance();
       final contactsJson = contacts
           .map((contact) => {
                 'id': contact.id,
@@ -22,20 +43,32 @@ class EmergencyContactService {
               })
           .toList();
 
-      await prefs.setString(_emergencyContactsKey, json.encode(contactsJson));
+      await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('emergency_contacts')
+          .doc('contacts')
+          .set({'contacts': contactsJson});
     } catch (e) {
       throw Exception('Failed to save emergency contacts: $e');
     }
   }
 
-  // Load emergency contacts from local storage
-  static Future<List<EmergencyContact>> loadEmergencyContacts() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final contactsJson = prefs.getString(_emergencyContactsKey);
+  // Load emergency contacts from Firestore
+  Future<List<EmergencyContact>> loadEmergencyContacts() async {
+    final userId = await _getUserId();
+    if (userId == null) return [];
 
-      if (contactsJson != null) {
-        final contactsList = json.decode(contactsJson) as List;
+    try {
+      final doc = await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('emergency_contacts')
+          .doc('contacts')
+          .get();
+
+      if (doc.exists && doc.data() != null) {
+        final contactsList = doc.data()!['contacts'] as List;
         return contactsList
             .map((item) => EmergencyContact(
                   id: item['id'],
@@ -58,22 +91,21 @@ class EmergencyContactService {
   }
 
   // Add a single emergency contact
-  static Future<void> addEmergencyContact(EmergencyContact contact) async {
+  Future<void> addEmergencyContact(EmergencyContact contact) async {
     final contacts = await loadEmergencyContacts();
     contacts.add(contact);
     await saveEmergencyContacts(contacts);
   }
 
   // Remove an emergency contact by ID
-  static Future<void> removeEmergencyContact(String id) async {
+  Future<void> removeEmergencyContact(String id) async {
     final contacts = await loadEmergencyContacts();
     contacts.removeWhere((contact) => contact.id == id);
     await saveEmergencyContacts(contacts);
   }
 
   // Update an emergency contact
-  static Future<void> updateEmergencyContact(
-      EmergencyContact updatedContact) async {
+  Future<void> updateEmergencyContact(EmergencyContact updatedContact) async {
     final contacts = await loadEmergencyContacts();
     final index =
         contacts.indexWhere((contact) => contact.id == updatedContact.id);
@@ -84,10 +116,17 @@ class EmergencyContactService {
   }
 
   // Clear all emergency contacts
-  static Future<void> clearEmergencyContacts() async {
+  Future<void> clearEmergencyContacts() async {
+    final userId = await _getUserId();
+    if (userId == null) return;
+
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_emergencyContactsKey);
+      await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('emergency_contacts')
+          .doc('contacts')
+          .delete();
     } catch (e) {
       throw Exception('Failed to clear emergency contacts: $e');
     }
