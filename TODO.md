@@ -1,30 +1,21 @@
-# Farmer Dashboard Animation Implementation
+# TODO: Fix withValues to withOpacity Errors
 
-## Completed Tasks
+## Overview
 
-- [x] Add SingleTickerProviderStateMixin to FarmerDashboard state class
-- [x] Initialize AnimationController with 1200ms duration in initState
-- [x] Create scale animation (0.8 to 1.2) with elastic curve
-- [x] Set animation to repeat continuously
-- [x] Add dispose method to clean up animation controller
-- [x] Modify appBar title to include animated agriculture icon
-- [x] Use AnimatedBuilder and Transform.scale for smooth animation
+Replace all instances of `withValues(alpha: value)` with `withOpacity(value)` in Color objects across multiple Dart files to fix compilation errors.
 
-## Animation Details
+## Steps
 
-- **Icon**: Icons.agriculture (farming-themed)
-- **Animation**: Scale from 0.8x to 1.2x with elastic easing
-- **Duration**: 1200ms per cycle
-- **Behavior**: Continuous pulsing animation
-- **Location**: App bar title, next to "Farmer Mode" text
-
-## Testing Status
-
-- [ ] Test animation on device/emulator
-- [ ] Verify smooth performance
-- [ ] Check animation starts on dashboard load
-- [ ] Ensure no performance issues
-
-## Notes
-
-The animation provides a welcoming, farming-themed visual effect when users enter farmer mode. The elastic curve creates a natural, bouncy feel that complements the agricultural theme.
+- [x] Edit lib/Widgets/saftey_card.dart (1 instance)
+- [x] Edit lib/Widgets/safety_history_card.dart (1 instance)
+- [ ] Edit lib/Widgets/emergency_contact_card.dart (3 instances)
+- [ ] Edit lib/Widgets/detailed_safety_card.dart (6 instances)
+- [x] Edit lib/utils/safety_notification_manager.dart (2 instances)
+- [x] Edit lib/Screens/traveler/traveler_saftey_card.dart (1 instance)
+- [x] Edit lib/Screens/settings_screen.dart (5 instances)
+- [ ] Edit lib/Screens/saftey/saftey_mode_screen.dart (4 instances)
+- [x] Edit lib/Screens/home_screen2.dart (1 instance)
+- [x] Edit lib/Screens/home_screen.dart (1 instance)
+- [ ] Edit lib/Screens/anomaly_screen.dart (3 instances)
+- [x] Edit lib/Screens/anomalies_screen.dart (1 instance)
+- [ ] Run flutter analyze to verify fixes

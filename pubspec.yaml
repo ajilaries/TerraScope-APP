@@ -21,6 +21,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   weather_icons: ^3.0.0
   fl_chart: ^0.68.0
+  table_calendar: ^3.0.9
 
   # Networking
   http: ^1.2.1
@@ -49,6 +50,7 @@ dependencies:
 
   # ENV
   flutter_dotenv: ^5.1.0
+  jwt_decoder: ^2.0.1
 
 dev_dependencies:
   flutter_test:
