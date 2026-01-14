@@ -1,6 +1,6 @@
 # 🌍 TerraScope - Advanced Weather & Safety App
 
-**TeraScope Pro** is a comprehensive Flutter mobile application designed to provide real-time weather monitoring, environmental intelligence, and location-based services. The app features intelligent AI-powered predictions, farmer-specific agricultural insights, traveler safety tools, and commute optimization.
+**TerraScope Pro** is a comprehensive Flutter mobile application designed to provide real-time weather monitoring, environmental intelligence, and location-based services. The app features intelligent AI-powered predictions, farmer-specific agricultural insights, traveler safety tools, commute optimization, and daily planner functionality.
 
 ---
 
@@ -34,6 +34,14 @@
 - Real-time weather integration for outdoor activities
 - Safe timing recommendations for daily tasks
 - Weather-optimized scheduling for work and leisure
+
+### 🚗 **Commute Mode**
+
+- Real-time commute alerts and notifications
+- Interactive commute dashboard with route planning
+- Quick actions for emergency situations during commute
+- Route preview with weather integration
+- Mini weather display for commute planning
 
 ### 🚨 **Safety Mode**
 
@@ -170,17 +178,19 @@ lib/
 │   ├── farmer/               # Farmer mode screens
 │   ├── traveler/             # Traveler mode screens
 │   ├── daily_planner/        # Daily planner mode screens
-│   ├── saftey/               # Safety mode screens
+│   ├── safety/               # Safety mode screens
+│   ├── commute/              # Commute mode screens
 │   ├── ai_mode/              # AI prediction screens
 │   └── radar/                # Weather radar and anomalies
 ├── Services/                 # API & Business Logic
-│   ├── weather/              # Weather-related services
-│   ├── crop/                 # Crop and soil services
-│   ├── ai/                   # AI prediction services
-│   ├── location/             # Location services
-│   ├── safety/               # Safety monitoring services
-│   ├── notification/         # Notification services
-│   └── auth/                 # Authentication services
+│   ├── weather_services.dart # Weather-related services
+│   ├── crop_service.dart     # Crop and soil services
+│   ├── ai_predict_service.dart # AI prediction services
+│   ├── location_service.dart # Location services
+│   ├── safety_monitoring_service.dart # Safety monitoring services
+│   ├── notification_service.dart # Notification services
+│   ├── auth_service.dart     # Authentication services
+│   └── more...               # Additional services
 ├── models/                   # Data Models
 ├── providers/                # State Management
 ├── Widgets/                  # Reusable UI Components
