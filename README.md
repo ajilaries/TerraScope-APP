@@ -4,6 +4,17 @@
 
 ---
 
+## 📋 Recent Updates
+
+### 🚜 Farmer Mode Enhancements (Latest)
+
+- **Fixed Frame Overflow Issues**: Resolved bottom overflow problems in the weekly forecast section by optimizing the SizedBox height from 110px to 170px
+- **Real Soil Type Integration**: Implemented ISRIC SoilGrids API integration to fetch actual soil texture data based on user location coordinates
+- **Dynamic Soil Type Display**: Soil type now displays real data (Clay, Loam, Sand, etc.) instead of static "Unknown" placeholder
+- **Enhanced UI Layout**: Improved weekly forecast layout with better spacing and responsive design
+
+---
+
 ## ✨ Key Features
 
 ### 🏠 **Core Dashboard**
@@ -17,10 +28,12 @@
 
 - **Crop Health Monitoring** – Track crop conditions and health status
 - **Crop Recommendations** – AI-driven suggestions based on weather and soil data
-- **Soil Analysis** – Detailed soil composition and fertility insights
+- **Soil Analysis** – Detailed soil composition and fertility insights with real-time soil type detection
 - **Crop Suitability** – Find optimal crops for your region
 - **Weather Alerts** – Receive critical weather notifications for agricultural safety
 - **Farmer-specific Weather Details** – Wind speed, soil moisture, and agricultural metrics
+- **Weekly Forecast** – 7-day weather forecast with optimized UI layout (fixed frame overflow issues)
+- **Real Soil Type Integration** – Uses ISRIC SoilGrids API to fetch actual soil texture data based on location coordinates
 
 ### 🧳 **Traveler Mode**
 

@@ -21,6 +21,14 @@ class _DailyPlannerDashboardState extends State<DailyPlannerDashboard> {
   List<Map<String, dynamic>> hourlyForecast = [];
   Map<String, dynamic>? currentWeather;
 
+  // Caching variables
+  Map<String, dynamic>? _cachedWeatherData;
+  Map<String, dynamic>? _cachedForecastData;
+  int? _cachedAqiData;
+  DateTime? _lastFetchTime;
+  static const Duration _cacheDuration =
+      Duration(minutes: 15); // Cache for 15 minutes
+
   @override
   void initState() {
     super.initState();
@@ -29,37 +37,73 @@ class _DailyPlannerDashboardState extends State<DailyPlannerDashboard> {
 
   Future<void> _initDailyPlanner() async {
     try {
+      // Check if we have valid cached data
+      if (_isCacheValid()) {
+        // Use cached data
+        setState(() {
+          if (_cachedWeatherData != null) {
+            currentPlace = _cachedWeatherData!['name'] ?? "Unknown Location";
+            temp = (_cachedWeatherData!['main']['temp'] as num).toDouble();
+            currentWeather =
+                WeatherService.parseWeatherData(_cachedWeatherData!);
+          }
+
+          if (_cachedForecastData != null &&
+              _cachedForecastData!['list'] != null) {
+            hourlyForecast = (_cachedForecastData!['list'] as List)
+                .take(24)
+                .map((item) => WeatherService.parseWeatherData(item))
+                .toList();
+          }
+
+          if (_cachedAqiData != null) {
+            aqi = _cachedAqiData!;
+          }
+        });
+        setState(() {
+          isLoading = false;
+        });
+        return;
+      }
+
       final pos = await LocationService.getCurrentPosition();
       if (pos != null) {
-        final weatherData =
-            await WeatherService.getCurrentWeather(pos.latitude, pos.longitude);
-        final forecastData = await WeatherService.getWeatherForecast(
-            pos.latitude, pos.longitude);
-        final aqiService = AQIService();
-        final aqiData = await aqiService.getAQI(pos.latitude, pos.longitude);
+        // Make API calls in parallel for better performance
+        final results = await Future.wait([
+          WeatherService.getCurrentWeather(pos.latitude, pos.longitude),
+          WeatherService.getWeatherForecast(pos.latitude, pos.longitude),
+          AQIService().getAQI(pos.latitude, pos.longitude),
+        ]);
 
-        if (weatherData != null) {
-          setState(() {
+        final weatherData = results[0] as Map<String, dynamic>?;
+        final forecastData = results[1] as Map<String, dynamic>?;
+        final aqiData = results[2] as int?;
+
+        // Cache the data
+        _cachedWeatherData = weatherData;
+        _cachedForecastData = forecastData;
+        _cachedAqiData = aqiData;
+        _lastFetchTime = DateTime.now();
+
+        // Update state with all data at once
+        setState(() {
+          if (weatherData != null) {
             currentPlace = weatherData['name'] ?? "Unknown Location";
             temp = (weatherData['main']['temp'] as num).toDouble();
             currentWeather = WeatherService.parseWeatherData(weatherData);
-          });
-        }
+          }
 
-        if (forecastData != null && forecastData['list'] != null) {
-          setState(() {
+          if (forecastData != null && forecastData['list'] != null) {
             hourlyForecast = (forecastData['list'] as List)
                 .take(24)
                 .map((item) => WeatherService.parseWeatherData(item))
                 .toList();
-          });
-        }
+          }
 
-        if (aqiData != null) {
-          setState(() {
+          if (aqiData != null) {
             aqi = aqiData;
-          });
-        }
+          }
+        });
       } else {
         setState(() {
           currentPlace = "Location unavailable";
@@ -79,6 +123,13 @@ class _DailyPlannerDashboardState extends State<DailyPlannerDashboard> {
         isLoading = false;
       });
     }
+  }
+
+  bool _isCacheValid() {
+    if (_lastFetchTime == null || _cachedWeatherData == null) {
+      return false;
+    }
+    return DateTime.now().difference(_lastFetchTime!) < _cacheDuration;
   }
 
   Future<void> _refreshData() async {
@@ -682,7 +733,6 @@ class _DailyPlannerDashboardState extends State<DailyPlannerDashboard> {
 
   String _getDailySummary() {
     if (currentWeather == null) return "Weather data loading...";
-
 
     final currentTemp = temp;
     final desc = currentWeather!['description'].toString();
