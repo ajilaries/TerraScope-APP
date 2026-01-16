@@ -3,6 +3,7 @@ import 'home_screen.dart';
 import 'home_screen2.dart';
 import 'home_screen0.dart';
 import '../Screens/farmer/farmer_dashboard.dart';
+import '../Screens/care/care_dashboard.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -51,6 +52,13 @@ class _MainPageState extends State<MainPage> {
                   context,
                   MaterialPageRoute(
                     builder: (_) => const FarmerDashboard(),
+                  ),
+                );
+              } else if (mode == "care") {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const CareDashboard(),
                   ),
                 );
               }
