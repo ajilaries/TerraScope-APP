@@ -286,8 +286,8 @@ class _CareDashboardState extends State<CareDashboard> {
         const SizedBox(height: 12),
         GridView.count(
           crossAxisCount: 3,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
+          crossAxisSpacing: 4,
+          mainAxisSpacing: 4,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           children: [
@@ -369,10 +369,10 @@ class _CareDashboardState extends State<CareDashboard> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(6),
           border: Border.all(color: Colors.grey.shade200),
           boxShadow: [
             BoxShadow(
@@ -386,22 +386,22 @@ class _CareDashboardState extends State<CareDashboard> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
                 color: color.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 icon,
-                size: 32,
+                size: 20,
                 color: color,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 4),
             Text(
               title,
               style: const TextStyle(
-                fontSize: 16,
+                fontSize: 10,
                 fontWeight: FontWeight.bold,
               ),
               textAlign: TextAlign.center,
