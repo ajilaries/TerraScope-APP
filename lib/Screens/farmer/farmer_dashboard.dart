@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:geocoding/geocoding.dart';
+import '../../Services/location_service.dart';
+import '../../Services/weather_services.dart';
+import '../../Services/soil_service.dart';
 import 'farmer_weather_details.dart';
 import 'farmer_crop_health.dart';
 import 'crop_recommendation.dart';
@@ -31,6 +35,7 @@ class _FarmerDashboardState extends State<FarmerDashboard>
   Map<String, dynamic>? _locationData;
   List<Map<String, dynamic>> cropRecommendations = [];
   List<Map<String, dynamic>>? _forecastData;
+  String _soilType = 'Loading...';
 
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
@@ -65,32 +70,123 @@ class _FarmerDashboardState extends State<FarmerDashboard>
     });
 
     try {
-      // Simulate loading weather data
-      await Future.delayed(const Duration(seconds: 2));
-      setState(() {
-        _weatherData = {
+      // Use widget parameters for location, fallback to current location if not provided
+      double lat = widget.latitude ?? 0.0;
+      double lon = widget.longitude ?? 0.0;
+
+      if (lat == 0.0 && lon == 0.0) {
+        // Fallback to current location if not provided
+        final position = await LocationService.getCurrentPosition();
+        if (position != null) {
+          lat = position.latitude;
+          lon = position.longitude;
+        }
+      }
+
+      // Get location name from coordinates
+      String cityName = 'Unknown';
+      String stateName = '';
+      try {
+        List<Placemark> placemarks = await placemarkFromCoordinates(lat, lon);
+        if (placemarks.isNotEmpty) {
+          cityName = placemarks.first.locality ?? 'Unknown';
+          stateName = placemarks.first.administrativeArea ?? '';
+        }
+      } catch (e) {
+        print('Error getting location name: $e');
+      }
+
+      // Fetch soil type data
+      final soilType = await SoilService.getSoilType(lat, lon);
+
+      // Fetch real weather data
+      final weatherData = await WeatherService.getCurrentWeather(lat, lon);
+      final forecastData = await WeatherService.getWeatherForecast(lat, lon);
+
+      // Parse weather data
+      Map<String, dynamic> parsedWeather = {};
+      if (weatherData != null) {
+        parsedWeather = {
+          'temperature': (weatherData['main']['temp'] as num).toDouble(),
+          'condition': weatherData['weather'][0]['description'],
+          'humidity': (weatherData['main']['humidity'] as num).toDouble(),
+          'wind_speed': (weatherData['wind']['speed'] as num).toDouble(),
+        };
+      } else {
+        // Fallback to default values
+        parsedWeather = {
           'temperature': 29.0,
           'condition': 'Partly Cloudy',
           'humidity': 78.0,
           'wind_speed': 12.0,
         };
-        _locationData = {
-          'city': 'Kottayam',
-          'state': 'Kerala',
-        };
-        cropRecommendations = [
-          {
-            'name': 'Rice',
-            'reason': 'Optimal temperature and humidity for growth',
-            'suitability': 85,
-          },
-          {
-            'name': 'Wheat',
-            'reason': 'Suitable soil conditions',
-            'suitability': 75,
-          },
-        ];
-        _forecastData = [
+      }
+
+      // Parse forecast data - Get daily forecasts for 7 days
+      List<Map<String, dynamic>> parsedForecast = [];
+      if (forecastData != null && forecastData['list'] != null) {
+        final list = forecastData['list'] as List;
+        Map<String, Map<String, dynamic>> dailyForecasts = {};
+
+        for (final item in list) {
+          final dt = DateTime.fromMillisecondsSinceEpoch(item['dt'] * 1000);
+          final dayKey = dt.toIso8601String().split('T')[0]; // YYYY-MM-DD
+
+          // Take midday forecast (around 12:00) for each day
+          if (dt.hour >= 11 &&
+              dt.hour <= 13 &&
+              !dailyForecasts.containsKey(dayKey)) {
+            dailyForecasts[dayKey] = {
+              'day': [
+                'Mon',
+                'Tue',
+                'Wed',
+                'Thu',
+                'Fri',
+                'Sat',
+                'Sun'
+              ][dt.weekday - 1],
+              'temp': (item['main']['temp'] as num).toDouble(),
+              'humidity': (item['main']['humidity'] as num).toInt(),
+              'icon': _getWeatherIcon(item['weather'][0]['main']),
+            };
+          }
+        }
+
+        // Take first 7 days
+        final sortedDays = dailyForecasts.keys.toList()..sort();
+        for (int i = 0; i < 7 && i < sortedDays.length; i++) {
+          parsedForecast.add(dailyForecasts[sortedDays[i]]!);
+        }
+
+        // If not enough daily forecasts, fill with available data
+        if (parsedForecast.length < 7) {
+          for (final item in list) {
+            if (parsedForecast.length >= 7) break;
+            final dt = DateTime.fromMillisecondsSinceEpoch(item['dt'] * 1000);
+            final dayKey = dt.toIso8601String().split('T')[0];
+            if (!dailyForecasts.containsKey(dayKey)) {
+              parsedForecast.add({
+                'day': [
+                  'Mon',
+                  'Tue',
+                  'Wed',
+                  'Thu',
+                  'Fri',
+                  'Sat',
+                  'Sun'
+                ][dt.weekday - 1],
+                'temp': (item['main']['temp'] as num).toDouble(),
+                'humidity': (item['main']['humidity'] as num).toInt(),
+                'icon': _getWeatherIcon(item['weather'][0]['main']),
+              });
+              dailyForecasts[dayKey] = parsedForecast.last;
+            }
+          }
+        }
+      } else {
+        // Fallback forecast for 7 days
+        parsedForecast = [
           {'day': 'Mon', 'temp': 28, 'humidity': 70, 'icon': Icons.cloud},
           {'day': 'Tue', 'temp': 30, 'humidity': 65, 'icon': Icons.sunny},
           {
@@ -99,17 +195,71 @@ class _FarmerDashboardState extends State<FarmerDashboard>
             'humidity': 80,
             'icon': Icons.cloudy_snowing
           },
+          {'day': 'Thu', 'temp': 29, 'humidity': 75, 'icon': Icons.wb_sunny},
+          {'day': 'Fri', 'temp': 31, 'humidity': 60, 'icon': Icons.grain},
+          {'day': 'Sat', 'temp': 26, 'humidity': 85, 'icon': Icons.ac_unit},
+          {'day': 'Sun', 'temp': 32, 'humidity': 55, 'icon': Icons.flash_on},
         ];
-      });
+      }
+
+      if (mounted) {
+        setState(() {
+          _weatherData = parsedWeather;
+          _locationData = {
+            'city': cityName,
+            'state': stateName,
+          };
+          _soilType = soilType;
+          cropRecommendations = [
+            {
+              'name': 'Rice',
+              'reason': 'Optimal temperature and humidity for growth',
+              'suitability': 85,
+            },
+            {
+              'name': 'Wheat',
+              'reason': 'Suitable soil conditions',
+              'suitability': 75,
+            },
+          ];
+          _forecastData = parsedForecast;
+        });
+      }
     } catch (e) {
-      setState(() {
-        errorMessage = 'Failed to load data: $e';
-      });
+      if (mounted) {
+        setState(() {
+          errorMessage = 'Failed to load data: $e';
+        });
+      }
     } finally {
-      setState(() {
-        isLoading = false;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  IconData _getWeatherIcon(String weatherMain) {
+    switch (weatherMain.toLowerCase()) {
+      case 'clear':
+        return Icons.wb_sunny;
+      case 'clouds':
+        return Icons.cloud;
+      case 'rain':
+        return Icons.grain;
+      case 'drizzle':
+        return Icons.grain;
+      case 'thunderstorm':
+        return Icons.flash_on;
+      case 'snow':
+        return Icons.ac_unit;
+      case 'mist':
+      case 'fog':
+        return Icons.blur_on;
+      default:
+        return Icons.cloud;
     }
   }
 
@@ -209,7 +359,7 @@ class _FarmerDashboardState extends State<FarmerDashboard>
                     style: const TextStyle(color: Colors.white70, fontSize: 12),
                   ),
                   Text(
-                    "Soil: ${widget.soilType ?? 'Unknown'}",
+                    "Soil: $_soilType",
                     style: const TextStyle(color: Colors.white70, fontSize: 12),
                   ),
                 ],
@@ -350,15 +500,15 @@ class _FarmerDashboardState extends State<FarmerDashboard>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "Kottayam, Kerala",
+            _getLocationName(),
             style: TextStyle(
               color: Colors.white.withOpacity(0.9),
               fontSize: 16,
             ),
           ),
           const SizedBox(height: 6),
-          const Text(
-            "29°C",
+          Text(
+            "${_weatherData!['temperature'].toStringAsFixed(1)}°C",
             style: TextStyle(
               color: Colors.white,
               fontSize: 42,
@@ -367,7 +517,7 @@ class _FarmerDashboardState extends State<FarmerDashboard>
           ),
           const SizedBox(height: 4),
           Text(
-            "Partly Cloudy",
+            _weatherData!['condition'],
             style: TextStyle(
               color: Colors.white.withOpacity(0.9),
               fontSize: 18,
@@ -377,9 +527,11 @@ class _FarmerDashboardState extends State<FarmerDashboard>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _miniInfo(Icons.water_drop, "Humidity", "78%"),
+              _miniInfo(Icons.water_drop, "Humidity",
+                  "${_weatherData!['humidity'].toStringAsFixed(0)}%"),
               _miniInfo(Icons.cloudy_snowing, "Rain Chance", "65%"),
-              _miniInfo(Icons.air, "Wind", "12 km/h"),
+              _miniInfo(Icons.air, "Wind",
+                  "${_weatherData!['wind_speed'].toStringAsFixed(1)} km/h"),
             ],
           ),
           const SizedBox(height: 20),
@@ -599,7 +751,7 @@ class _FarmerDashboardState extends State<FarmerDashboard>
         ),
         const SizedBox(height: 12),
         SizedBox(
-          height: 110,
+          height: 170,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: _forecastData!.length,
@@ -666,7 +818,7 @@ class _FarmerDashboardState extends State<FarmerDashboard>
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 12),
-            Text("Soil Type: ${widget.soilType ?? 'Unknown'}"),
+            Text("Soil Type: $_soilType"),
             Text("Latitude: ${widget.latitude?.toStringAsFixed(4) ?? '--'}"),
             Text("Longitude: ${widget.longitude?.toStringAsFixed(4) ?? '--'}"),
             Text("Humidity Level: ${_getHumidity()}%"),
