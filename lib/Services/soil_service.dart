@@ -16,15 +16,47 @@ class SoilService {
       }
       final data = json.decode(response.body);
 
-      // Extract texture class - Fixed typo: 'properties' instead of 'propreties'
+      // Extract texture class - Use 'mean' value and map to soil type name
       final layers = data['properties']['layers'];
-      final texture = layers[0]['depths'][0]['values']['values'];
+      final textureCode = layers[0]['depths'][0]['values']['mean'];
 
-      return texture.toString();
+      // Map numeric texture class to soil type name
+      return _mapTextureClassToName(textureCode);
     } catch (e) {
       print("❌ Soil Service Error: $e");
       // Return default soil type if API fails
-      return "Clay";
+      return "Unknown";
+    }
+  }
+
+  static String _mapTextureClassToName(int textureCode) {
+    switch (textureCode) {
+      case 1:
+        return "Clay";
+      case 2:
+        return "Silty Clay";
+      case 3:
+        return "Sandy Clay";
+      case 4:
+        return "Clay Loam";
+      case 5:
+        return "Silty Clay Loam";
+      case 6:
+        return "Sandy Clay Loam";
+      case 7:
+        return "Loam";
+      case 8:
+        return "Silty Loam";
+      case 9:
+        return "Sandy Loam";
+      case 10:
+        return "Silt";
+      case 11:
+        return "Loamy Sand";
+      case 12:
+        return "Sand";
+      default:
+        return "Unknown";
     }
   }
 }
