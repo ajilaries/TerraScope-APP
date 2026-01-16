@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:terra_scope_apk/Screens/farmer/farmer_result_screen.dart';
 import 'package:terra_scope_apk/popups/farmer_intro_popup.dart';
 import 'package:terra_scope_apk/Screens/traveler/traveler_dashboard.dart';
+import 'package:terra_scope_apk/Screens/care/care_dashboard.dart';
 
 import 'package:terra_scope_apk/Screens/daily_planner/daily_planner_dashboard.dart';
 import 'package:terra_scope_apk/providers/mode_provider.dart';
@@ -181,6 +182,11 @@ class _HomeScreen0State extends State<HomeScreen0> {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => DailyPlannerDashboard()),
+          );
+        } else if (mode == "care") {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const CareDashboard()),
           );
         } else {
           widget.onModeSelected(mode);
