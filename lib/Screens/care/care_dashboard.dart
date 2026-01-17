@@ -10,6 +10,11 @@ import 'health_reminders.dart';
 import 'nearby_services.dart';
 import '../../Services/weather_services.dart';
 import '../../Services/location_service.dart';
+import '../../Services/auth_service.dart';
+import '../../Services/user_settings_service.dart';
+import '../../Services/firebase_user_service.dart';
+import '../../providers/emergency_provider.dart';
+import 'package:provider/provider.dart';
 
 class CareDashboard extends StatefulWidget {
   const CareDashboard({super.key});
@@ -26,6 +31,8 @@ class _CareDashboardState extends State<CareDashboard> {
   List<Map<String, dynamic>> _todayReminders = [];
   List<Map<String, dynamic>> _todayActivities = [];
   bool _isLoading = true;
+  String? _currentUserId;
+  final AuthService _authService = AuthService();
 
   @override
   void initState() {
@@ -88,8 +95,34 @@ class _CareDashboardState extends State<CareDashboard> {
 
   Future<void> _loadTodayReminders() async {
     try {
+      // Load health reminders from Firestore
+      final reminders = await UserSettingsService.getHealthReminders();
+
+      // Filter for enabled reminders and take first 3
+      final todayReminders = reminders
+          .where((reminder) => reminder['enabled'] == true)
+          .take(3)
+          .toList();
+
+      setState(() {
+        _todayReminders = todayReminders;
+      });
+    } catch (e) {
+      print('Error loading reminders: $e');
+      // Fallback to SharedPreferences if Firestore fails
+      await _loadRemindersFromPrefs();
+    }
+  }
+
+  Future<void> _loadRemindersFromPrefs() async {
+    try {
+      if (_currentUserId == null) {
+        _currentUserId = await _authService.getSavedUserId();
+      }
+
       final prefs = await SharedPreferences.getInstance();
-      final remindersData = prefs.getStringList('health_reminders') ?? [];
+      final userKey = 'health_reminders_${_currentUserId ?? 'guest'}';
+      final remindersData = prefs.getStringList(userKey) ?? [];
 
       final todayReminders = remindersData
           .map((reminderJson) {
@@ -102,23 +135,57 @@ class _CareDashboardState extends State<CareDashboard> {
             };
           })
           .where((reminder) => reminder['enabled'] == true)
-          .take(3) // Show only first 3
+          .take(3)
           .toList();
 
       setState(() {
         _todayReminders = todayReminders;
       });
     } catch (e) {
-      print('Error loading reminders: $e');
+      print('Error loading reminders from prefs: $e');
     }
   }
 
   Future<void> _loadTodayActivities() async {
     try {
+      // Load daily activities from Firebase (primary)
+      final now = DateTime.now();
+      final todayKey = '${now.year}-${now.month}-${now.day}';
+      final activities = await FirebaseUserService.getDailyActivities(todayKey);
+
+      setState(() {
+        _todayActivities = activities;
+      });
+    } catch (e) {
+      print('Error loading activities from Firebase: $e');
+      // Fallback to UserSettingsService
+      try {
+        final now = DateTime.now();
+        final todayKey = '${now.year}-${now.month}-${now.day}';
+        final activities =
+            await UserSettingsService.getDailyActivities(todayKey);
+        setState(() {
+          _todayActivities = activities;
+        });
+      } catch (fallbackError) {
+        print('Error loading activities from fallback: $fallbackError');
+        // Final fallback to SharedPreferences
+        await _loadActivitiesFromPrefs();
+      }
+    }
+  }
+
+  Future<void> _loadActivitiesFromPrefs() async {
+    try {
+      if (_currentUserId == null) {
+        _currentUserId = await _authService.getSavedUserId();
+      }
+
       final prefs = await SharedPreferences.getInstance();
       final now = DateTime.now();
       final todayKey = '${now.year}-${now.month}-${now.day}';
-      final activitiesData = prefs.getStringList('activities_$todayKey') ?? [];
+      final userKey = 'activities_${todayKey}_${_currentUserId ?? 'guest'}';
+      final activitiesData = prefs.getStringList(userKey) ?? [];
 
       final todayActivities = activitiesData
           .map((activityJson) {
@@ -128,14 +195,14 @@ class _CareDashboardState extends State<CareDashboard> {
               'completed': parts[5] == 'true',
             };
           })
-          .take(3) // Show only first 3
+          .take(3)
           .toList();
 
       setState(() {
         _todayActivities = todayActivities;
       });
     } catch (e) {
-      print('Error loading activities: $e');
+      print('Error loading activities from prefs: $e');
     }
   }
 
