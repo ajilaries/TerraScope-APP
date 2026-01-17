@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../Services/location_service.dart';
+import '../../Services/nearby_services.dart';
+// import '../../Services/nearby_cache_service.dart';
 
 class NearbyServicesScreen extends StatefulWidget {
   const NearbyServicesScreen({super.key});
@@ -86,39 +88,22 @@ class _NearbyServicesScreenState extends State<NearbyServicesScreen> {
     });
 
     try {
-      // Simulate API call delay
-      await Future.delayed(const Duration(seconds: 2));
+      // Get current location
+      final position = await LocationService.getCurrentPosition();
+      if (position == null) {
+        throw Exception('Unable to get current location');
+      }
 
-      // Mock data for demonstration
-      final mockResults = [
-        {
-          'name': 'City General Hospital',
-          'address': '123 Main St, City, State',
-          'phone': '+1-555-0123',
-          'distance': '0.5 km',
-          'rating': 4.5,
-          'isOpen': true,
-        },
-        {
-          'name': 'Downtown Medical Center',
-          'address': '456 Health Ave, City, State',
-          'phone': '+1-555-0456',
-          'distance': '1.2 km',
-          'rating': 4.2,
-          'isOpen': true,
-        },
-        {
-          'name': 'Community Clinic',
-          'address': '789 Care Blvd, City, State',
-          'phone': '+1-555-0789',
-          'distance': '2.1 km',
-          'rating': 4.0,
-          'isOpen': false,
-        },
-      ];
+      // Search for nearby services using OpenStreetMap Overpass API
+      final services = await NearbyServices.searchNearbyServices(
+        query,
+        position.latitude,
+        position.longitude,
+        5000, // 5km radius
+      );
 
       setState(() {
-        _services = mockResults;
+        _services = services;
         _isLoading = false;
       });
     } catch (e) {
@@ -132,6 +117,13 @@ class _NearbyServicesScreenState extends State<NearbyServicesScreen> {
   }
 
   Future<void> _makeCall(String phoneNumber) async {
+    if (phoneNumber == 'Not available' || phoneNumber.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Phone number not available')),
+      );
+      return;
+    }
+
     final Uri launchUri = Uri(scheme: 'tel', path: phoneNumber);
     try {
       await launchUrl(launchUri);
@@ -142,9 +134,21 @@ class _NearbyServicesScreenState extends State<NearbyServicesScreen> {
     }
   }
 
-  Future<void> _openInMaps(String address) async {
-    final query = Uri.encodeComponent(address);
-    final url = 'https://www.google.com/maps/search/?api=1&query=$query';
+  Future<void> _openInMaps(Map<String, dynamic> service) async {
+    final latitude = service['latitude'];
+    final longitude = service['longitude'];
+    final address = service['address'];
+
+    String url;
+    if (latitude != null && longitude != null) {
+      // Use OpenStreetMap for directions with coordinates
+      url =
+          'https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=$latitude,$longitude';
+    } else {
+      // Fallback to address search on OpenStreetMap
+      final query = Uri.encodeComponent(address);
+      url = 'https://www.openstreetmap.org/search?query=$query';
+    }
 
     try {
       await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
@@ -417,7 +421,7 @@ class _NearbyServicesScreenState extends State<NearbyServicesScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: () => _openInMaps(service['address']),
+                      onPressed: () => _openInMaps(service),
                       icon: const Icon(Icons.directions, size: 16),
                       label: const Text('Directions'),
                       style: ElevatedButton.styleFrom(
