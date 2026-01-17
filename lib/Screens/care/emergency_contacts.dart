@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/emergency_contact.dart';
 import '../../Services/emergency_contact_service.dart';
 import '../../Widgets/emergency_contact_card.dart';
+import '../../popups/add_contact_dialog.dart';
 
 class EmergencyContactsScreen extends StatefulWidget {
   const EmergencyContactsScreen({super.key});
@@ -115,18 +116,57 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
   }
 
   void _addContact() {
-    // Navigate to add contact screen
-    Navigator.pushNamed(context, '/add-emergency-contact')
-        .then((_) => _loadContacts());
+    showDialog(
+      context: context,
+      builder: (context) => AddContactDialog(
+        onContactAdded: _handleContactAdded,
+      ),
+    );
   }
 
   void _editContact(EmergencyContact contact) {
-    // Navigate to edit contact screen
-    Navigator.pushNamed(
-      context,
-      '/edit-emergency-contact',
-      arguments: contact,
-    ).then((_) => _loadContacts());
+    showDialog(
+      context: context,
+      builder: (context) => AddContactDialog(
+        initialContact: contact,
+        onContactAdded: _handleContactAdded,
+      ),
+    );
+  }
+
+  void _handleContactAdded(EmergencyContact contact) {
+    // Save the contact using the service
+    final service = EmergencyContactService();
+
+    // Check if this is an update or add
+    final existingContact = _contacts.firstWhere(
+      (c) => c.id == contact.id,
+      orElse: () => EmergencyContact(
+        id: '',
+        name: '',
+        phoneNumber: '',
+        email: '',
+        type: EmergencyContactType.family,
+      ),
+    );
+
+    final isUpdate = existingContact.id.isNotEmpty;
+
+    (isUpdate
+            ? service.updateEmergencyContact(contact)
+            : service.addEmergencyContact(contact))
+        .then((_) {
+      _loadContacts();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text(
+                '${contact.name} ${isUpdate ? 'updated' : 'added'} successfully')),
+      );
+    }).catchError((error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error saving contact: $error')),
+      );
+    });
   }
 
   Future<void> _deleteContact(EmergencyContact contact) async {
