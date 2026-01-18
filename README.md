@@ -1,6 +1,6 @@
 # 🌍 TerraScope - Advanced Weather & Safety App
 
-**TerraScope Pro** is a comprehensive Flutter mobile application designed to provide real-time weather monitoring, environmental intelligence, and location-based services. The app features intelligent AI-powered predictions, farmer-specific agricultural insights, traveler safety tools, commute optimization, and daily planner functionality.
+**TerraScope Pro** is a comprehensive Flutter mobile application designed to provide real-time weather monitoring, environmental intelligence, and location-based services. The app features intelligent AI-powered predictions, farmer-specific agricultural insights, traveler safety tools, commute optimization, daily planner functionality, and kids/senior care mode.
 
 ---
 
@@ -12,6 +12,14 @@
 - **Real Soil Type Integration**: Implemented ISRIC SoilGrids API integration to fetch actual soil texture data based on user location coordinates
 - **Dynamic Soil Type Display**: Soil type now displays real data (Clay, Loam, Sand, etc.) instead of static "Unknown" placeholder
 - **Enhanced UI Layout**: Improved weekly forecast layout with better spacing and responsive design
+
+### 👶 Kids/Senior Care Mode (Latest)
+
+- **Complete Implementation**: Successfully implemented comprehensive care mode with 8 screens including dashboard, emergency contacts, SOS functionality, health reminders, medication tracker, hydration tracker, daily activities, nearby services, and family contacts
+- **Accessibility Features**: Large, accessible UI elements with high contrast colors and clear icons for ease of use
+- **Emergency SOS**: Large-button SOS screen with location sharing capabilities
+- **Health Tracking**: Medication schedules, water intake monitoring, and activity reminders
+- **Offline Persistence**: Data stored using SharedPreferences for offline functionality
 
 ---
 
@@ -65,6 +73,19 @@
 - **Offline Safety Features** – Emergency functionality available without internet connection
 - **Safety History & Status Tracking** – Log and review past safety incidents and current safety status
 - **Emergency Service Integration** – Direct access to emergency services and providers
+
+### 👶 **Kids/Senior Care Mode**
+
+- **Care Dashboard** – Simplified weather display with safety alerts and health reminders
+- **Emergency Contacts** – Dedicated emergency contact management for caregivers
+- **SOS Functionality** – Large-button SOS screen with location sharing capabilities
+- **Health Reminders** – Medication schedules, hydration tracking, and exercise reminders
+- **Medication Tracker** – Track medication schedules and dosages
+- **Hydration Tracker** – Monitor daily water intake
+- **Daily Activities** – Activity tracking and reminders for daily routines
+- **Nearby Services** – Find hospitals, pharmacies, and clinics nearby
+- **Family Contacts** – Quick communication with family members
+- **Accessibility Features** – Large, accessible UI elements with high contrast colors and clear icons
 
 ### 🤖 **AI Predictions**
 
@@ -158,7 +179,6 @@ TerraScope is a **Flutter-powered mobile app** that lets users explore and monit
 
 - ☁️ **Live API Integration**
   Real-time data such as:
-
   - Temperature
   - Humidity
   - Weather conditions
@@ -188,6 +208,7 @@ TerraScope is a **Flutter-powered mobile app** that lets users explore and monit
 ```
 lib/
 ├── Screens/                  # UI Screens
+│   ├── care/                 # Kids/Senior care mode screens
 │   ├── farmer/               # Farmer mode screens
 │   ├── traveler/             # Traveler mode screens
 │   ├── daily_planner/        # Daily planner mode screens
@@ -240,12 +261,10 @@ lib/
    ```
 
 3. **Configure Firebase**
-
    - Add your `google-services.json` to `android/app/`
    - Add your Firebase project configuration to `lib/firebase_options.dart`
 
 4. **Set up environment variables**
-
    - Create a `.env` file in the project root
    - Add required API keys and backend URLs:
      ```
