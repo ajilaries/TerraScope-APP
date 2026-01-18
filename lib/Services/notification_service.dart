@@ -1,14 +1,27 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'auth_service.dart';
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
   static final FirebaseMessaging _firebaseMessaging =
       FirebaseMessaging.instance;
+  static final AuthService _authService = AuthService();
+  static String? _currentUserId;
 
   static Future<void> initialize() async {
+    // Set current user for user-specific preferences
+    try {
+      _currentUserId = await _authService.getSavedUserId();
+      print(
+          'Notification service initialized for user: ${_currentUserId ?? 'guest'}');
+    } catch (e) {
+      print('Error setting current user for notifications: $e');
+      _currentUserId = null;
+    }
+
     // Initialize local notifications
     const AndroidInitializationSettings androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -101,12 +114,14 @@ class NotificationService {
 
   static Future<bool> areNotificationsEnabled() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool('notifications_enabled') ?? true;
+    final key = 'notifications_enabled_${_currentUserId ?? 'guest'}';
+    return prefs.getBool(key) ?? true;
   }
 
   static Future<void> setNotificationsEnabled(bool enabled) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('notifications_enabled', enabled);
+    final key = 'notifications_enabled_${_currentUserId ?? 'guest'}';
+    await prefs.setBool(key, enabled);
   }
 
   static Future<String?> getDeviceToken() async {

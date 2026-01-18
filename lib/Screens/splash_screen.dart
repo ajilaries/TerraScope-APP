@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import '../Services/weather_services.dart';
+import '../Services/nearby_cache_service.dart';
 import 'main_page.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -22,6 +23,9 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _initializeApp() async {
     try {
+      // Initialize nearby services cache
+      await NearbyCacheService.initializeCache();
+
       // Request location permission and get current position
       LocationPermission permission = await Geolocator.requestPermission();
       Position? position;
@@ -45,6 +49,12 @@ class _SplashScreenState extends State<SplashScreen> {
             print(
                 'Weather data loaded: ${weatherData['weather'][0]['description']}');
           }
+
+          // Preload nearby services data for instant access
+          await NearbyCacheService.preloadNearbyServices(
+            position.latitude,
+            position.longitude,
+          );
         }
       }
 

@@ -3,13 +3,19 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/emergency_contact.dart';
+import '../Services/auth_service.dart';
 
 class EmergencyProvider with ChangeNotifier {
-  static const String _contactsKey = 'emergency_contacts';
-  static const String _signupCompletedKey = 'signup_completed';
+  final AuthService _authService = AuthService();
+  String? _currentUserId;
 
   List<EmergencyContact> _contacts = [];
   bool _isSignupCompleted = false;
+
+  // Get user-specific keys
+  String get _contactsKey => 'emergency_contacts_${_currentUserId ?? 'guest'}';
+  String get _signupCompletedKey =>
+      'signup_completed_${_currentUserId ?? 'guest'}';
 
   List<EmergencyContact> get contacts => List.unmodifiable(_contacts);
   bool get isSignupCompleted => _isSignupCompleted;
@@ -18,9 +24,23 @@ class EmergencyProvider with ChangeNotifier {
   EmergencyContact? get primaryContact =>
       _contacts.isNotEmpty ? _contacts[0] : null;
 
+  // Set current user for user-specific data
+  Future<void> setCurrentUser() async {
+    try {
+      _currentUserId = await _authService.getSavedUserId();
+      print('Emergency provider set for user: ${_currentUserId ?? 'guest'}');
+    } catch (e) {
+      print('Error setting current user for emergency provider: $e');
+      _currentUserId = null;
+    }
+  }
+
   // Load data from storage
   Future<void> loadData() async {
     try {
+      // Set current user first
+      await setCurrentUser();
+
       final prefs = await SharedPreferences.getInstance();
 
       // Load signup status
