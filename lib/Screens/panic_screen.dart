@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../Services/notification_service.dart'; // For sending push alerts
 import '../Services/location_service.dart'; // For current location
+import '../Services/emergency_contact_service.dart'; // For emergency contacts
 
 class PanicScreen extends StatefulWidget {
   const PanicScreen({super.key});
@@ -41,40 +42,39 @@ class _PanicScreenState extends State<PanicScreen> {
           "Time: ${DateTime.now().toString()}\n"
           "Please respond urgently!";
 
-      // 3️⃣ Get emergency contact from shared preferences
-      final prefs = await SharedPreferences.getInstance();
-      final emergencyContact =
-          prefs.getString('emergency_contact') ?? ""; // Default fallback
+      // 3️⃣ Get emergency contact from Firestore
+      final emergencyContactService = EmergencyContactService();
+      final contacts = await emergencyContactService.loadEmergencyContacts();
+      final primaryContact = contacts.isNotEmpty ? contacts.first : null;
 
-      // Send alert to emergency contact
-      final String testPhoneNumber =
-          emergencyContact; // Use saved emergency contact
+      // Use primary contact or fallback to default emergency numbers
+      final String emergencyPhoneNumber = primaryContact?.phoneNumber ?? "100"; // Default to police
 
       bool alertSent = false;
 
       try {
-        // Send SMS to your own number for testing
+        // Send SMS to emergency contact
         final smsUri = Uri.parse(
-            'sms:$testPhoneNumber?body=${Uri.encodeComponent(emergencyMessage)}');
+            'sms:$emergencyPhoneNumber?body=${Uri.encodeComponent(emergencyMessage)}');
         debugPrint("Attempting to launch SMS: $smsUri");
 
         if (await canLaunchUrl(smsUri)) {
           await launchUrl(smsUri, mode: LaunchMode.externalApplication);
           alertSent = true;
-          debugPrint("Test alert sent to: $testPhoneNumber");
+          debugPrint("Emergency alert sent to: $emergencyPhoneNumber");
         } else {
           // Fallback: try without body parameter
-          final fallbackUri = Uri.parse('sms:$testPhoneNumber');
+          final fallbackUri = Uri.parse('sms:$emergencyPhoneNumber');
           if (await canLaunchUrl(fallbackUri)) {
             await launchUrl(fallbackUri, mode: LaunchMode.externalApplication);
             alertSent = true;
-            debugPrint("Fallback SMS sent to: $testPhoneNumber (without body)");
+            debugPrint("Fallback SMS sent to: $emergencyPhoneNumber (without body)");
           } else {
             debugPrint("Could not launch SMS app - both URI formats failed");
           }
         }
       } catch (e) {
-        debugPrint("Failed to send test alert: $e");
+        debugPrint("Failed to send emergency alert: $e");
       }
 
       // 4️⃣ Send local notification
