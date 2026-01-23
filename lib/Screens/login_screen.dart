@@ -37,7 +37,7 @@ class _LoginScreenState extends State<LoginScreen> {
       }
       // Navigate to main app
       if (mounted) {
-        Navigator.of(context).popUntil((route) => route.isFirst);
+        Navigator.pushReplacementNamed(context, '/');
       }
     } else {
       if (mounted) {
