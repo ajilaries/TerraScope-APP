@@ -47,21 +47,24 @@ class _MainPageState extends State<MainPage> {
             onModeSelected: (mode) {
               print("Selected mode: $mode");
 
-              if (mode == "farmer") {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const FarmerDashboard(),
-                  ),
-                );
-              } else if (mode == "care") {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const CareDashboard(),
-                  ),
-                );
-              }
+              // Defer navigation to avoid build-time navigation
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mode == "farmer") {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const FarmerDashboard(),
+                    ),
+                  );
+                } else if (mode == "care") {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const CareDashboard(),
+                    ),
+                  );
+                }
+              });
             },
           ),
 
