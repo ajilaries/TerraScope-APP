@@ -3,9 +3,100 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
-  final String baseUrl =
-      "http://10.0.2.2:8000"; // Android emulator -> localhost. Use 127.0.0.1 on real device or device IP.
+  final String baseUrl = "http://10.0.2.2:8000"; // Android emulator -> localhost. Use 127.0.0.1 on real device or device IP.
 
+  // Login method
+  Future<Map<String, dynamic>> login({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': email,
+          'password': password,
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        // Save token and user ID
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('auth_token', data['access_token']);
+        await prefs.setString('user_id', data['user_id']);
+        return {'ok': true, 'message': 'Login successful'};
+      } else {
+        return {'ok': false, 'message': data['detail'] ?? 'Login failed'};
+      }
+    } catch (e) {
+      return {'ok': false, 'message': 'Network error: $e'};
+    }
+  }
+
+  // Send OTP for email verification
+  Future<Map<String, dynamic>> sendOtp({required String email}) async {
+    final startTime = DateTime.now();
+    try {
+      print('Sending OTP request to: $baseUrl/auth/send-otp');
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/send-otp'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email}),
+      );
+
+      final endTime = DateTime.now();
+      final duration = endTime.difference(startTime);
+      print('OTP send response time: ${duration.inMilliseconds}ms, Status: ${response.statusCode}');
+
+      return {
+        'statusCode': response.statusCode,
+        'body': response.body.isNotEmpty ? jsonDecode(response.body) : null,
+      };
+    } catch (e) {
+      final endTime = DateTime.now();
+      final duration = endTime.difference(startTime);
+      print('OTP send failed after ${duration.inMilliseconds}ms: $e');
+      return {'statusCode': 500, 'body': 'Network error: $e'};
+    }
+  }
+
+  // Verify OTP
+  Future<Map<String, dynamic>> verifyOtp({
+    required String email,
+    required String otp,
+  }) async {
+    final startTime = DateTime.now();
+    try {
+      print('Verifying OTP request to: $baseUrl/auth/verify-otp');
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/verify-otp'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': email,
+          'otp': otp,
+        }),
+      );
+
+      final endTime = DateTime.now();
+      final duration = endTime.difference(startTime);
+      print('OTP verify response time: ${duration.inMilliseconds}ms, Status: ${response.statusCode}');
+
+      return {
+        'statusCode': response.statusCode,
+        'body': response.body.isNotEmpty ? jsonDecode(response.body) : null,
+      };
+    } catch (e) {
+      final endTime = DateTime.now();
+      final duration = endTime.difference(startTime);
+      print('OTP verify failed after ${duration.inMilliseconds}ms: $e');
+      return {'statusCode': 500, 'body': 'Network error: $e'};
+    }
+  }
+
+  // Signup method
   Future<Map<String, dynamic>> signup({
     required String name,
     required String email,
@@ -15,125 +106,92 @@ class AuthService {
     required int age,
     required String phoneNumber,
     required String address,
-    List<Map<String, dynamic>>? emergencyContacts,
-    bool? enableNotifications,
-    bool? enableLocationSharing,
+    required List<Map<String, dynamic>> emergencyContacts,
+    required bool enableNotifications,
+    required bool enableLocationSharing,
   }) async {
-    final url = Uri.parse("$baseUrl/auth/signup");
-    final resp = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        "name": name,
-        "email": email,
-        "password": password,
-        "gender": gender,
-        "user_mode": userMode,
-        "age": age,
-        "phone_number": phoneNumber,
-        "address": address,
-        "emergency_contacts": emergencyContacts,
-        "enable_notifications": enableNotifications,
-        "enable_location_sharing": enableLocationSharing,
-      }),
-    );
-    return {
-      "statusCode": resp.statusCode,
-      "body": resp.body.isEmpty ? null : jsonDecode(resp.body)
-    };
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/signup'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'name': name,
+          'email': email,
+          'password': password,
+          'gender': gender,
+          'user_mode': userMode,
+          'age': age,
+          'phone_number': phoneNumber,
+          'address': address,
+          'emergency_contacts': emergencyContacts,
+          'enable_notifications': enableNotifications,
+          'enable_location_sharing': enableLocationSharing,
+        }),
+      );
+
+      return {
+        'statusCode': response.statusCode,
+        'body': response.body.isNotEmpty ? jsonDecode(response.body) : null,
+      };
+    } catch (e) {
+      return {'statusCode': 500, 'body': 'Network error: $e'};
+    }
   }
 
-  Future<Map<String, dynamic>> sendOtp({required String email}) async {
-    final url = Uri.parse("$baseUrl/auth/send-otp");
-    final resp = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({"email": email}),
-    );
-    return {
-      "statusCode": resp.statusCode,
-      "body": resp.body.isEmpty ? null : jsonDecode(resp.body)
-    };
-  }
-
-  Future<Map<String, dynamic>> verifyOtp({
-    required String email,
-    required String otp,
-  }) async {
-    final url = Uri.parse("$baseUrl/auth/verify-otp");
-    final resp = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({"email": email, "otp": otp}),
-    );
-    return {
-      "statusCode": resp.statusCode,
-      "body": resp.body.isEmpty ? null : jsonDecode(resp.body)
-    };
-  }
-
+  // Reset password
   Future<Map<String, dynamic>> resetPassword({
     required String email,
     required String otp,
     required String newPassword,
   }) async {
-    final url = Uri.parse("$baseUrl/auth/reset-password");
-    final resp = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        "email": email,
-        "otp": otp,
-        "new_password": newPassword,
-      }),
-    );
-    return {
-      "statusCode": resp.statusCode,
-      "body": resp.body.isEmpty ? null : jsonDecode(resp.body)
-    };
-  }
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/reset-password'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': email,
+          'otp': otp,
+          'new_password': newPassword,
+        }),
+      );
 
-  Future<Map<String, dynamic>> login({
-    required String email,
-    required String password,
-  }) async {
-    final url = Uri.parse("$baseUrl/auth/login");
-    final resp = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({"email": email, "password": password}),
-    );
-    if (resp.statusCode == 200) {
-      final data = jsonDecode(resp.body);
-      final token = data['token'] ?? data['access_token'] ?? data['token'];
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('jwt_token', token);
-      // Save mode if backend returns it
-      if (data['user'] != null && data['user']['mode'] != null) {
-        await prefs.setString('user_mode', data['user']['mode']);
-      }
-      // Save user ID for offline access
-      if (data['user'] != null && data['user']['id'] != null) {
-        await saveUserId(data['user']['id'].toString());
-      }
-      return {"ok": true, "data": data};
-    } else {
-      return {"ok": false, "message": resp.body};
+      return {
+        'statusCode': response.statusCode,
+        'body': response.body.isNotEmpty ? jsonDecode(response.body) : null,
+      };
+    } catch (e) {
+      return {'statusCode': 500, 'body': 'Network error: $e'};
     }
   }
 
-  Future<String?> getSavedToken() async {
+  // Get saved user ID
+  Future<String?> getSavedUserId() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('jwt_token');
+    return prefs.getString('user_id');
   }
 
+  // Get saved token
+  Future<String?> getSavedToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('auth_token');
+  }
+
+  // Save user ID
   Future<void> saveUserId(String userId) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('user_id', userId);
   }
 
-  Future<String?> getSavedUserId() async {
+  // Logout
+  Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('user_id');
+    await prefs.remove('auth_token');
+    await prefs.remove('user_id');
+  }
+
+  // Check if user is logged in
+  Future<bool> isLoggedIn() async {
+    final token = await getSavedToken();
+    return token != null;
   }
 }

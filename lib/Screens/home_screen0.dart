@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:provider/provider.dart';
+import 'dart:async';
 import 'package:terra_scope_apk/Screens/farmer/farmer_result_screen.dart';
 import 'package:terra_scope_apk/popups/farmer_intro_popup.dart';
 import 'package:terra_scope_apk/Screens/traveler/traveler_dashboard.dart';
 import 'package:terra_scope_apk/Screens/care/care_dashboard.dart';
-
 import 'package:terra_scope_apk/Screens/daily_planner/daily_planner_dashboard.dart';
 import 'package:terra_scope_apk/providers/mode_provider.dart';
+import 'package:terra_scope_apk/Services/auth_service.dart';
+import 'package:terra_scope_apk/Screens/signup_screen.dart';
 import 'Saftey/saftey_mode_screen.dart';
 
 class HomeScreen0 extends StatefulWidget {
@@ -57,6 +60,45 @@ class _HomeScreen0State extends State<HomeScreen0> {
             ),
 
             const SizedBox(height: 20),
+
+            // Recent Modes Section
+            Consumer<ModeProvider>(
+              builder: (context, modeProvider, child) {
+                if (modeProvider.recentModes.isNotEmpty) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Text(
+                          "Recent Modes",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? Colors.white : Colors.black,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        height: 80,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          itemCount: modeProvider.recentModes.length,
+                          itemBuilder: (context, index) {
+                            final mode = modeProvider.recentModes[index];
+                            return recentModeButton(mode, isDark);
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
 
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -126,6 +168,177 @@ class _HomeScreen0State extends State<HomeScreen0> {
     );
   }
 
+  // RECENT MODE BUTTON
+  Widget recentModeButton(String mode, bool isDark) {
+    String title;
+    IconData icon;
+    Color color;
+
+    switch (mode) {
+      case "default":
+        title = "Default";
+        icon = Icons.dashboard;
+        color = Colors.blue;
+        break;
+      case "traveller":
+        title = "Traveller";
+        icon = Icons.travel_explore;
+        color = Colors.green;
+        break;
+      case "farmer":
+        title = "Farmer";
+        icon = Icons.agriculture;
+        color = Colors.brown;
+        break;
+      case "safety":
+        title = "Safety";
+        icon = Icons.shield;
+        color = Colors.red;
+        break;
+      case "care":
+        title = "Kids / Senior";
+        icon = Icons.family_restroom;
+        color = Colors.deepPurple;
+        break;
+      case "daily_planner":
+        title = "Daily Planner";
+        icon = Icons.calendar_today;
+        color = Colors.teal;
+        break;
+      default:
+        title = mode;
+        icon = Icons.help;
+        color = Colors.grey;
+    }
+
+    return GestureDetector(
+      onTap: () {
+        // Schedule navigation for next frame to avoid build-time navigation
+        SchedulerBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _navigateToMode(mode);
+          }
+        });
+      },
+      child: Container(
+        width: 100,
+        margin: const EdgeInsets.only(right: 12),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.white10 : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.3)),
+          boxShadow: isDark
+              ? null
+              : [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 24, color: color),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: isDark ? Colors.white : Colors.black,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _navigateToMode(String mode) {
+    if (!mounted) return;
+
+    // For default mode, no login required
+    if (mode == "default") {
+      Provider.of<ModeProvider>(context, listen: false).setMode(mode);
+      widget.onModeSelected(mode);
+      return;
+    }
+
+    // Check login status asynchronously and navigate after current frame
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+
+      // Check if user is logged in for other modes
+      final authService = AuthService();
+      final token = await authService.getSavedToken();
+
+      if (token == null) {
+        // User not logged in, redirect to signup for this mode
+        if (!mounted) return;
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => SignupScreen(selectedMode: mode),
+          ),
+        );
+        return;
+      }
+
+      // User is logged in, proceed with mode selection
+      if (!mounted) return;
+      Provider.of<ModeProvider>(context, listen: false).setMode(mode);
+
+      // Navigate to the appropriate screen
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+
+        switch (mode) {
+          case "farmer":
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (_) => FarmerIntroPopup(
+                onSubmit: (double lat, double lon, String soilType) {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => FarmerResultScreen(
+                        lat: lat,
+                        lon: lon,
+                        soilType: soilType,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            );
+            break;
+          case "traveller":
+            Navigator.pushNamed(context, '/traveler-dashboard');
+            break;
+          case "safety":
+            Navigator.pushNamed(context, '/safety-mode');
+            break;
+          case "care":
+            Navigator.pushNamed(context, '/care-dashboard');
+            break;
+          case "daily_planner":
+            Navigator.pushNamed(context, '/daily-planner-dashboard');
+            break;
+          default:
+            widget.onModeSelected(mode);
+        }
+      });
+    });
+  }
+
   // MODE CARD
   Widget modeCard({
     required String title,
@@ -138,59 +351,17 @@ class _HomeScreen0State extends State<HomeScreen0> {
 
     return GestureDetector(
       onTap: () {
+        // Update selection state
         setState(() {
           selectedMode = mode;
         });
 
-        if (mode == "farmer") {
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (_) => FarmerIntroPopup(
-              onSubmit: (double lat, double lon, String soilType) {
-                Navigator.pop(context); // close popup
-
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => FarmerResultScreen(
-                      lat: lat,
-                      lon: lon,
-                      soilType: soilType,
-                    ),
-                  ),
-                );
-              },
-            ),
-          );
-        } else if (mode == "traveller") {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => TravelerDashboard()),
-          );
-        } else if (mode == "daily_planner") {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => DailyPlannerDashboard()),
-          );
-        } else if (mode == "safety") {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => SafetyModeScreen()),
-          );
-        } else if (mode == "daily_planner") {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => DailyPlannerDashboard()),
-          );
-        } else if (mode == "care") {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const CareDashboard()),
-          );
-        } else {
-          widget.onModeSelected(mode);
-        }
+        // Schedule navigation for next frame to avoid build-time navigation
+        SchedulerBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _navigateToMode(mode);
+          }
+        });
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),

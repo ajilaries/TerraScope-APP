@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -30,6 +31,11 @@ class _SignupScreenState extends State<SignupScreen> {
   bool enableLocationSharing = true;
   bool emailVerified = false;
   bool otpSent = false;
+  int otpExpiryTime = 300; // 5 minutes in seconds
+  int resendCooldownTime = 30; // 30 seconds
+  Timer? otpTimer;
+  Timer? resendTimer;
+  bool canResendOtp = false;
 
   List<Map<String, dynamic>> emergencyContacts = [];
 
@@ -201,6 +207,13 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   @override
+  void dispose() {
+    otpTimer?.cancel();
+    resendTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -238,10 +251,15 @@ class _SignupScreenState extends State<SignupScreen> {
               if (!emailVerified) ...[
                 const SizedBox(height: 10),
                 ElevatedButton(
-                  onPressed: loading ? null : sendOtp,
-                  child: const Text("Send OTP"),
+                  onPressed: (loading || (!canResendOtp && otpSent)) ? null : sendOtp,
+                  child: Text(otpSent ? "Resend OTP${canResendOtp ? '' : ' (${resendCooldownTime}s)'}" : "Send OTP"),
                 ),
                 if (otpSent) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    "OTP expires in: ${otpExpiryTime ~/ 60}:${(otpExpiryTime % 60).toString().padLeft(2, '0')}",
+                    style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 10),
                   TextFormField(
                     controller: otpC,

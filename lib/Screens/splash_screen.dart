@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import '../Services/weather_services.dart';
 import '../Services/nearby_cache_service.dart';
+import '../Services/auth_service.dart';
 import 'main_page.dart';
+import 'login_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -13,7 +15,7 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
-  final bool _isLoading = true;
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -23,53 +25,66 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _initializeApp() async {
     try {
-      // Initialize nearby services cache
-      await NearbyCacheService.initializeCache();
+      // Quick initialization - skip heavy preloading for snappy start
+      // Initialize cache in background if needed, but don't wait
+      NearbyCacheService.initializeCache().catchError((e) => print('Cache init error: $e'));
 
-      // Request location permission and get current position
-      LocationPermission permission = await Geolocator.requestPermission();
-      Position? position;
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        // Handle permission denied, but still proceed
-        print('Location permission denied');
-      } else {
-        position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high,
+      // Schedule navigation after the current frame is built
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+
+        // Always go to home screen - login only required for specific modes
+        const nextScreen = MainPage();
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => nextScreen),
         );
-        print('Location fetched: ${position.latitude}, ${position.longitude}');
 
-        // Load weather data using the fetched location
-        if (position != null) {
-          final weatherData = await WeatherService.getCurrentWeather(
-            position.latitude,
-            position.longitude,
-          );
-          if (weatherData != null) {
-            print(
-                'Weather data loaded: ${weatherData['weather'][0]['description']}');
-          }
-
-          // Preload nearby services data for instant access
-          await NearbyCacheService.preloadNearbyServices(
-            position.latitude,
-            position.longitude,
-          );
-        }
-      }
-
-      // Navigate to main page after initialization
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const MainPage()),
-      );
+        // Load location and data in background after navigation
+        _loadDataInBackground();
+      });
     } catch (e) {
       print('Error during initialization: $e');
-      // Still navigate even if there's an error
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const MainPage()),
-      );
+      // On error, still go to home screen
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const MainPage()),
+        );
+      });
+    }
+  }
+
+  Future<void> _loadDataInBackground() async {
+    try {
+      // Request location permission and get current position in background
+      LocationPermission permission = await Geolocator.requestPermission();
+      if (permission != LocationPermission.denied &&
+          permission != LocationPermission.deniedForever) {
+        Position position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+        );
+        print('Location fetched in background: ${position.latitude}, ${position.longitude}');
+
+        // Load weather data in background
+        final weatherData = await WeatherService.getCurrentWeather(
+          position.latitude,
+          position.longitude,
+        );
+        if (weatherData != null) {
+          print('Weather data loaded in background: ${weatherData['weather'][0]['description']}');
+        }
+
+        // Preload nearby services in background
+        await NearbyCacheService.preloadNearbyServices(
+          position.latitude,
+          position.longitude,
+        );
+      }
+    } catch (e) {
+      print('Background loading error: $e');
     }
   }
 
@@ -99,10 +114,9 @@ class _SplashScreenState extends State<SplashScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            if (_isLoading)
-              const CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              ),
+            const CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            ),
           ],
         ),
       ),
