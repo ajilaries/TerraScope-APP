@@ -1,9 +1,11 @@
 // {"id":"45913","variant":"standard","title":"Corrected MainHomeScreen with live updates"}
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:terra_scope_apk/pages/ai_predict_page.dart';
 import '../Services/location_service.dart';
 import '../Services/weather_services.dart';
