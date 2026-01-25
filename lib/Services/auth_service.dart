@@ -36,20 +36,20 @@ class AuthService {
     }
   }
 
-  // Send OTP for email verification
-  Future<Map<String, dynamic>> sendOtp({required String email}) async {
+  // Send verification link for email verification
+  Future<Map<String, dynamic>> sendVerificationLink({required String email}) async {
     final startTime = DateTime.now();
     try {
-      print('Sending OTP request to: $baseUrl/auth/send-otp');
+      print('Sending verification link request to: $baseUrl/auth/send-verification-link');
       final response = await http.post(
-        Uri.parse('$baseUrl/auth/send-otp'),
+        Uri.parse('$baseUrl/auth/send-verification-link'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email}),
       );
 
       final endTime = DateTime.now();
       final duration = endTime.difference(startTime);
-      print('OTP send response time: ${duration.inMilliseconds}ms, Status: ${response.statusCode}');
+      print('Verification link send response time: ${duration.inMilliseconds}ms, Status: ${response.statusCode}');
 
       return {
         'statusCode': response.statusCode,
@@ -58,31 +58,25 @@ class AuthService {
     } catch (e) {
       final endTime = DateTime.now();
       final duration = endTime.difference(startTime);
-      print('OTP send failed after ${duration.inMilliseconds}ms: $e');
+      print('Verification link send failed after ${duration.inMilliseconds}ms: $e');
       return {'statusCode': 500, 'body': 'Network error: $e'};
     }
   }
 
-  // Verify OTP
-  Future<Map<String, dynamic>> verifyOtp({
-    required String email,
-    required String otp,
-  }) async {
+  // Send reset link for password reset
+  Future<Map<String, dynamic>> sendResetLink({required String email}) async {
     final startTime = DateTime.now();
     try {
-      print('Verifying OTP request to: $baseUrl/auth/verify-otp');
+      print('Sending reset link request to: $baseUrl/auth/send-reset-link');
       final response = await http.post(
-        Uri.parse('$baseUrl/auth/verify-otp'),
+        Uri.parse('$baseUrl/auth/send-reset-link'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'email': email,
-          'otp': otp,
-        }),
+        body: jsonEncode({'email': email}),
       );
 
       final endTime = DateTime.now();
       final duration = endTime.difference(startTime);
-      print('OTP verify response time: ${duration.inMilliseconds}ms, Status: ${response.statusCode}');
+      print('Reset link send response time: ${duration.inMilliseconds}ms, Status: ${response.statusCode}');
 
       return {
         'statusCode': response.statusCode,
@@ -91,7 +85,7 @@ class AuthService {
     } catch (e) {
       final endTime = DateTime.now();
       final duration = endTime.difference(startTime);
-      print('OTP verify failed after ${duration.inMilliseconds}ms: $e');
+      print('Reset link send failed after ${duration.inMilliseconds}ms: $e');
       return {'statusCode': 500, 'body': 'Network error: $e'};
     }
   }
@@ -138,10 +132,9 @@ class AuthService {
     }
   }
 
-  // Reset password
+  // Reset password (used after clicking reset link)
   Future<Map<String, dynamic>> resetPassword({
     required String email,
-    required String otp,
     required String newPassword,
   }) async {
     try {
@@ -150,7 +143,6 @@ class AuthService {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'email': email,
-          'otp': otp,
           'new_password': newPassword,
         }),
       );
