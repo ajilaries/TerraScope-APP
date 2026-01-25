@@ -8,8 +8,8 @@ import '../providers/emergency_provider.dart';
 import '../models/emergency_contact.dart';
 
 class SignupScreen extends StatefulWidget {
-  final String selectedMode;
-  const SignupScreen({super.key, required this.selectedMode});
+  final String? selectedMode;
+  const SignupScreen({super.key, this.selectedMode});
 
   @override
   State<SignupScreen> createState() => _SignupScreenState();
@@ -106,7 +106,7 @@ class _SignupScreenState extends State<SignupScreen> {
       email: emailC.text.trim(),
       password: passC.text,
       gender: gender,
-      userMode: widget.selectedMode,
+      userMode: widget.selectedMode ?? "default",
       age: int.parse(ageC.text),
       phoneNumber: phoneC.text.trim(),
       address: addressC.text.trim(),
@@ -141,11 +141,12 @@ class _SignupScreenState extends State<SignupScreen> {
       if (loginRes['ok']) {
         // Set provider mode
         Provider.of<ModeProvider>(context, listen: false)
-            .setMode(widget.selectedMode);
+            .setMode(widget.selectedMode ?? "default");
         // Save user preferences locally
         final prefs = await SharedPreferences.getInstance();
         await prefs.setBool('enable_notifications', enableNotifications);
         await prefs.setBool('enable_location_sharing', enableLocationSharing);
+        await prefs.setBool('has_completed_signup', true);
         // Go to main app/home for this mode
         if (mounted) {
           Navigator.of(context).popUntil((route) => route.isFirst);
@@ -190,7 +191,7 @@ class _SignupScreenState extends State<SignupScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("Selected mode: ${widget.selectedMode}",
+              Text("Selected mode: ${widget.selectedMode ?? "default"}",
                   style: const TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 20),
 
