@@ -33,7 +33,7 @@ class _SplashScreenState extends State<SplashScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
 
-        // Always go to home screen - login only required for specific modes
+        // Always go to home screen - signup only required for mode screen
         const nextScreen = MainPage();
 
         Navigator.pushReplacement(
