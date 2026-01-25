@@ -11,13 +11,11 @@ class ForgotPasswordScreen extends StatefulWidget {
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController emailC = TextEditingController();
-  final TextEditingController otpC = TextEditingController();
-  final TextEditingController newPassC = TextEditingController();
   bool loading = false;
-  bool otpSent = false;
+  bool resetLinkSent = false;
   final AuthService _auth = AuthService();
 
-  void sendOtp() async {
+  void sendResetLink() async {
     if (!emailC.text.contains('@')) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Enter valid email")),
@@ -26,40 +24,16 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     }
     setState(() => loading = true);
 
-    final res = await _auth.sendOtp(email: emailC.text.trim());
+    final res = await _auth.sendResetLink(email: emailC.text.trim());
 
     if (res['statusCode'] == 200) {
-      setState(() => otpSent = true);
+      setState(() => resetLinkSent = true);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("OTP sent to your email")),
+        const SnackBar(content: Text("Reset link sent to your email")),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(res['body'] ?? 'Failed to send OTP')),
-      );
-    }
-
-    setState(() => loading = false);
-  }
-
-  void resetPassword() async {
-    if (!_formKey.currentState!.validate()) return;
-    setState(() => loading = true);
-
-    final res = await _auth.resetPassword(
-      email: emailC.text.trim(),
-      otp: otpC.text,
-      newPassword: newPassC.text,
-    );
-
-    if (res['statusCode'] == 200) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Password reset successful")),
-      );
-      Navigator.of(context).pop();
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(res['body'] ?? 'Failed to reset password')),
+        SnackBar(content: Text(res['body'] ?? 'Failed to send reset link')),
       );
     }
 
@@ -87,37 +61,17 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     ? "Enter valid email"
                     : null,
               ),
-              if (!otpSent) ...[
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: loading ? null : sendOtp,
-                  child: loading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text("Send OTP"),
-                ),
-              ] else ...[
-                const SizedBox(height: 20),
-                TextFormField(
-                  controller: otpC,
-                  decoration: const InputDecoration(labelText: "OTP"),
-                  keyboardType: TextInputType.number,
-                  validator: (v) =>
-                      (v == null || v.length != 6) ? "Enter 6-digit OTP" : null,
-                ),
-                TextFormField(
-                  controller: newPassC,
-                  decoration: const InputDecoration(labelText: "New Password"),
-                  obscureText: true,
-                  validator: (v) =>
-                      (v == null || v.length < 6) ? "Min 6 chars" : null,
-                ),
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: loading ? null : resetPassword,
-                  child: loading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text("Reset Password"),
-                ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: loading ? null : sendResetLink,
+                child: loading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text("Send Reset Link"),
+              ),
+              if (resetLinkSent) ...[
+                const SizedBox(height: 10),
+                const Text("Reset link sent to your email. Please check your email and click the link to reset your password.",
+                    style: TextStyle(color: Colors.blue)),
               ],
             ],
           ),
