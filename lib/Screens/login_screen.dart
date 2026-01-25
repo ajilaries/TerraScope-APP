@@ -101,18 +101,18 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: const Text("Forgot Password?"),
               ),
               if (widget.selectedMode != null)
-                TextButton(
-                  onPressed: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            SignupScreen(selectedMode: widget.selectedMode!),
-                      ),
-                    );
-                  },
-                  child: const Text("Don't have an account? Sign up"),
-                ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          SignupScreen(selectedMode: widget.selectedMode),
+                    ),
+                  );
+                },
+                child: const Text("Don't have an account? Sign up"),
+              ),
             ],
           ),
         ),
