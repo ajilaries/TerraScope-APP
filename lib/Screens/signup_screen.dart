@@ -23,19 +23,11 @@ class _SignupScreenState extends State<SignupScreen> {
   final TextEditingController ageC = TextEditingController();
   final TextEditingController phoneC = TextEditingController();
   final TextEditingController addressC = TextEditingController();
-  final TextEditingController otpC = TextEditingController();
-
   String gender = "male";
   bool loading = false;
   bool enableNotifications = true;
   bool enableLocationSharing = true;
-  bool emailVerified = false;
-  bool otpSent = false;
-  int otpExpiryTime = 300; // 5 minutes in seconds
-  int resendCooldownTime = 30; // 30 seconds
-  Timer? otpTimer;
-  Timer? resendTimer;
-  bool canResendOtp = false;
+  bool verificationLinkSent = false;
 
   List<Map<String, dynamic>> emergencyContacts = [];
 
@@ -65,7 +57,7 @@ class _SignupScreenState extends State<SignupScreen> {
     });
   }
 
-  void sendOtp() async {
+  void sendVerificationLink() async {
     if (!emailC.text.contains('@')) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Enter valid email first")),
@@ -74,55 +66,29 @@ class _SignupScreenState extends State<SignupScreen> {
     }
     setState(() => loading = true);
 
-    final res = await _auth.sendOtp(email: emailC.text.trim());
+    final res = await _auth.sendVerificationLink(email: emailC.text.trim());
 
     if (res['statusCode'] == 200) {
-      setState(() => otpSent = true);
+      setState(() => verificationLinkSent = true);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("OTP sent to your email")),
+        const SnackBar(content: Text("Verification link sent to your email. Please check your email and click the link to verify.")),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(res['body'] ?? 'Failed to send OTP')),
+        SnackBar(content: Text(res['body'] ?? 'Failed to send verification link')),
       );
     }
 
     setState(() => loading = false);
   }
 
-  void verifyOtp() async {
-    if (otpC.text.length != 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Enter 6-digit OTP")),
-      );
-      return;
-    }
-    setState(() => loading = true);
 
-    final res = await _auth.verifyOtp(
-      email: emailC.text.trim(),
-      otp: otpC.text,
-    );
-
-    if (res['statusCode'] == 200) {
-      setState(() => emailVerified = true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Email verified successfully")),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(res['body'] ?? 'OTP verification failed')),
-      );
-    }
-
-    setState(() => loading = false);
-  }
 
   void signup() async {
     if (!_formKey.currentState!.validate()) return;
-    if (!emailVerified) {
+    if (!verificationLinkSent) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please verify your email first")),
+        const SnackBar(content: Text("Please send verification link to your email first")),
       );
       return;
     }
@@ -208,8 +174,6 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   void dispose() {
-    otpTimer?.cancel();
-    resendTimer?.cancel();
     super.dispose();
   }
 
@@ -248,35 +212,15 @@ class _SignupScreenState extends State<SignupScreen> {
                     ? "Enter valid email"
                     : null,
               ),
-              if (!emailVerified) ...[
+              const SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: loading ? null : sendVerificationLink,
+                child: const Text("Send Verification Link"),
+              ),
+              if (verificationLinkSent) ...[
                 const SizedBox(height: 10),
-                ElevatedButton(
-                  onPressed: (loading || (!canResendOtp && otpSent)) ? null : sendOtp,
-                  child: Text(otpSent ? "Resend OTP${canResendOtp ? '' : ' (${resendCooldownTime}s)'}" : "Send OTP"),
-                ),
-                if (otpSent) ...[
-                  const SizedBox(height: 10),
-                  Text(
-                    "OTP expires in: ${otpExpiryTime ~/ 60}:${(otpExpiryTime % 60).toString().padLeft(2, '0')}",
-                    style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 10),
-                  TextFormField(
-                    controller: otpC,
-                    decoration: const InputDecoration(labelText: "Enter OTP"),
-                    keyboardType: TextInputType.number,
-                    validator: (v) => (v == null || v.length != 6)
-                        ? "Enter 6-digit OTP"
-                        : null,
-                  ),
-                  ElevatedButton(
-                    onPressed: loading ? null : verifyOtp,
-                    child: const Text("Verify OTP"),
-                  ),
-                ],
-              ] else ...[
-                const Text("Email Verified ✓",
-                    style: TextStyle(color: Colors.green)),
+                const Text("Verification link sent to your email. Please check your email and click the link to verify.",
+                    style: TextStyle(color: Colors.blue)),
               ],
               TextFormField(
                 controller: passC,
