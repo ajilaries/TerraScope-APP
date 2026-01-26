@@ -76,12 +76,6 @@ class _SplashScreenState extends State<SplashScreen> {
         if (weatherData != null) {
           print('Weather data loaded in background: ${weatherData['weather'][0]['description']}');
         }
-
-        // Preload nearby services in background
-        await NearbyCacheService.preloadNearbyServices(
-          position.latitude,
-          position.longitude,
-        );
       }
     } catch (e) {
       print('Background loading error: $e');
