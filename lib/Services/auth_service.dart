@@ -22,14 +22,14 @@ class AuthService {
 
       final data = jsonDecode(response.body);
 
-      if (response.statusCode == 200) {
-        // Save token and user ID
+      if (response.statusCode == 200 && data['success'] == true) {
+        // Save token and user data
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('auth_token', data['access_token']);
-        await prefs.setString('user_id', data['user_id']);
-        return {'ok': true, 'message': 'Login successful'};
+        await prefs.setString('auth_token', data['token']);
+        await prefs.setString('user_data', jsonEncode(data['user']));
+        return {'ok': true, 'message': 'Login successful', 'user': data['user']};
       } else {
-        return {'ok': false, 'message': data['detail'] ?? 'Login failed'};
+        return {'ok': false, 'message': data['message'] ?? 'Login failed'};
       }
     } catch (e) {
       return {'ok': false, 'message': 'Network error: $e'};
@@ -95,14 +95,13 @@ class AuthService {
     required String name,
     required String email,
     required String password,
+    required String otp,
     required String gender,
     required String userMode,
     required int age,
     required String phoneNumber,
     required String address,
     required List<Map<String, dynamic>> emergencyContacts,
-    required bool enableNotifications,
-    required bool enableLocationSharing,
   }) async {
     try {
       final response = await http.post(
@@ -112,29 +111,88 @@ class AuthService {
           'name': name,
           'email': email,
           'password': password,
+          'otp': otp,
           'gender': gender,
-          'user_mode': userMode,
+          'userMode': userMode,
           'age': age,
-          'phone_number': phoneNumber,
+          'phoneNumber': phoneNumber,
           'address': address,
-          'emergency_contacts': emergencyContacts,
-          'enable_notifications': enableNotifications,
-          'enable_location_sharing': enableLocationSharing,
+          'emergencyContacts': emergencyContacts,
+          'preferences': {
+            'enableNotifications': true,
+            'enableLocationSharing': true,
+          },
         }),
       );
 
-      return {
-        'statusCode': response.statusCode,
-        'body': response.body.isNotEmpty ? jsonDecode(response.body) : null,
-      };
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && data['success'] == true) {
+        // Save token and user data
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('auth_token', data['token']);
+        await prefs.setString('user_data', jsonEncode(data['user']));
+        return {'ok': true, 'message': 'Signup successful', 'user': data['user']};
+      } else {
+        return {'ok': false, 'message': data['message'] ?? 'Signup failed'};
+      }
     } catch (e) {
-      return {'statusCode': 500, 'body': 'Network error: $e'};
+      return {'ok': false, 'message': 'Network error: $e'};
     }
   }
 
-  // Reset password (used after clicking reset link)
+  // Send OTP
+  Future<Map<String, dynamic>> sendOtp({required String email}) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/send-otp'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email}),
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && data['success'] == true) {
+        return {'ok': true, 'message': 'OTP sent successfully'};
+      } else {
+        return {'ok': false, 'message': data['message'] ?? 'Failed to send OTP'};
+      }
+    } catch (e) {
+      return {'ok': false, 'message': 'Network error: $e'};
+    }
+  }
+
+  // Verify OTP
+  Future<Map<String, dynamic>> verifyOtp({
+    required String email,
+    required String otp,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/verify-otp'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': email,
+          'otp': otp,
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && data['success'] == true) {
+        return {'ok': true, 'message': 'OTP verified successfully'};
+      } else {
+        return {'ok': false, 'message': data['message'] ?? 'Invalid OTP'};
+      }
+    } catch (e) {
+      return {'ok': false, 'message': 'Network error: $e'};
+    }
+  }
+
+  // Reset password with OTP
   Future<Map<String, dynamic>> resetPassword({
     required String email,
+    required String otp,
     required String newPassword,
   }) async {
     try {
@@ -143,16 +201,20 @@ class AuthService {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'email': email,
-          'new_password': newPassword,
+          'otp': otp,
+          'newPassword': newPassword,
         }),
       );
 
-      return {
-        'statusCode': response.statusCode,
-        'body': response.body.isNotEmpty ? jsonDecode(response.body) : null,
-      };
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && data['success'] == true) {
+        return {'ok': true, 'message': 'Password reset successful'};
+      } else {
+        return {'ok': false, 'message': data['message'] ?? 'Password reset failed'};
+      }
     } catch (e) {
-      return {'statusCode': 500, 'body': 'Network error: $e'};
+      return {'ok': false, 'message': 'Network error: $e'};
     }
   }
 
