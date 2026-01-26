@@ -102,6 +102,7 @@ class AuthService {
     required String phoneNumber,
     required String address,
     required List<Map<String, dynamic>> emergencyContacts,
+    required String deviceToken,
   }) async {
     try {
       final response = await http.post(
