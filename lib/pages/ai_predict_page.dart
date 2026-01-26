@@ -13,7 +13,7 @@ class AIPredictPage extends StatefulWidget {
 
 class _AIPredictPageState extends State<AIPredictPage> {
   late Future<List<Prediction>> _predictions;
-  final service = AIPredictService(baseUrl: "http://10.0.2.2:8000");
+  final service = AIPredictService(baseUrl: "http://192.168.93.189:8000");
 
   @override
   void initState() {
