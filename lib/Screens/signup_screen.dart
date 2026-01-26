@@ -105,14 +105,13 @@ class _SignupScreenState extends State<SignupScreen> {
       name: nameC.text.trim(),
       email: emailC.text.trim(),
       password: passC.text,
+      otp: '', // Add OTP parameter if required by backend
       gender: gender,
       userMode: widget.selectedMode ?? "default",
       age: int.parse(ageC.text),
       phoneNumber: phoneC.text.trim(),
       address: addressC.text.trim(),
       emergencyContacts: emergencyContacts,
-      enableNotifications: enableNotifications,
-      enableLocationSharing: enableLocationSharing,
     );
 
     if (res['statusCode'] == 200 || res['statusCode'] == 201) {
