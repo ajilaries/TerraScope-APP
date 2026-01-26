@@ -63,7 +63,14 @@ class _SignupScreenState extends State<SignupScreen> {
   void sendOtp() async {
     if (!emailC.text.contains('@')) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Enter valid email first")),
+        SnackBar(
+          content: const Text("Enter valid email first"),
+          backgroundColor: Colors.red.shade400,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
       );
       return;
     }
@@ -74,11 +81,25 @@ class _SignupScreenState extends State<SignupScreen> {
     if (res['ok']) {
       setState(() => otpSent = true);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("OTP sent to your email. Please enter the OTP to verify.")),
+        SnackBar(
+          content: const Text("OTP sent to your email. Please enter the OTP to verify."),
+          backgroundColor: Colors.green.shade400,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(res['message'] ?? 'Failed to send OTP')),
+        SnackBar(
+          content: Text(res['message'] ?? 'Failed to send OTP'),
+          backgroundColor: Colors.red.shade400,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
       );
     }
 
@@ -88,7 +109,14 @@ class _SignupScreenState extends State<SignupScreen> {
   void verifyOtp() async {
     if (otpC.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Enter OTP first")),
+        SnackBar(
+          content: const Text("Enter OTP first"),
+          backgroundColor: Colors.red.shade400,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
       );
       return;
     }
@@ -99,30 +127,56 @@ class _SignupScreenState extends State<SignupScreen> {
     if (res['ok']) {
       setState(() => otpVerified = true);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Email verified successfully")),
+        SnackBar(
+          content: const Text("Email verified successfully"),
+          backgroundColor: Colors.green.shade400,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(res['message'] ?? 'Invalid OTP')),
+        SnackBar(
+          content: Text(res['message'] ?? 'Invalid OTP'),
+          backgroundColor: Colors.red.shade400,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
       );
     }
 
     setState(() => loading = false);
   }
 
-
-
   void signup() async {
     if (!_formKey.currentState!.validate()) return;
     if (!otpVerified) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please verify your email with OTP first")),
+        SnackBar(
+          content: const Text("Please verify your email with OTP first"),
+          backgroundColor: Colors.red.shade400,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
       );
       return;
     }
     if (emergencyContacts.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Add at least one emergency contact")),
+        SnackBar(
+          content: const Text("Add at least one emergency contact"),
+          backgroundColor: Colors.red.shade400,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
       );
       return;
     }
@@ -185,7 +239,14 @@ class _SignupScreenState extends State<SignupScreen> {
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Signup succeeded but login failed")),
+            SnackBar(
+              content: const Text("Signup succeeded but login failed"),
+              backgroundColor: Colors.red.shade400,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
           );
         }
       }
@@ -197,7 +258,14 @@ class _SignupScreenState extends State<SignupScreen> {
           : res['body'] ?? 'Signup failed';
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(msg.toString())));
+            .showSnackBar(SnackBar(
+              content: Text(msg.toString()),
+              backgroundColor: Colors.red.shade400,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ));
       }
     }
 
@@ -212,166 +280,98 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Signup to enable mode"),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF667eea),
+              Color(0xFF764ba2),
+              Color(0xFFF093FB),
+              Color(0xFFF5576C),
+            ],
+          ),
+        ),
+        child: SafeArea(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("Selected mode: ${widget.selectedMode ?? "default"}",
-                  style: const TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 20),
-
-              // Basic Info Section
-              const Text("Basic Information",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: nameC,
-                decoration: const InputDecoration(labelText: "Full Name"),
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? "Enter full name" : null,
-              ),
-              TextFormField(
-                controller: emailC,
-                decoration: const InputDecoration(labelText: "Email"),
-                keyboardType: TextInputType.emailAddress,
-                validator: (v) => (v == null || !v.contains('@'))
-                    ? "Enter valid email"
-                    : null,
-              ),
-              const SizedBox(height: 10),
-              ElevatedButton(
-                onPressed: loading ? null : sendOtp,
-                child: const Text("Send OTP"),
-              ),
-              if (otpSent && !otpVerified) ...[
-                const SizedBox(height: 10),
-                TextFormField(
-                  controller: otpC,
-                  decoration: const InputDecoration(labelText: "Enter OTP"),
-                  keyboardType: TextInputType.number,
-                  maxLength: 6,
-                  validator: (v) => (v == null || v.trim().isEmpty)
-                      ? "Enter OTP"
-                      : null,
+              // Header
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                child: Row(
+                  children: [
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.white.withOpacity(0.2),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    const Expanded(
+                      child: Text(
+                        "Create Account",
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 10),
-                ElevatedButton(
-                  onPressed: loading ? null : verifyOtp,
-                  child: const Text("Verify OTP"),
-                ),
-              ],
-              if (otpVerified) ...[
-                const SizedBox(height: 10),
-                const Text("Email verified successfully",
-                    style: TextStyle(color: Colors.green)),
-              ],
-              TextFormField(
-                controller: passC,
-                decoration: const InputDecoration(labelText: "Password"),
-                obscureText: true,
-                validator: (v) => (v == null || v.length < 6)
-                    ? "Password must be at least 6 characters"
-                    : null,
-              ),
-              TextFormField(
-                controller: ageC,
-                decoration: const InputDecoration(labelText: "Age"),
-                keyboardType: TextInputType.number,
-                validator: (v) {
-                  if (v == null || v.trim().isEmpty) return "Enter age";
-                  final age = int.tryParse(v);
-                  if (age == null || age < 13 || age > 120)
-                    return "Enter valid age (13-120)";
-                  return null;
-                },
-              ),
-              TextFormField(
-                controller: phoneC,
-                decoration: const InputDecoration(labelText: "Phone Number"),
-                keyboardType: TextInputType.phone,
-                validator: (v) => (v == null || v.trim().isEmpty)
-                    ? "Enter phone number"
-                    : null,
-              ),
-              TextFormField(
-                controller: addressC,
-                decoration: const InputDecoration(labelText: "Address"),
-                maxLines: 3,
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? "Enter address" : null,
               ),
 
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  const Text("Gender: "),
-                  DropdownButton<String>(
-                    value: gender,
-                    items: const [
-                      DropdownMenuItem(value: "male", child: Text("Male")),
-                      DropdownMenuItem(value: "female", child: Text("Female")),
-                      DropdownMenuItem(value: "other", child: Text("Other")),
-                    ],
-                    onChanged: (v) => setState(() => gender = v ?? "male"),
+              // Content
+              Expanded(
+                child: Container(
+                  margin: const EdgeInsets.only(top: 20),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(30),
+                      topRight: Radius.circular(30),
+                    ),
                   ),
-                ],
-              ),
-
-              const SizedBox(height: 20),
-
-              // Emergency Contacts Section
-              const Text("Emergency Contacts",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 12),
-              ...emergencyContacts.asMap().entries.map((entry) {
-                final index = entry.key;
-                final contact = entry.value;
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text("Contact ${index + 1}"),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Mode indicator
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.shade50,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: Colors.blue.shade200),
                             ),
-                            IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () => removeEmergencyContact(index),
+                            child: Text(
+                              "Selected mode: ${widget.selectedMode ?? "default"}",
+                              style: TextStyle(
+                                color: Colors.blue.shade700,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
-                          ],
-                        ),
-                        TextFormField(
-                          initialValue: contact['name'],
-                          decoration: const InputDecoration(labelText: "Name"),
-                          onChanged: (v) => contact['name'] = v,
-                          validator: (v) => (v == null || v.trim().isEmpty)
-                              ? "Enter name"
-                              : null,
-                        ),
-                        TextFormField(
-                          initialValue: contact['phone'],
-                          decoration: const InputDecoration(labelText: "Phone"),
-                          keyboardType: TextInputType.phone,
-                          onChanged: (v) => contact['phone'] = v,
-                          validator: (v) => (v == null || v.trim().isEmpty)
-                              ? "Enter phone"
-                              : null,
-                        ),
-                        TextFormField(
-                          initialValue: contact['email'],
-                          decoration: const InputDecoration(labelText: "Email"),
-                          keyboardType: TextInputType.emailAddress,
-                          onChanged: (v) => contact['email'] = v,
+                          ),
+
+                          const SizedBox(height: 30),
+
+                          // Basic Info Section
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.person_outline,
+                                color: Colors.blue.shade400,
+                                size: 24,
+                              ),
+                              const SizedBox(width: 8),
                           validator: (v) => (v == null || !v.contains('@'))
                               ? "Enter valid email"
                               : null,
