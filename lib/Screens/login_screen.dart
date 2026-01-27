@@ -6,8 +6,7 @@ import 'signup_screen.dart';
 import 'forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
-  final String? selectedMode;
-  const LoginScreen({super.key, this.selectedMode});
+  const LoginScreen({super.key});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -31,11 +30,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
 
     if (res['ok']) {
-      // Set mode if provided
-      if (widget.selectedMode != null) {
-        Provider.of<ModeProvider>(context, listen: false)
-            .setMode(widget.selectedMode!);
-      }
       // Navigate to main app
       if (mounted) {
         Navigator.pushReplacementNamed(context, '/');
@@ -120,13 +114,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 8),
 
-                Text(
-                  widget.selectedMode != null
-                    ? "Login to enable ${widget.selectedMode} mode"
-                    : "Sign in to your account",
+                const Text(
+                  "Sign in to your account",
                   style: TextStyle(
                     fontSize: 16,
-                    color: Colors.white.withOpacity(0.9),
+                    color: Colors.white,
                     fontWeight: FontWeight.w300,
                   ),
                   textAlign: TextAlign.center,
@@ -314,37 +306,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         const SizedBox(height: 20),
 
-                        // Sign Up Link
-                        if (widget.selectedMode != null)
-                          SizedBox(
-                            width: double.infinity,
-                            height: 50,
-                            child: OutlinedButton(
-                              onPressed: () {
-                                Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        SignupScreen(selectedMode: widget.selectedMode),
-                                  ),
-                                );
-                              },
-                              style: OutlinedButton.styleFrom(
-                                side: BorderSide(color: Colors.blue.shade400, width: 2),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              child: Text(
-                                "Create New Account",
-                                style: TextStyle(
-                                  color: Colors.blue.shade600,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
+
                       ],
                     ),
                   ),
