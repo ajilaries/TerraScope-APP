@@ -6,7 +6,8 @@ import '../Screens/farmer/farmer_dashboard.dart';
 import '../Screens/care/care_dashboard.dart';
 
 class MainPage extends StatefulWidget {
-  const MainPage({super.key});
+  final int initialPage;
+  const MainPage({super.key, required this.initialPage});
 
   @override
   State<MainPage> createState() => _MainPageState();
@@ -14,12 +15,13 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> {
   late PageController _pageController;
-  int _currentIndex = 1; // Start at HomeScreen1 (MainHomeScreen)
+  late int _currentIndex; // Start at HomeScreen1 (MainHomeScreen)
 
   @override
   void initState() {
     super.initState();
-    _pageController = PageController(initialPage: 1);
+    _currentIndex = widget.initialPage;
+    _pageController = PageController(initialPage: widget.initialPage);
   }
 
   @override
