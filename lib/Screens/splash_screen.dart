@@ -34,7 +34,7 @@ class _SplashScreenState extends State<SplashScreen> {
         if (!mounted) return;
 
         // Always go to home screen - signup only required for mode screen
-        const nextScreen = MainPage();
+        const nextScreen = MainPage(initialPage: 1);
 
         Navigator.pushReplacement(
           context,
@@ -51,7 +51,7 @@ class _SplashScreenState extends State<SplashScreen> {
         if (!mounted) return;
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const MainPage()),
+          MaterialPageRoute(builder: (context) => const MainPage(initialPage: 1)),
         );
       });
     }
