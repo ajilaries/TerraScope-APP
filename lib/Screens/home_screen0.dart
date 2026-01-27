@@ -285,7 +285,7 @@ class _HomeScreen0State extends State<HomeScreen0> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => SignupScreen(selectedMode: mode),
+            builder: (context) => const SignupScreen(),
           ),
         );
         return;
@@ -301,7 +301,7 @@ class _HomeScreen0State extends State<HomeScreen0> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => SignupScreen(selectedMode: mode),
+            builder: (context) => const SignupScreen(),
           ),
         );
         return;
