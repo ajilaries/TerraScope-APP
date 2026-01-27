@@ -1,3 +1,4 @@
+
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -103,28 +104,34 @@ class AuthService {
     required String address,
     required List<Map<String, dynamic>> emergencyContacts,
     required String deviceToken,
+    required Map<String, dynamic> preferences,
   }) async {
     try {
+      final requestBody = {
+        'name': name,
+        'email': email,
+        'password': password,
+        'otp': otp,
+        'gender': gender,
+        'userMode': userMode,
+        'age': age,
+        'phoneNumber': phoneNumber,
+        'address': address,
+        'emergencyContacts': emergencyContacts,
+        'deviceToken': deviceToken,
+        'preferences': preferences,
+      };
+
+      print('Signup request body: ${jsonEncode(requestBody)}');
+
       final response = await http.post(
         Uri.parse('$baseUrl/auth/signup'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'name': name,
-          'email': email,
-          'password': password,
-          'otp': otp,
-          'gender': gender,
-          'userMode': userMode,
-          'age': age,
-          'phoneNumber': phoneNumber,
-          'address': address,
-          'emergencyContacts': emergencyContacts,
-          'preferences': {
-            'enableNotifications': true,
-            'enableLocationSharing': true,
-          },
-        }),
+        body: jsonEncode(requestBody),
       );
+
+      print('Signup response status: ${response.statusCode}');
+      print('Signup response body: ${response.body}');
 
       final data = jsonDecode(response.body);
 
@@ -135,7 +142,7 @@ class AuthService {
         await prefs.setString('user_data', jsonEncode(data['user']));
         return {'ok': true, 'message': 'Signup successful', 'user': data['user']};
       } else {
-        return {'ok': false, 'message': data['message'] ?? 'Signup failed'};
+        return {'ok': false, 'message': data['message'] ?? 'Signup failed', 'statusCode': response.statusCode, 'body': data};
       }
     } catch (e) {
       return {'ok': false, 'message': 'Network error: $e'};
