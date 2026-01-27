@@ -9,10 +9,11 @@ import '../services/nearby_cache_service.dart';
 import '../providers/mode_provider.dart';
 import '../providers/emergency_provider.dart';
 import '../models/emergency_contact.dart';
+import 'login_screen.dart';
+import 'main_page.dart';
 
 class SignupScreen extends StatefulWidget {
-  final String? selectedMode;
-  const SignupScreen({super.key, this.selectedMode});
+  const SignupScreen({super.key});
 
   @override
   State<SignupScreen> createState() => _SignupScreenState();
@@ -31,6 +32,8 @@ class _SignupScreenState extends State<SignupScreen> {
   bool loading = false;
   bool enableNotifications = true;
   bool enableLocationSharing = true;
+  String language = "en";
+  String theme = "light";
   bool otpSent = false;
   bool otpVerified = false;
 
@@ -194,12 +197,18 @@ class _SignupScreenState extends State<SignupScreen> {
       password: passC.text,
       otp: otpC.text.trim(),
       gender: gender,
-      userMode: widget.selectedMode ?? "default",
+      userMode: "default",
       age: int.parse(ageC.text),
       phoneNumber: phoneC.text.trim(),
       address: addressC.text.trim(),
       emergencyContacts: emergencyContacts,
       deviceToken: deviceToken,
+      preferences: {
+        'enableNotifications': enableNotifications,
+        'enableLocationSharing': enableLocationSharing,
+        'language': language,
+        'theme': theme,
+      },
     );
 
     if (res['statusCode'] == 200 || res['statusCode'] == 201) {
@@ -226,13 +235,15 @@ class _SignupScreenState extends State<SignupScreen> {
           await _auth.login(email: emailC.text.trim(), password: passC.text);
       if (!mounted) return;
       if (loginRes['ok']) {
-        // Set provider mode
+        // Set provider mode to default
         Provider.of<ModeProvider>(context, listen: false)
-            .setMode(widget.selectedMode ?? "default");
+            .setMode("default");
         // Save user preferences locally
         final prefs = await SharedPreferences.getInstance();
         await prefs.setBool('enable_notifications', enableNotifications);
         await prefs.setBool('enable_location_sharing', enableLocationSharing);
+        await prefs.setString('language', language);
+        await prefs.setString('theme', theme);
         await prefs.setBool('has_completed_signup', true);
 
         // Preload nearby services after successful signup
@@ -250,7 +261,11 @@ class _SignupScreenState extends State<SignupScreen> {
 
         // Go to main app/home for this mode
         if (mounted) {
-          Navigator.of(context).popUntil((route) => route.isFirst);
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => MainPage(initialPage: 0),
+            ),
+          );
         }
       } else {
         if (mounted) {
@@ -363,24 +378,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Mode indicator
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: Colors.blue.shade50,
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: Colors.blue.shade200),
-                                ),
-                                child: Text(
-                                  "Selected mode: ${widget.selectedMode ?? "default"}",
-                                  style: TextStyle(
-                                    color: Colors.blue.shade700,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
 
-                              const SizedBox(height: 30),
 
                               // Basic Info Section
                               Row(
@@ -414,6 +412,19 @@ class _SignupScreenState extends State<SignupScreen> {
                                 decoration: const InputDecoration(labelText: "Email"),
                                 validator: (v) => v == null || !v.contains('@') ? 'Enter valid email' : null,
                               ),
+
+                              const SizedBox(height: 10),
+
+                              if (!otpSent)
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton(
+                                    onPressed: loading ? null : sendOtp,
+                                    child: loading ? const CircularProgressIndicator() : const Text("Send OTP"),
+                                  ),
+                                ),
+
+                              const SizedBox(height: 20),
 
                               TextFormField(
                                 controller: passC,
@@ -470,15 +481,11 @@ class _SignupScreenState extends State<SignupScreen> {
                                         child: loading ? const CircularProgressIndicator() : const Text("Verify OTP"),
                                       ),
                                     ),
-                                  ],
-                                ),
-                              ] else ...[
-                                Row(
-                                  children: [
+                                    const SizedBox(width: 10),
                                     Expanded(
                                       child: ElevatedButton(
                                         onPressed: loading ? null : sendOtp,
-                                        child: loading ? const CircularProgressIndicator() : const Text("Send OTP"),
+                                        child: loading ? const CircularProgressIndicator() : const Text("Resend OTP"),
                                       ),
                                     ),
                                   ],
@@ -590,6 +597,45 @@ class _SignupScreenState extends State<SignupScreen> {
                           value: enableLocationSharing,
                           onChanged: (v) => setState(() => enableLocationSharing = v),
                         ),
+                        DropdownButtonFormField<String>(
+                          value: language,
+                          decoration: const InputDecoration(labelText: "Language"),
+                          items: ['en', 'es', 'fr', 'de']
+                              .map((l) => DropdownMenuItem(value: l, child: Text(l)))
+                              .toList(),
+                          onChanged: (v) => setState(() => language = v!),
+                        ),
+                        DropdownButtonFormField<String>(
+                          value: theme,
+                          decoration: const InputDecoration(labelText: "Theme"),
+                          items: ['light', 'dark']
+                              .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+                              .toList(),
+                          onChanged: (v) => setState(() => theme = v!),
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        // Login link
+                        Center(
+                          child: TextButton(
+                            onPressed: () {
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const LoginScreen(),
+                                ),
+                              );
+                            },
+                            child: const Text(
+                              "Already have an account? Login",
+                              style: TextStyle(
+                                color: Colors.blue,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -606,8 +652,8 @@ class _SignupScreenState extends State<SignupScreen> {
                   ),
                   child: loading
                       ? const CircularProgressIndicator(color: Colors.white)
-                      : Text("Signup & Activate Mode",
-                          style: const TextStyle(fontSize: 16)),
+                      : const Text("Create Account",
+                          style: TextStyle(fontSize: 16)),
                 ),
               ),
             ],
