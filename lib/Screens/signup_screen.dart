@@ -195,7 +195,6 @@ class _SignupScreenState extends State<SignupScreen> {
       name: nameC.text.trim(),
       email: emailC.text.trim(),
       password: passC.text,
-      otp: otpC.text.trim(),
       gender: gender,
       userMode: "default",
       age: int.parse(ageC.text),
