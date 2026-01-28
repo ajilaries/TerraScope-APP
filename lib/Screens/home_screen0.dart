@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:terra_scope_apk/Screens/farmer/farmer_result_screen.dart';
 import 'package:terra_scope_apk/popups/farmer_intro_popup.dart';
 import 'package:terra_scope_apk/Screens/traveler/traveler_dashboard.dart';
@@ -270,7 +271,7 @@ class _HomeScreen0State extends State<HomeScreen0> {
       return;
     }
 
-    // Check login status asynchronously and navigate after current frame
+    // Check login status and signup completion asynchronously and navigate after current frame
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
 
@@ -284,13 +285,29 @@ class _HomeScreen0State extends State<HomeScreen0> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => SignupScreen(selectedMode: mode),
+            builder: (context) => const SignupScreen(),
           ),
         );
         return;
       }
 
-      // User is logged in, proceed with mode selection
+      // Check if user has completed signup
+      final prefs = await SharedPreferences.getInstance();
+      final hasCompletedSignup = prefs.getBool('has_completed_signup') ?? false;
+
+      if (!hasCompletedSignup) {
+        // User logged in but hasn't completed signup, redirect to signup
+        if (!mounted) return;
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const SignupScreen(),
+          ),
+        );
+        return;
+      }
+
+      // User is logged in and has completed signup, proceed with mode selection
       if (!mounted) return;
       Provider.of<ModeProvider>(context, listen: false).setMode(mode);
 

@@ -33,8 +33,8 @@ class _SplashScreenState extends State<SplashScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
 
-        // Always go to home screen - login only required for specific modes
-        const nextScreen = MainPage();
+        // Always go to home screen - signup only required for mode screen
+        const nextScreen = MainPage(initialPage: 1);
 
         Navigator.pushReplacement(
           context,
@@ -51,7 +51,7 @@ class _SplashScreenState extends State<SplashScreen> {
         if (!mounted) return;
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const MainPage()),
+          MaterialPageRoute(builder: (context) => const MainPage(initialPage: 1)),
         );
       });
     }
@@ -76,12 +76,6 @@ class _SplashScreenState extends State<SplashScreen> {
         if (weatherData != null) {
           print('Weather data loaded in background: ${weatherData['weather'][0]['description']}');
         }
-
-        // Preload nearby services in background
-        await NearbyCacheService.preloadNearbyServices(
-          position.latitude,
-          position.longitude,
-        );
       }
     } catch (e) {
       print('Background loading error: $e');

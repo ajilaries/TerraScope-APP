@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 
 class AQIService {
   static const String aqiUrl =
-      "http://10.0.2.2:8000/get_aqi";
+      "http://192.168.93.189:8000/get_aqi";
 
   Future<int?> getAQI(double lat, double lon) async {
     try {
