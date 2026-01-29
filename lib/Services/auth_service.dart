@@ -4,9 +4,9 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
-  final String baseUrl = "http://127.0.0.1:8000"; // Android emulator -> localhost. Use 127.0.0.1 on real device or device IP.
+  final String baseUrl = "http://10.0.2.2:8000"; // Android emulator -> 10.0.2.2. Use 127.0.0.1 on real device or device IP.
 
-  // Login method
+  // Login method using backend API
   Future<Map<String, dynamic>> login({
     required String email,
     required String password,
@@ -24,10 +24,12 @@ class AuthService {
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data['success'] == true) {
-        // Save token and user data
+        // Save user data locally
         final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user_id', data['user']['id'].toString());
         await prefs.setString('auth_token', data['token']);
         await prefs.setString('user_data', jsonEncode(data['user']));
+
         return {'ok': true, 'message': 'Login successful', 'user': data['user']};
       } else {
         return {'ok': false, 'message': data['message'] ?? 'Login failed'};
@@ -91,7 +93,7 @@ class AuthService {
     }
   }
 
-  // Signup method
+  // Signup method using backend API
   Future<Map<String, dynamic>> signup({
     required String name,
     required String email,
@@ -106,41 +108,36 @@ class AuthService {
     required Map<String, dynamic> preferences,
   }) async {
     try {
-      final requestBody = {
-        'name': name,
-        'email': email,
-        'password': password,
-        'gender': gender,
-        'userMode': userMode,
-        'age': age,
-        'phoneNumber': phoneNumber,
-        'address': address,
-        'emergencyContacts': emergencyContacts,
-        'deviceToken': deviceToken,
-        'preferences': preferences,
-      };
-
-      print('Signup request body: ${jsonEncode(requestBody)}');
-
       final response = await http.post(
         Uri.parse('$baseUrl/auth/signup'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(requestBody),
+        body: jsonEncode({
+          'name': name,
+          'email': email,
+          'password': password,
+          'gender': gender,
+          'userMode': userMode,
+          'age': age,
+          'phoneNumber': phoneNumber,
+          'address': address,
+          'emergencyContacts': emergencyContacts,
+          'deviceToken': deviceToken,
+          'preferences': preferences,
+        }),
       );
-
-      print('Signup response status: ${response.statusCode}');
-      print('Signup response body: ${response.body}');
 
       final data = jsonDecode(response.body);
 
-      if (response.statusCode == 200 && data['success'] == true) {
-        // Save token and user data
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // Save user data locally
         final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user_id', data['user']['id'].toString());
         await prefs.setString('auth_token', data['token']);
         await prefs.setString('user_data', jsonEncode(data['user']));
+
         return {'ok': true, 'message': 'Signup successful', 'user': data['user']};
       } else {
-        return {'ok': false, 'message': data['message'] ?? 'Signup failed', 'statusCode': response.statusCode, 'body': data};
+        return {'ok': false, 'message': data['message'] ?? 'Signup failed'};
       }
     } catch (e) {
       return {'ok': false, 'message': 'Network error: $e'};
@@ -245,13 +242,18 @@ class AuthService {
   // Logout
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('auth_token');
     await prefs.remove('user_id');
+    await prefs.remove('auth_token');
+    await prefs.remove('user_data');
   }
 
   // Check if user is logged in
   Future<bool> isLoggedIn() async {
-    final token = await getSavedToken();
-    return token != null;
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
+    final userId = prefs.getString('user_id');
+    return token != null && userId != null;
   }
+
+
 }
