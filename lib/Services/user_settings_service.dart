@@ -1,14 +1,19 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-// import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'auth_service.dart';
+import 'nearby_cache_service.dart';
+import 'offline_service.dart';
 
 class UserSettingsService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  static final FirebaseAuth _auth = FirebaseAuth.instance;
   static final AuthService _authService = AuthService();
 
-  // Get current user ID
+  // Get current user ID from Firebase Auth
   static Future<String?> _getCurrentUserId() async {
-    return await _authService.getSavedUserId();
+    final user = _auth.currentUser;
+    return user?.uid;
   }
 
   // Get user settings document reference
@@ -359,6 +364,114 @@ class UserSettingsService {
       });
     } catch (e) {
       print('Error importing user data: $e');
+    }
+  }
+
+  // ==================== CACHE MANAGEMENT ====================
+
+  // Clear all app caches to reduce memory load
+  static Future<void> clearAllCaches() async {
+    try {
+      print('Clearing all app caches...');
+
+      // Clear nearby services cache
+      await _clearNearbyCache();
+
+      // Clear offline service cache
+      await _clearOfflineCache();
+
+      // Clear shared preferences cache (additional cleanup)
+      await _clearSharedPreferencesCache();
+
+      // Update last cleared timestamp
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('last_cache_clear', DateTime.now().toIso8601String());
+
+      print('All caches cleared successfully');
+    } catch (e) {
+      print('Error clearing caches: $e');
+    }
+  }
+
+  // Clear nearby services cache
+  static Future<void> _clearNearbyCache() async {
+    try {
+      await NearbyCacheService.clearCache();
+    } catch (e) {
+      print('Error clearing nearby cache: $e');
+    }
+  }
+
+  // Clear offline service cache
+  static Future<void> _clearOfflineCache() async {
+    try {
+      await OfflineService.clearCache();
+    } catch (e) {
+      print('Error clearing offline cache: $e');
+    }
+  }
+
+  // Clear additional shared preferences cache
+  static Future<void> _clearSharedPreferencesCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      // Clear any additional cache keys that might exist
+      final keys = prefs.getKeys();
+      final cacheKeys = keys.where((key) =>
+        key.contains('cache') ||
+        key.contains('Cache') ||
+        key.contains('_temp') ||
+        key.contains('temp_')
+      );
+
+      for (final key in cacheKeys) {
+        await prefs.remove(key);
+      }
+    } catch (e) {
+      print('Error clearing shared preferences cache: $e');
+    }
+  }
+
+
+
+  // Get cache status information
+  static Future<Map<String, dynamic>> getCacheStatus() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      // Get cache keys count
+      final keys = prefs.getKeys();
+      final cacheKeys = keys.where((key) =>
+        key.contains('cache') ||
+        key.contains('Cache') ||
+        key.contains('_temp') ||
+        key.contains('temp_')
+      ).length;
+
+      // Get storage size estimate (rough calculation)
+      int estimatedSize = 0;
+      for (final key in keys) {
+        final value = prefs.get(key);
+        if (value is String) {
+          estimatedSize += value.length * 2; // Rough UTF-16 estimate
+        }
+      }
+
+      return {
+        'cacheKeysCount': cacheKeys,
+        'totalKeysCount': keys.length,
+        'estimatedSizeKB': (estimatedSize / 1024).round(),
+        'lastCleared': prefs.getString('last_cache_clear') ?? 'Never',
+      };
+    } catch (e) {
+      print('Error getting cache status: $e');
+      return {
+        'cacheKeysCount': 0,
+        'totalKeysCount': 0,
+        'estimatedSizeKB': 0,
+        'lastCleared': 'Unknown',
+      };
     }
   }
 
