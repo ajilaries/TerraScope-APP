@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
-  final String baseUrl = "http://10.0.2.2:8000"; // Android emulator -> localhost. Use 127.0.0.1 on real device or device IP.
+  final String baseUrl = "http://127.0.0.1:8000"; // Android emulator -> localhost. Use 127.0.0.1 on real device or device IP.
 
   // Login method
   Future<Map<String, dynamic>> login({
@@ -96,7 +96,6 @@ class AuthService {
     required String name,
     required String email,
     required String password,
-    required String otp,
     required String gender,
     required String userMode,
     required int age,
@@ -111,7 +110,6 @@ class AuthService {
         'name': name,
         'email': email,
         'password': password,
-        'otp': otp,
         'gender': gender,
         'userMode': userMode,
         'age': age,
