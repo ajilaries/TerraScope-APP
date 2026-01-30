@@ -172,23 +172,47 @@ TerraScope is a **Flutter-powered mobile app** that lets users explore and monit
 ### ✅ Current
 
 - 🏠 **Home Dashboard**
-  Displays essential weather & climate information at a glance
+  Displays essential weather & climate information at a glance with auto-refresh every 30 seconds
 
 - 📍 **Location-Based Data**
-  Automatically fetches environmental stats for the user’s current location
+  Automatically fetches environmental stats for the user’s current location with GPS tracking
 
 - ☁️ **Live API Integration**
   Real-time data such as:
-  - Temperature
-  - Humidity
-  - Weather conditions
-  - Air quality (API dependent)
+  - Temperature, humidity, and weather conditions
+  - Air quality index (AQI) with color-coded indicators
+  - 24-hour and 7-day forecasts with interactive charts
+
+- 🚜 **Farmer Mode**
+  Complete agricultural interface with:
+  - Real soil type detection using ISRIC SoilGrids API
+  - Optimized weekly forecast layout (fixed overflow issues)
+  - Dynamic crop recommendations and health monitoring
+  - Enhanced UI with better spacing and responsive design
+
+- 👶 **Kids/Senior Care Mode**
+  Comprehensive care interface featuring:
+  - 8 dedicated screens for health tracking and safety
+  - Large, accessible UI elements with high contrast
+  - Emergency SOS with location sharing capabilities
+  - Medication and hydration trackers with offline persistence
+  - Family contacts and nearby services integration
 
 - 🚨 **Safety Mode**
-  Comprehensive safety features including emergency contacts, real-time monitoring, and offline capabilities
+  Professional 4-tab safety interface including:
+  - Real-time monitoring with risk scoring (0-100)
+  - Interactive parameter sliders for hazard assessment
+  - Emergency contacts management with quick dial
+  - Safety history tracking with 50-record limit
+  - Animated SOS screen with countdown timer
 
-- 🎨 **Minimal UI/UX**
-  Clean layouts, smooth animations, and responsive design
+- 🎨 **Advanced UI/UX**
+  Motion-first design with:
+  - Smooth animations and gesture-based navigation
+  - Responsive layouts optimized for all screen sizes
+  - Dark mode support with automatic theme switching
+  - Interactive FL Chart visualizations for weather trends
+  - Comprehensive weather icons and status indicators
 
 ---
 
@@ -334,12 +358,18 @@ lib/
 
 ## 🎨 UI/UX Features
 
-- **Responsive Design** – Optimized for various screen sizes
-- **Dynamic Theming** – Seamless light/dark mode switching
-- **Real-time Updates** – Auto-refresh with timer-based polling
-- **Interactive Charts** – FL Chart for weather trends visualization
-- **Weather Icons** – Comprehensive weather condition icons
-- **Smooth Navigation** – Intuitive bottom navigation and page navigation
+- **Responsive Design** – Optimized for various screen sizes (phones, tablets, landscape/portrait)
+- **Dynamic Theming** – Seamless light/dark mode switching with automatic theme detection
+- **Real-time Updates** – Auto-refresh with timer-based polling (30-second intervals)
+- **Interactive Charts** – FL Chart for weather trends with gesture-based interactions
+- **Weather Icons** – Comprehensive weather condition icons with animated states
+- **Smooth Navigation** – Intuitive bottom navigation with gesture-based page transitions
+- **Motion-First Design** – Smooth animations and micro-interactions throughout the app
+- **Accessibility Features** – Large UI elements, high contrast colors, and clear icons for care mode
+- **Professional Safety Interface** – 4-tab layout with interactive sliders and status indicators
+- **Agricultural UI Enhancements** – Fixed overflow issues, optimized layouts, and real soil data integration
+- **Care Mode Accessibility** – Large-button SOS, simplified dashboards, and offline persistence
+- **Multi-Mode Architecture** – Seamless switching between farmer, safety, care, and other modes
 
 ---
 

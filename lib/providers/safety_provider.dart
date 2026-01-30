@@ -6,6 +6,8 @@ import '../Services/saftey_service.dart';
 import '../Services/weather_services.dart';
 import '../Services/location_service.dart';
 import '../Services/emergency_contact_service.dart';
+import '../Services/safety_history_service.dart';
+import '../Services/fcm_service.dart';
 import '../utils/safety_notification_manager.dart';
 import 'dart:async';
 
@@ -67,6 +69,12 @@ class SafetyProvider extends ChangeNotifier {
     if (value) {
       await checkCurrentSafety();
       _startPeriodicSafetyUpdates();
+      // Send FCM notification when safety mode is enabled
+      await FCMService.sendTestNotification(
+        title: 'Safety Mode Enabled',
+        body: 'Real-time safety monitoring is now active. You will receive alerts for weather hazards.',
+        type: 'safety_mode',
+      );
     } else {
       _stopPeriodicSafetyUpdates();
     }
@@ -132,23 +140,29 @@ class SafetyProvider extends ChangeNotifier {
 
       // Add to history if safety mode is on
       if (_isSafetyModeEnabled && _currentStatus != null) {
-        _safetyHistory.insert(
-          0,
-          SafetyAlert(
-            level: _currentStatus!.level,
-            message: _currentStatus!.message,
-            timestamp: DateTime.now(),
-            rainMm: actualRainMm,
-            windSpeed: actualWindSpeed,
-            visibility: actualVisibility,
-            temperature: actualTemperature,
-          ),
+        final alert = SafetyAlert(
+          level: _currentStatus!.level,
+          message: _currentStatus!.message,
+          timestamp: DateTime.now(),
+          rainMm: actualRainMm,
+          windSpeed: actualWindSpeed,
+          visibility: actualVisibility,
+          temperature: actualTemperature,
+          humidity: actualHumidity,
         );
 
-        // Keep only last 50 records
+        // Add to local list
+        _safetyHistory.insert(0, alert);
+
+        // Keep only last 50 records locally
         if (_safetyHistory.length > 50) {
           _safetyHistory.removeLast();
         }
+
+        // Save to Firestore asynchronously (don't await to avoid blocking UI)
+        _safetyHistoryService.addSafetyAlert(alert).catchError((e) {
+          debugPrint('Failed to save safety alert to Firestore: $e');
+        });
       }
 
       _isLoading = false;
@@ -162,6 +176,7 @@ class SafetyProvider extends ChangeNotifier {
   // Add emergency contact
   Future<void> addEmergencyContact(EmergencyContact contact) async {
     try {
+      // Add to Firestore
       await _emergencyContactService.addEmergencyContact(contact);
       _emergencyContacts.add(contact);
       notifyListeners();
@@ -173,6 +188,7 @@ class SafetyProvider extends ChangeNotifier {
   // Remove emergency contact
   Future<void> removeEmergencyContact(String id) async {
     try {
+      // Remove from Firestore
       await _emergencyContactService.removeEmergencyContact(id);
       _emergencyContacts.removeWhere((contact) => contact.id == id);
       notifyListeners();
@@ -184,29 +200,40 @@ class SafetyProvider extends ChangeNotifier {
   // Load emergency contacts
   Future<void> loadEmergencyContacts() async {
     try {
+      // Load from Firestore
       final contacts = await _emergencyContactService.loadEmergencyContacts();
 
-      // If no contacts exist, load default ones
-      if (contacts.isEmpty) {
-        _emergencyContacts = EmergencyContactService.getDefaultContacts();
-        // Save the default contacts to storage
-        await _emergencyContactService
-            .saveEmergencyContacts(_emergencyContacts);
-      } else {
+      if (contacts.isNotEmpty) {
         _emergencyContacts = contacts;
+        debugPrint('Loaded ${contacts.length} emergency contacts from Firestore');
+      } else {
+        // No contacts saved, load default ones
+        _emergencyContacts = EmergencyContactService.getDefaultContacts();
+        // Save the default contacts to Firestore
+        await _emergencyContactService.saveEmergencyContacts(_emergencyContacts);
+        debugPrint('No saved contacts found, loaded default contacts');
       }
     } catch (e) {
       // Fallback to default contacts if loading fails
       _emergencyContacts = EmergencyContactService.getDefaultContacts();
-      throw Exception('Failed to load emergency contacts: $e');
+      debugPrint('Failed to load emergency contacts from Firestore: $e');
     }
   }
 
+
+
   // Load safety history
   Future<void> loadSafetyHistory() async {
-    // TODO: Load from local storage
-    // For now, initialize as empty
-    _safetyHistory = [];
+    try {
+      // Load from Firestore
+      final history = await _safetyHistoryService.loadSafetyHistory();
+      _safetyHistory = history;
+      debugPrint('Loaded ${history.length} safety history records from Firestore');
+    } catch (e) {
+      // Fallback to empty list if loading fails
+      _safetyHistory = [];
+      debugPrint('Failed to load safety history from Firestore: $e');
+    }
   }
 
   // Clear history

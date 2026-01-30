@@ -1,14 +1,16 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-// import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'auth_service.dart';
 
 class FirebaseUserService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  static final FirebaseAuth _auth = FirebaseAuth.instance;
   static final AuthService _authService = AuthService();
 
-  // Get current user ID from auth service
+  // Get current user ID from Firebase Auth
   static Future<String?> _getCurrentUserId() async {
-    return await _authService.getSavedUserId();
+    final user = _auth.currentUser;
+    return user?.uid;
   }
 
   // ==================== USER PROFILE ====================
