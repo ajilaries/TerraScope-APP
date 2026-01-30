@@ -211,29 +211,34 @@ class _SignupScreenState extends State<SignupScreen> {
     );
 
     if (res['statusCode'] == 200 || res['statusCode'] == 201) {
-      // Save emergency contacts using provider
-      final emergencyProvider =
-          Provider.of<EmergencyProvider>(context, listen: false);
-      List<EmergencyContact> contacts = emergencyContacts
-          .map((c) => EmergencyContact(
-                id: DateTime.now().millisecondsSinceEpoch.toString() +
-                    c['name'], // Simple ID generation
-                name: c['name'],
-                phoneNumber: c['phone'],
-                email: c['email'],
-                type: EmergencyContactType.values
-                    .firstWhere((e) => e.name == c['type']),
-                notes: c['notes'],
-                isPrimary: c['isPrimary'],
-              ))
-          .toList();
-      await emergencyProvider.completeSignup(contacts);
-
       // Auto login after signup
       final loginRes =
           await _auth.login(email: emailC.text.trim(), password: passC.text);
       if (!mounted) return;
       if (loginRes['ok']) {
+        // Save emergency contacts to Firestore after login (when user ID is available)
+        final emergencyContactService = EmergencyContactService();
+        List<EmergencyContact> contacts = emergencyContacts
+            .map((c) => EmergencyContact(
+                  id: DateTime.now().millisecondsSinceEpoch.toString() +
+                      c['name'], // Simple ID generation
+                  name: c['name'],
+                  phoneNumber: c['phone'],
+                  email: c['email'],
+                  type: EmergencyContactType.values
+                      .firstWhere((e) => e.name == c['type']),
+                  notes: c['notes'],
+                  isPrimary: c['isPrimary'],
+                ))
+            .toList();
+        await emergencyContactService.saveEmergencyContacts(contacts);
+
+        // Also save to EmergencyProvider for local access
+        final emergencyProvider =
+            Provider.of<EmergencyProvider>(context, listen: false);
+        await emergencyProvider.setCurrentUser(); // Set the user ID
+        await emergencyProvider.completeSignup(contacts);
+
         // Set provider mode to default
         Provider.of<ModeProvider>(context, listen: false)
             .setMode("default");
