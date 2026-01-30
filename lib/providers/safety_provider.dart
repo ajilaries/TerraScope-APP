@@ -13,6 +13,7 @@ import 'dart:async';
 
 final EmergencyContactService _emergencyContactService =
     EmergencyContactService();
+final SafetyHistoryService _safetyHistoryService = SafetyHistoryService();
 
 class SafetyProvider extends ChangeNotifier {
   bool _isSafetyModeEnabled = false;
