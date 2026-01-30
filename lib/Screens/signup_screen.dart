@@ -282,10 +282,12 @@ class _SignupScreenState extends State<SignupScreen> {
       }
     } else {
       if (!mounted) return;
-      final body = res['body'] ?? {};
-      final msg = body is Map && body['detail'] != null
-          ? body['detail']
-          : res['body'] ?? 'Signup failed';
+      final body = res['body'];
+      final msg = body is Map && body['message'] != null
+          ? body['message']
+          : body is Map && body['detail'] != null
+              ? body['detail']
+              : 'Signup failed';
       if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(
