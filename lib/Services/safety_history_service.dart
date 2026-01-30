@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import '../models/safety_alert.dart';
+import '../models/saftey_status.dart';
 import 'auth_service.dart';
 
 class SafetyHistoryService {
