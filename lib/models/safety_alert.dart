@@ -8,6 +8,8 @@ class SafetyAlert {
   final double windSpeed;
   final int visibility;
   final double temperature;
+  final int humidity;
+  final String userId;
 
   SafetyAlert({
     required this.level,
@@ -17,5 +19,7 @@ class SafetyAlert {
     required this.windSpeed,
     required this.visibility,
     required this.temperature,
+    this.humidity = 50,
+    this.userId = '',
   });
 }
