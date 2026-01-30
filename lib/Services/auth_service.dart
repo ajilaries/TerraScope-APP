@@ -31,6 +31,8 @@ class AuthService {
         await prefs.setString('user_id', data['user']['id'].toString());
         await prefs.setString('auth_token', data['token']);
         await prefs.setString('user_data', jsonEncode(data['user']));
+        // Mark signup as completed since user can login
+        await prefs.setBool('has_completed_signup', true);
 
         return {'ok': true, 'message': 'Login successful', 'user': data['user']};
       } else {
@@ -129,6 +131,8 @@ class AuthService {
       );
 
       final data = jsonDecode(response.body);
+      print('Signup response status: ${response.statusCode}');
+      print('Signup response body: ${response.body}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         // Save user data locally
@@ -136,6 +140,8 @@ class AuthService {
         await prefs.setString('user_id', data['user']['id'].toString());
         await prefs.setString('auth_token', data['token']);
         await prefs.setString('user_data', jsonEncode(data['user']));
+        // Mark signup as completed
+        await prefs.setBool('has_completed_signup', true);
       }
 
       return {
