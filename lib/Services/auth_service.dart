@@ -22,6 +22,8 @@ class AuthService {
       );
 
       final data = jsonDecode(response.body);
+      print('Login response status: ${response.statusCode}');
+      print('Login response body: ${response.body}');
 
       if (response.statusCode == 200 && data['success'] == true) {
         // Save user data locally
@@ -134,11 +136,12 @@ class AuthService {
         await prefs.setString('user_id', data['user']['id'].toString());
         await prefs.setString('auth_token', data['token']);
         await prefs.setString('user_data', jsonEncode(data['user']));
-
-        return {'ok': true, 'message': 'Signup successful', 'user': data['user']};
-      } else {
-        return {'ok': false, 'message': data['message'] ?? 'Signup failed'};
       }
+
+      return {
+        'statusCode': response.statusCode,
+        'body': response.body.isNotEmpty ? jsonDecode(response.body) : null,
+      };
     } catch (e) {
       return {'ok': false, 'message': 'Network error: $e'};
     }
