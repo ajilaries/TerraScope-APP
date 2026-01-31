@@ -277,9 +277,9 @@ class _HomeScreen0State extends State<HomeScreen0> {
 
       // Check if user is logged in for other modes
       final authService = AuthService();
-      final token = await authService.getSavedToken();
+      final isLoggedIn = await authService.isLoggedIn();
 
-      if (token == null) {
+      if (!isLoggedIn) {
         // User not logged in, redirect to signup for this mode
         if (!mounted) return;
         Navigator.push(
