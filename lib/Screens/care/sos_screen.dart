@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../Services/emergency_contact_service.dart';
 import '../../models/emergency_contact.dart';
+import '../../providers/emergency_provider.dart';
 
 class SOSScreen extends StatefulWidget {
   const SOSScreen({super.key});
@@ -11,15 +13,12 @@ class SOSScreen extends StatefulWidget {
 }
 
 class _SOSScreenState extends State<SOSScreen> with TickerProviderStateMixin {
-  List<EmergencyContact> _emergencyContacts = [];
-  bool _isLoading = true;
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
 
   @override
   void initState() {
     super.initState();
-    _loadEmergencyContacts();
     _pulseController = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
@@ -28,28 +27,18 @@ class _SOSScreenState extends State<SOSScreen> with TickerProviderStateMixin {
     _pulseAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
+
+    // Load emergency contacts data
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final emergencyProvider = Provider.of<EmergencyProvider>(context, listen: false);
+      emergencyProvider.loadData();
+    });
   }
 
   @override
   void dispose() {
     _pulseController.dispose();
     super.dispose();
-  }
-
-  Future<void> _loadEmergencyContacts() async {
-    try {
-      final service = EmergencyContactService();
-      final contacts = await service.loadEmergencyContacts();
-      setState(() {
-        _emergencyContacts = contacts.where((c) => c.isPrimary).toList();
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      print('Error loading emergency contacts: $e');
-    }
   }
 
   Future<void> _makeEmergencyCall(String phoneNumber) async {
@@ -64,7 +53,10 @@ class _SOSScreenState extends State<SOSScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _sendEmergencySMS() async {
-    if (_emergencyContacts.isEmpty) {
+    final emergencyProvider = Provider.of<EmergencyProvider>(context, listen: false);
+    final contacts = emergencyProvider.contacts.where((c) => c.isPrimary).toList();
+
+    if (contacts.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('No emergency contacts available')),
       );
@@ -72,7 +64,7 @@ class _SOSScreenState extends State<SOSScreen> with TickerProviderStateMixin {
     }
 
     String message = 'EMERGENCY: I need help! Please contact me immediately.';
-    String recipients = _emergencyContacts.map((c) => c.phoneNumber).join(',');
+    String recipients = contacts.map((c) => c.phoneNumber).join(',');
 
     final Uri smsUri = Uri(
       scheme: 'sms',
@@ -134,176 +126,194 @@ class _SOSScreenState extends State<SOSScreen> with TickerProviderStateMixin {
               // Large SOS Button
               Expanded(
                 child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      AnimatedBuilder(
-                        animation: _pulseAnimation,
-                        builder: (context, child) {
-                          return Transform.scale(
-                            scale: _pulseAnimation.value,
-                            child: GestureDetector(
-                              onTap: () async {
-                                // Trigger emergency actions
-                                await _sendEmergencySMS();
+                  child: Consumer<EmergencyProvider>(
+                    builder: (context, emergencyProvider, child) {
+                      final contacts = emergencyProvider.contacts.where((c) => c.isPrimary).toList();
 
-                                // Call primary emergency contact
-                                if (_emergencyContacts.isNotEmpty) {
-                                  await _makeEmergencyCall(
-                                      _emergencyContacts.first.phoneNumber);
-                                } else {
-                                  // Call emergency services
-                                  await _makeEmergencyCall(
-                                      '112'); // International emergency number
-                                }
+                      return Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          AnimatedBuilder(
+                            animation: _pulseAnimation,
+                            builder: (context, child) {
+                              return Transform.scale(
+                                scale: _pulseAnimation.value,
+                                child: GestureDetector(
+                                  onTap: () async {
+                                    // Trigger emergency actions
+                                    await _sendEmergencySMS();
 
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Emergency alert sent!'),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                              },
-                              child: Container(
-                                width: 200,
-                                height: 200,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      Colors.red.shade600,
-                                      Colors.red.shade800
-                                    ],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.red.shade300,
-                                      blurRadius: 20,
-                                      spreadRadius: 5,
-                                    ),
-                                  ],
-                                ),
-                                child: const Center(
-                                  child: Text(
-                                    'SOS',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 48,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
+                                    // Call primary emergency contact
+                                    if (contacts.isNotEmpty) {
+                                      await _makeEmergencyCall(contacts.first.phoneNumber);
+                                    } else {
+                                      // Call emergency services
+                                      await _makeEmergencyCall('112'); // International emergency number
+                                    }
 
-                      const SizedBox(height: 40),
-
-                      Text(
-                        'Emergency Contacts',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey.shade700,
-                        ),
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      // Emergency Contacts List
-                      if (_isLoading)
-                        const CircularProgressIndicator()
-                      else if (_emergencyContacts.isEmpty)
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Text(
-                            'No primary emergency contacts set.\nPlease add emergency contacts first.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.grey),
-                          ),
-                        )
-                      else
-                        ..._emergencyContacts.map((contact) => Container(
-                              margin: const EdgeInsets.only(bottom: 8),
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.grey.shade200),
-                              ),
-                              child: Row(
-                                children: [
-                                  Text(
-                                    contact.icon,
-                                    style: const TextStyle(fontSize: 24),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          contact.name,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        Text(
-                                          contact.phoneNumber,
-                                          style: TextStyle(
-                                            color: Colors.grey.shade600,
-                                          ),
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Emergency alert sent!'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  },
+                                  child: Container(
+                                    width: 200,
+                                    height: 200,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          Colors.red.shade600,
+                                          Colors.red.shade800
+                                        ],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.red.shade300,
+                                          blurRadius: 20,
+                                          spreadRadius: 5,
                                         ),
                                       ],
                                     ),
+                                    child: const Center(
+                                      child: Text(
+                                        'SOS',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 48,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
                                   ),
-                                  IconButton(
-                                    icon: const Icon(Icons.call,
-                                        color: Colors.green),
-                                    onPressed: () =>
-                                        _makeEmergencyCall(contact.phoneNumber),
-                                  ),
-                                ],
-                              ),
-                            )),
-
-                      const SizedBox(height: 20),
-
-                      // Quick Actions
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          _quickActionButton(
-                            icon: Icons.message,
-                            label: 'Send Alert',
-                            color: Colors.orange,
-                            onTap: _sendEmergencySMS,
-                          ),
-                          _quickActionButton(
-                            icon: Icons.location_on,
-                            label: 'Share Location',
-                            color: Colors.blue,
-                            onTap: () {
-                              // TODO: Implement location sharing
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content:
-                                        Text('Location sharing coming soon')),
+                                ),
                               );
                             },
                           ),
+
+                          const SizedBox(height: 40),
+
+                          Text(
+                            'Emergency Contacts',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey.shade700,
+                            ),
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          // Emergency Contacts List
+                          if (contacts.isEmpty)
+                            Column(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: const Text(
+                                    'No emergency contacts found.\nPlease add emergency contacts during signup or in settings.',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(color: Colors.grey),
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                ElevatedButton.icon(
+                                  onPressed: () {
+                                    Navigator.pushNamed(context, '/emergency-contacts');
+                                  },
+                                  icon: const Icon(Icons.add),
+                                  label: const Text('Add Emergency Contacts'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.red.shade700,
+                                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                  ),
+                                ),
+                              ],
+                            )
+                          else
+                            ...contacts.map((contact) => Container(
+                                  margin: const EdgeInsets.only(bottom: 8),
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: Colors.grey.shade200),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Text(
+                                        contact.icon,
+                                        style: const TextStyle(fontSize: 24),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              contact.name,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            Text(
+                                              contact.phoneNumber,
+                                              style: TextStyle(
+                                                color: Colors.grey.shade600,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.call,
+                                            color: Colors.green),
+                                        onPressed: () =>
+                                            _makeEmergencyCall(contact.phoneNumber),
+                                      ),
+                                    ],
+                                  ),
+                                )),
+
+                          const SizedBox(height: 20),
+
+                          // Quick Actions
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              _quickActionButton(
+                                icon: Icons.message,
+                                label: 'Send Alert',
+                                color: Colors.orange,
+                                onTap: _sendEmergencySMS,
+                              ),
+                              _quickActionButton(
+                                icon: Icons.location_on,
+                                label: 'Share Location',
+                                color: Colors.blue,
+                                onTap: () {
+                                  // TODO: Implement location sharing
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content:
+                                            Text('Location sharing coming soon')),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
                         ],
-                      ),
-                    ],
+                      );
+                    },
                   ),
                 ),
               ),
