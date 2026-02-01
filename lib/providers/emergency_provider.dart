@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/emergency_contact.dart';
 import '../Services/auth_service.dart';
+import '../Services/emergency_contact_service.dart';
 
 class EmergencyProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
@@ -46,7 +47,7 @@ class EmergencyProvider with ChangeNotifier {
       // Load signup status
       _isSignupCompleted = prefs.getBool(_signupCompletedKey) ?? false;
 
-      // Load contacts
+      // Load contacts from SharedPreferences first
       final contactsJson = prefs.getString(_contactsKey);
       if (contactsJson != null) {
         final contactsList = json.decode(contactsJson) as List;
@@ -62,6 +63,21 @@ class EmergencyProvider with ChangeNotifier {
             ),
           );
         }).toList();
+      }
+
+      // If no contacts found in SharedPreferences, try loading from Firestore
+      if (_contacts.isEmpty) {
+        try {
+          final emergencyContactService = EmergencyContactService();
+          final firestoreContacts = await emergencyContactService.loadAllEmergencyContacts();
+          if (firestoreContacts.isNotEmpty) {
+            _contacts = firestoreContacts;
+            // Save to SharedPreferences for future use
+            await _saveData();
+          }
+        } catch (e) {
+          debugPrint('Error loading emergency contacts from Firestore: $e');
+        }
       }
 
       notifyListeners();
@@ -178,19 +194,33 @@ class EmergencyProvider with ChangeNotifier {
     }
   }
 
-  // Send emergency alert to all contacts
+  // Send emergency alert to all contacts (from both sources)
   Future<void> sendEmergencyAlert(String alertMessage) async {
-    if (_contacts.isEmpty) return;
+    // Load all contacts from both signup and additional contacts
+    final allContacts = await loadAllEmergencyContacts();
+    if (allContacts.isEmpty) return;
 
     final emergencyMessage =
         '🚨 EMERGENCY ALERT 🚨\n\n$alertMessage\n\nSent from TerraScope Safety Mode';
 
-    for (final contact in _contacts) {
+    for (final contact in allContacts) {
       try {
         await sendEmergencySMS(contact.id, emergencyMessage);
       } catch (e) {
         debugPrint('Failed to send alert to ${contact.name}: $e');
       }
+    }
+  }
+
+  // Load all emergency contacts from both sources (signup + additional)
+  Future<List<EmergencyContact>> loadAllEmergencyContacts() async {
+    try {
+      // Import the service to use its method
+      final emergencyContactService = EmergencyContactService();
+      return await emergencyContactService.loadAllEmergencyContacts();
+    } catch (e) {
+      debugPrint('Error loading all emergency contacts: $e');
+      return [];
     }
   }
 
