@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
 import '../Services/notification_service.dart'; // For sending push alerts
 import '../Services/location_service.dart'; // For current location
-import '../Services/emergency_contact_service.dart'; // For emergency contacts
+import '../providers/emergency_provider.dart'; // For emergency contacts
 
 class PanicScreen extends StatefulWidget {
   const PanicScreen({super.key});
@@ -42,58 +41,35 @@ class _PanicScreenState extends State<PanicScreen> {
           "Time: ${DateTime.now().toString()}\n"
           "Please respond urgently!";
 
-      // 3️⃣ Get emergency contact from Firestore
-      final emergencyContactService = EmergencyContactService();
-      final contacts = await emergencyContactService.loadEmergencyContacts();
-      final primaryContact = contacts.isNotEmpty ? contacts.first : null;
+      // 3️⃣ Get emergency provider and send alert to all contacts
+      final emergencyProvider = Provider.of<EmergencyProvider>(context, listen: false);
 
-      // Use primary contact or fallback to default emergency numbers
-      final String emergencyPhoneNumber = primaryContact?.phoneNumber ?? "100"; // Default to police
+      // Load all contacts from both sources (signup + additional)
+      final allContacts = await emergencyProvider.loadAllEmergencyContacts();
 
-      bool alertSent = false;
-
-      try {
-        // Send SMS to emergency contact
-        final smsUri = Uri.parse(
-            'sms:$emergencyPhoneNumber?body=${Uri.encodeComponent(emergencyMessage)}');
-        debugPrint("Attempting to launch SMS: $smsUri");
-
-        if (await canLaunchUrl(smsUri)) {
-          await launchUrl(smsUri, mode: LaunchMode.externalApplication);
-          alertSent = true;
-          debugPrint("Emergency alert sent to: $emergencyPhoneNumber");
-        } else {
-          // Fallback: try without body parameter
-          final fallbackUri = Uri.parse('sms:$emergencyPhoneNumber');
-          if (await canLaunchUrl(fallbackUri)) {
-            await launchUrl(fallbackUri, mode: LaunchMode.externalApplication);
-            alertSent = true;
-            debugPrint("Fallback SMS sent to: $emergencyPhoneNumber (without body)");
-          } else {
-            debugPrint("Could not launch SMS app - both URI formats failed");
-          }
-        }
-      } catch (e) {
-        debugPrint("Failed to send emergency alert: $e");
+      if (allContacts.isEmpty) {
+        setState(() {
+          statusMessage = "No emergency contacts found. Please add contacts during signup or in settings.";
+          isSending = false;
+        });
+        return;
       }
+
+      // Send alert to all emergency contacts from both sources
+      await emergencyProvider.sendEmergencyAlert(emergencyMessage);
 
       // 4️⃣ Send local notification
       await NotificationService.showNotification(
         title: "Emergency Alert Sent",
-        body: "Test alert sent to your number. Location: $lat, $lon 🚨",
+        body: "Emergency alert sent to ${allContacts.length} contact(s). Location: $lat, $lon 🚨",
       );
 
       // 5️⃣ Update status message
-      if (alertSent) {
-        setState(() {
-          statusMessage = "Test alert sent to your phone number!\n"
-              "Check your SMS app for the emergency message.";
-        });
-      } else {
-        setState(() {
-          statusMessage = "Failed to send test alert. Check your phone number.";
-        });
-      }
+      setState(() {
+        statusMessage = "Emergency alert sent successfully!\n"
+            "Alert sent to ${allContacts.length} emergency contact(s).\n"
+            "Check your SMS app for confirmation.";
+      });
 
       setState(() => isSending = false);
     } catch (e) {
@@ -108,7 +84,7 @@ class _PanicScreenState extends State<PanicScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Panic / Safety (TEST MODE)"),
+        title: const Text("Panic / Safety"),
         backgroundColor: Colors.orangeAccent,
       ),
       body: Center(
