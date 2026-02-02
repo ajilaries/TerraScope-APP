@@ -19,7 +19,7 @@ class FarmerApiService {
     };
 
     final response = await http.post(
-      Uri.parse("http://10.0.2.2:8000/agri/planting-advice"),
+      Uri.parse("http://192.168.120.189:8001/agri/planting-advice"),
       headers: {"Content-Type": "application/json"},
       body: jsonEncode(body),
     );
