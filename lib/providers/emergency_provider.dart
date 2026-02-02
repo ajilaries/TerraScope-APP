@@ -47,36 +47,51 @@ class EmergencyProvider with ChangeNotifier {
       // Load signup status
       _isSignupCompleted = prefs.getBool(_signupCompletedKey) ?? false;
 
-      // Load contacts from SharedPreferences first
-      final contactsJson = prefs.getString(_contactsKey);
-      if (contactsJson != null) {
-        final contactsList = json.decode(contactsJson) as List;
-        _contacts = contactsList.map((contactJson) {
-          return EmergencyContact(
-            id: contactJson['id'],
-            name: contactJson['name'],
-            phoneNumber: contactJson['phoneNumber'],
-            email: contactJson['email'] ?? '',
-            type: EmergencyContactType.values.firstWhere(
-              (e) => e.toString() == contactJson['type'],
-              orElse: () => EmergencyContactType.custom,
-            ),
-          );
-        }).toList();
-      }
-
-      // If no contacts found in SharedPreferences, try loading from Firestore
-      if (_contacts.isEmpty) {
-        try {
-          final emergencyContactService = EmergencyContactService();
-          final firestoreContacts = await emergencyContactService.loadAllEmergencyContacts();
-          if (firestoreContacts.isNotEmpty) {
-            _contacts = firestoreContacts;
-            // Save to SharedPreferences for future use
-            await _saveData();
+      // Try loading from Firestore first
+      try {
+        final emergencyContactService = EmergencyContactService();
+        final firestoreContacts = await emergencyContactService.loadAllEmergencyContacts();
+        if (firestoreContacts.isNotEmpty) {
+          _contacts = firestoreContacts;
+          // Save to SharedPreferences for offline use
+          await _saveData();
+        } else {
+          // If no contacts in Firestore, try loading from SharedPreferences
+          final contactsJson = prefs.getString(_contactsKey);
+          if (contactsJson != null) {
+            final contactsList = json.decode(contactsJson) as List;
+            _contacts = contactsList.map((contactJson) {
+              return EmergencyContact(
+                id: contactJson['id'],
+                name: contactJson['name'],
+                phoneNumber: contactJson['phoneNumber'],
+                email: contactJson['email'] ?? '',
+                type: EmergencyContactType.values.firstWhere(
+                  (e) => e.toString() == contactJson['type'],
+                  orElse: () => EmergencyContactType.custom,
+                ),
+              );
+            }).toList();
           }
-        } catch (e) {
-          debugPrint('Error loading emergency contacts from Firestore: $e');
+        }
+      } catch (e) {
+        debugPrint('Error loading emergency contacts from Firestore: $e');
+        // Fallback to SharedPreferences
+        final contactsJson = prefs.getString(_contactsKey);
+        if (contactsJson != null) {
+          final contactsList = json.decode(contactsJson) as List;
+          _contacts = contactsList.map((contactJson) {
+            return EmergencyContact(
+              id: contactJson['id'],
+              name: contactJson['name'],
+              phoneNumber: contactJson['phoneNumber'],
+              email: contactJson['email'] ?? '',
+              type: EmergencyContactType.values.firstWhere(
+                (e) => e.toString() == contactJson['type'],
+                orElse: () => EmergencyContactType.custom,
+              ),
+            );
+          }).toList();
         }
       }
 
@@ -115,6 +130,15 @@ class EmergencyProvider with ChangeNotifier {
     _contacts = List.from(initialContacts);
     _isSignupCompleted = true;
     await _saveData();
+
+    // Also save to Firestore
+    try {
+      final emergencyContactService = EmergencyContactService();
+      await emergencyContactService.saveEmergencyContacts(initialContacts);
+    } catch (e) {
+      debugPrint('Error saving initial contacts to Firestore: $e');
+    }
+
     notifyListeners();
   }
 
@@ -127,6 +151,15 @@ class EmergencyProvider with ChangeNotifier {
 
     _contacts.add(contact);
     await _saveData();
+
+    // Also save to Firestore
+    try {
+      final emergencyContactService = EmergencyContactService();
+      await emergencyContactService.addEmergencyContact(contact);
+    } catch (e) {
+      debugPrint('Error saving contact to Firestore: $e');
+    }
+
     notifyListeners();
   }
 
@@ -146,6 +179,15 @@ class EmergencyProvider with ChangeNotifier {
 
     _contacts[index] = updatedContact;
     await _saveData();
+
+    // Also update in Firestore
+    try {
+      final emergencyContactService = EmergencyContactService();
+      await emergencyContactService.updateEmergencyContact(updatedContact);
+    } catch (e) {
+      debugPrint('Error updating contact in Firestore: $e');
+    }
+
     notifyListeners();
   }
 
@@ -153,6 +195,15 @@ class EmergencyProvider with ChangeNotifier {
   Future<void> removeContact(String contactId) async {
     _contacts.removeWhere((c) => c.id == contactId);
     await _saveData();
+
+    // Also remove from Firestore
+    try {
+      final emergencyContactService = EmergencyContactService();
+      await emergencyContactService.removeEmergencyContact(contactId);
+    } catch (e) {
+      debugPrint('Error removing contact from Firestore: $e');
+    }
+
     notifyListeners();
   }
 
