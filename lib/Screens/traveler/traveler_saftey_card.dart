@@ -1,9 +1,18 @@
 import 'package:flutter/material.dart';
+import 'travel_map_preview.dart';
+import 'package:latlong2/latlong.dart';
 
 class TravelerSafetyCard extends StatelessWidget {
   final int score;
+  final double? latitude;
+  final double? longitude;
 
-  const TravelerSafetyCard({super.key, required this.score});
+  const TravelerSafetyCard({
+    super.key,
+    required this.score,
+    this.latitude,
+    this.longitude,
+  });
 
   Color _safetyColor(int score) {
     if (score >= 80) return Colors.green;
@@ -82,12 +91,20 @@ class TravelerSafetyCard extends StatelessWidget {
                   color: Colors.grey.shade100,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Center(
-                  child: Text(
-                    "Map preview\n(plug Google Maps here)",
-                    textAlign: TextAlign.center,
-                  ),
-                ),
+                child: latitude != null && longitude != null
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: TravelMapPreview(
+                          location: LatLng(latitude!, longitude!),
+                        ),
+                      )
+                    : const Center(
+                        child: Text(
+                          "Map preview\n(Location unavailable)",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      ),
               ),
             ),
           ],
