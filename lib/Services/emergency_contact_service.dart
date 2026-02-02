@@ -1,5 +1,6 @@
-// import 'dart:convert';
+import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 // import 'package:shared_preferences/shared_preferences.dart';
@@ -11,114 +12,90 @@ class EmergencyContactService {
   final AuthService _authService = AuthService();
 
   Future<String?> _getUserId() async {
-    final token = await _authService.getSavedToken();
-    if (token != null) {
-      try {
-        Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
-        return decodedToken['user_id'] ??
-            decodedToken['id'] ??
-            decodedToken['sub'];
-      } catch (e) {
-        print('Error decoding JWT: $e');
-        return null;
-      }
-    }
-    return null;
+    final user = FirebaseAuth.instance.currentUser;
+    return user?.uid;
   }
 
-  // Save emergency contacts to Firestore (subcollection)
+  // Save emergency contacts to Firestore (each contact as separate document)
   Future<void> saveEmergencyContacts(List<EmergencyContact> contacts) async {
     final userId = await _getUserId();
     if (userId == null) return;
 
     try {
-      final contactsJson = contacts
-          .map((contact) => {
-                'id': contact.id,
-                'name': contact.name,
-                'phoneNumber': contact.phoneNumber,
-                'email': contact.email,
-                'type': contact.type.toString(),
-                'notes': contact.notes,
-                'isPrimary': contact.isPrimary,
-              })
-          .toList();
-
-      await _firestore
+      final batch = _firestore.batch();
+      final userContactsRef = _firestore
           .collection('users')
           .doc(userId)
-          .collection('emergencyContacts')
-          .doc('contacts')
-          .set({'contacts': contactsJson});
+          .collection('emergencyContacts');
+
+      // Delete existing contacts
+      final existingContacts = await userContactsRef.get();
+      for (final doc in existingContacts.docs) {
+        batch.delete(doc.reference);
+      }
+
+      // Add all contacts as separate documents
+      for (final contact in contacts) {
+        final contactRef = userContactsRef.doc(contact.id);
+        batch.set(contactRef, {
+          'id': contact.id,
+          'name': contact.name,
+          'phoneNumber': contact.phoneNumber,
+          'email': contact.email,
+          'type': contact.type.toString(),
+          'notes': contact.notes,
+          'isPrimary': contact.isPrimary,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      await batch.commit();
     } catch (e) {
       throw Exception('Failed to save emergency contacts: $e');
     }
   }
 
-  // Load emergency contacts from Firestore (subcollection and top-level collection)
+  // Load emergency contacts from Firestore (each contact as separate document)
   Future<List<EmergencyContact>> loadAllEmergencyContacts() async {
     final userId = await _getUserId();
     if (userId == null) return [];
 
-    List<EmergencyContact> allContacts = [];
-
     try {
-      // First, try loading from the subcollection (users/{userId}/emergencyContacts/contacts)
-      final doc = await _firestore
+      final snapshot = await _firestore
           .collection('users')
           .doc(userId)
           .collection('emergencyContacts')
-          .doc('contacts')
           .get();
 
-      if (doc.exists && doc.data() != null) {
-        final contactsList = doc.data()!['contacts'] as List;
-        allContacts = contactsList
-            .map((item) => EmergencyContact(
-                  id: item['id'],
-                  name: item['name'],
-                  phoneNumber: item['phoneNumber'],
-                  email: item['email'],
-                  type: EmergencyContactType.values.firstWhere(
-                    (e) => e.toString() == item['type'],
-                    orElse: () => EmergencyContactType.custom,
-                  ),
-                  notes: item['notes'],
-                  isPrimary: item['isPrimary'] ?? false,
-                ))
-            .toList();
-      }
+      final allContacts = snapshot.docs.map((doc) {
+        final data = doc.data();
+        return EmergencyContact(
+          id: doc.id,
+          name: data['name'] ?? '',
+          phoneNumber: data['phoneNumber'] ?? '',
+          email: data['email'] ?? '',
+          type: EmergencyContactType.values.firstWhere(
+            (e) => e.toString() == data['type'],
+            orElse: () => EmergencyContactType.custom,
+          ),
+          notes: data['notes'] ?? '',
+          isPrimary: data['isPrimary'] ?? false,
+        );
+      }).toList();
 
-      // If no contacts found in subcollection, also check the top-level emergencyContacts collection
-      if (allContacts.isEmpty) {
-        final existingContacts = await _firestore
-            .collection('emergencyContacts')
-            .where('userId', isEqualTo: userId)
-            .get();
+      // Sort by creation time if available, otherwise by name
+      allContacts.sort((a, b) {
+        // If both have timestamps, sort by timestamp
+        // For now, sort by name as fallback
+        return a.name.compareTo(b.name);
+      });
 
-        if (existingContacts.docs.isNotEmpty) {
-          allContacts = existingContacts.docs
-              .map((doc) => EmergencyContact(
-                    id: doc.id,
-                    name: doc.data()['name'] ?? '',
-                    phoneNumber: doc.data()['phoneNumber'] ?? '',
-                    email: doc.data()['email'] ?? '',
-                    type: EmergencyContactType.values.firstWhere(
-                      (e) => e.toString() == doc.data()['type'],
-                      orElse: () => EmergencyContactType.custom,
-                    ),
-                    notes: doc.data()['notes'] ?? '',
-                    isPrimary: doc.data()['isPrimary'] ?? false,
-                  ))
-              .toList();
-        }
-      }
+      return allContacts;
     } catch (e) {
       debugPrint('Error loading emergency contacts: $e');
       // Return empty list instead of throwing exception
       return [];
     }
-    return allContacts;
   }
 
   // Add a single emergency contact
