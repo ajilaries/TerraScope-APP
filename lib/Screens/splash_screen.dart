@@ -69,10 +69,10 @@ class _SplashScreenState extends State<SplashScreen> {
         print('Location fetched in background: ${position.latitude}, ${position.longitude}');
 
         // Load weather data in background
-        final weatherData = await WeatherService.getCurrentWeather(
-          position.latitude,
-          position.longitude,
-        );
+    final weatherData = await WeatherService.getCurrentWeatherCached(
+      position.latitude,
+      position.longitude,
+    );
         if (weatherData != null) {
           print('Weather data loaded in background: ${weatherData['weather'][0]['description']}');
         }
