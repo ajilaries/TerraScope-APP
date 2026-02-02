@@ -36,8 +36,8 @@ class _TravelerDashboardState extends State<TravelerDashboard> {
       final pos = await LocationService.getCurrentPosition();
       if (pos != null) {
         final weatherData =
-            await WeatherService.getCurrentWeather(pos.latitude, pos.longitude);
-        final forecastData = await WeatherService.getWeatherForecast(
+            await WeatherService.getCurrentWeatherCached(pos.latitude, pos.longitude);
+        final forecastData = await WeatherService.getWeatherForecastCached(
             pos.latitude, pos.longitude);
         final aqiService = AQIService();
         final aqiData = await aqiService.getAQI(pos.latitude, pos.longitude);
