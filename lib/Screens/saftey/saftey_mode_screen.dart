@@ -306,14 +306,28 @@ class _SafetyModeScreenState extends State<SafetyModeScreen>
         const SizedBox(height: 16),
         ElevatedButton.icon(
           onPressed: () {
+            final screenContext = context; // Capture screen context
             showDialog(
               context: context,
-              builder: (context) => AddContactDialog(
-                onContactAdded: (contact) {
-                  provider.addEmergencyContact(contact);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('${contact.name} added to emergency contacts')),
-                  );
+              builder: (dialogContext) => AddContactDialog(
+                onContactAdded: (contact) async {
+                  try {
+                    await provider.addEmergencyContact(contact);
+                    if (mounted) {
+                      ScaffoldMessenger.of(screenContext).showSnackBar(
+                        SnackBar(content: Text('${contact.name} added to emergency contacts')),
+                      );
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(screenContext).showSnackBar(
+                        SnackBar(
+                          content: Text('Failed to add emergency contact: $e'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
                 },
               ),
             );
