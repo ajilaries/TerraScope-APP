@@ -91,7 +91,7 @@ class SafetyRecommendationService {
 
     try {
       // Get current weather data
-      final weatherData = await WeatherService.getCurrentWeather(lat, lon);
+      final weatherData = await WeatherService.getCurrentWeatherCached(lat, lon);
       if (weatherData == null) return recommendations;
 
       final rainMm = weatherData['rain']?['1h'] ?? 0.0;

@@ -32,46 +32,56 @@ class _DailyPlannerDashboardState extends State<DailyPlannerDashboard> {
   @override
   void initState() {
     super.initState();
-    _initDailyPlanner();
+    _loadCachedData(); // Show cached data immediately
+    _refreshDataInBackground(); // Fetch fresh data in background
   }
 
-  Future<void> _initDailyPlanner() async {
+  void _loadCachedData() {
+    // Always try to load cached data first for instant loading
+    if (_cachedWeatherData != null) {
+      setState(() {
+        currentPlace = _cachedWeatherData!['name'] ?? "Unknown Location";
+        temp = (_cachedWeatherData!['main']['temp'] as num).toDouble();
+        currentWeather = WeatherService.parseWeatherData(_cachedWeatherData!);
+      });
+    } else {
+      // Set default values for instant display
+      setState(() {
+        currentPlace = "Loading location...";
+        temp = 25.0;
+        aqi = 50;
+      });
+    }
+
+    if (_cachedForecastData != null && _cachedForecastData!['list'] != null) {
+      setState(() {
+        hourlyForecast = (_cachedForecastData!['list'] as List)
+            .take(24)
+            .map((item) => WeatherService.parseWeatherData(item))
+            .toList();
+      });
+    }
+
+    if (_cachedAqiData != null) {
+      setState(() {
+        aqi = _cachedAqiData!;
+      });
+    }
+
+    // Show content immediately, no loading state
+    setState(() {
+      isLoading = false;
+    });
+  }
+
+  Future<void> _refreshDataInBackground() async {
     try {
-      // Check if we have valid cached data
-      if (_isCacheValid()) {
-        // Use cached data
-        setState(() {
-          if (_cachedWeatherData != null) {
-            currentPlace = _cachedWeatherData!['name'] ?? "Unknown Location";
-            temp = (_cachedWeatherData!['main']['temp'] as num).toDouble();
-            currentWeather =
-                WeatherService.parseWeatherData(_cachedWeatherData!);
-          }
-
-          if (_cachedForecastData != null &&
-              _cachedForecastData!['list'] != null) {
-            hourlyForecast = (_cachedForecastData!['list'] as List)
-                .take(24)
-                .map((item) => WeatherService.parseWeatherData(item))
-                .toList();
-          }
-
-          if (_cachedAqiData != null) {
-            aqi = _cachedAqiData!;
-          }
-        });
-        setState(() {
-          isLoading = false;
-        });
-        return;
-      }
-
       final pos = await LocationService.getCurrentPosition();
       if (pos != null) {
-        // Make API calls in parallel for better performance
+        // Make API calls in parallel for better performance using cached methods
         final results = await Future.wait([
-          WeatherService.getCurrentWeather(pos.latitude, pos.longitude),
-          WeatherService.getWeatherForecast(pos.latitude, pos.longitude),
+          WeatherService.getCurrentWeatherCached(pos.latitude, pos.longitude),
+          WeatherService.getWeatherForecastCached(pos.latitude, pos.longitude),
           AQIService().getAQI(pos.latitude, pos.longitude),
         ]);
 
@@ -85,26 +95,28 @@ class _DailyPlannerDashboardState extends State<DailyPlannerDashboard> {
         _cachedAqiData = aqiData;
         _lastFetchTime = DateTime.now();
 
-        // Update state with all data at once
-        setState(() {
-          if (weatherData != null) {
-            currentPlace = weatherData['name'] ?? "Unknown Location";
-            temp = (weatherData['main']['temp'] as num).toDouble();
-            currentWeather = WeatherService.parseWeatherData(weatherData);
-          }
+        // Update UI with fresh data (no loading state)
+        if (mounted) {
+          setState(() {
+            if (weatherData != null) {
+              currentPlace = weatherData['name'] ?? "Unknown Location";
+              temp = (weatherData['main']['temp'] as num).toDouble();
+              currentWeather = WeatherService.parseWeatherData(weatherData);
+            }
 
-          if (forecastData != null && forecastData['list'] != null) {
-            hourlyForecast = (forecastData['list'] as List)
-                .take(24)
-                .map((item) => WeatherService.parseWeatherData(item))
-                .toList();
-          }
+            if (forecastData != null && forecastData['list'] != null) {
+              hourlyForecast = (forecastData['list'] as List)
+                  .take(24)
+                  .map((item) => WeatherService.parseWeatherData(item))
+                  .toList();
+            }
 
-          if (aqiData != null) {
-            aqi = aqiData;
-          }
-        });
-      } else {
+            if (aqiData != null) {
+              aqi = aqiData;
+            }
+          });
+        }
+      } else if (mounted) {
         setState(() {
           currentPlace = "Location unavailable";
           temp = 25.0;
@@ -112,16 +124,8 @@ class _DailyPlannerDashboardState extends State<DailyPlannerDashboard> {
         });
       }
     } catch (e) {
-      // Error initializing daily planner: $e
-      setState(() {
-        currentPlace = "Error loading location";
-        temp = 25.0;
-        aqi = 50;
-      });
-    } finally {
-      setState(() {
-        isLoading = false;
-      });
+      // Silently handle errors in background refresh
+      debugPrint('Background data refresh failed: $e');
     }
   }
 
@@ -136,7 +140,10 @@ class _DailyPlannerDashboardState extends State<DailyPlannerDashboard> {
     setState(() {
       isLoading = true;
     });
-    await _initDailyPlanner();
+    await _refreshDataInBackground();
+    setState(() {
+      isLoading = false;
+    });
   }
 
   @override

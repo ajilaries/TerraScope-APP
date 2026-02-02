@@ -1,9 +1,16 @@
 import 'dart:convert';
+import 'dart:math';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class WeatherService {
   static const String _baseUrl = 'https://api.openweathermap.org/data/2.5';
+  static const String _weatherCacheKey = 'cached_weather_data';
+  static const String _forecastCacheKey = 'cached_forecast_data';
+  static const String _locationCacheKey = 'cached_location_data';
+  static const String _lastFetchKey = 'weather_last_fetch_time';
+  static const Duration _cacheDuration = Duration(minutes: 15); // Cache for 15 minutes
 
   static Future<Map<String, dynamic>?> getCurrentWeather(
       double lat, double lon) async {
@@ -309,5 +316,168 @@ class WeatherService {
     if (precipitation >= 2.5) return 'moderate';
     if (precipitation >= 0.1) return 'light';
     return 'none';
+  }
+
+  // Caching methods
+  static Future<void> _saveWeatherData(Map<String, dynamic> data, double lat, double lon) async {
+    final prefs = await SharedPreferences.getInstance();
+    final cacheData = {
+      'data': data,
+      'lat': lat,
+      'lon': lon,
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+    };
+    await prefs.setString(_weatherCacheKey, json.encode(cacheData));
+    await prefs.setInt(_lastFetchKey, DateTime.now().millisecondsSinceEpoch);
+  }
+
+  static Future<void> _saveForecastData(Map<String, dynamic> data, double lat, double lon) async {
+    final prefs = await SharedPreferences.getInstance();
+    final cacheData = {
+      'data': data,
+      'lat': lat,
+      'lon': lon,
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+    };
+    await prefs.setString(_forecastCacheKey, json.encode(cacheData));
+  }
+
+  static Future<void> _saveLocationData(String locationName, double lat, double lon) async {
+    final prefs = await SharedPreferences.getInstance();
+    final cacheData = {
+      'name': locationName,
+      'lat': lat,
+      'lon': lon,
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+    };
+    await prefs.setString(_locationCacheKey, json.encode(cacheData));
+  }
+
+  static Future<Map<String, dynamic>?> _getCachedWeatherData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final cached = prefs.getString(_weatherCacheKey);
+    if (cached != null) {
+      final cacheData = json.decode(cached);
+      final timestamp = cacheData['timestamp'];
+      final age = DateTime.now().millisecondsSinceEpoch - timestamp;
+      if (age < _cacheDuration.inMilliseconds) {
+        return cacheData;
+      }
+    }
+    return null;
+  }
+
+  static Future<Map<String, dynamic>?> _getCachedForecastData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final cached = prefs.getString(_forecastCacheKey);
+    if (cached != null) {
+      final cacheData = json.decode(cached);
+      final timestamp = cacheData['timestamp'];
+      final age = DateTime.now().millisecondsSinceEpoch - timestamp;
+      if (age < _cacheDuration.inMilliseconds) {
+        return cacheData;
+      }
+    }
+    return null;
+  }
+
+  static Future<Map<String, dynamic>?> _getCachedLocationData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final cached = prefs.getString(_locationCacheKey);
+    if (cached != null) {
+      final cacheData = json.decode(cached);
+      final timestamp = cacheData['timestamp'];
+      final age = DateTime.now().millisecondsSinceEpoch - timestamp;
+      if (age < _cacheDuration.inMilliseconds) {
+        return cacheData;
+      }
+    }
+    return null;
+  }
+
+  // Cached versions of existing methods
+  static Future<Map<String, dynamic>?> getCurrentWeatherCached(double lat, double lon) async {
+    // First check cache
+    final cached = await _getCachedWeatherData();
+    if (cached != null) {
+      // Check if location matches (within reasonable distance)
+      final cachedLat = cached['lat'];
+      final cachedLon = cached['lon'];
+      final distance = _calculateDistance(lat, lon, cachedLat, cachedLon);
+      if (distance < 1000) { // Within 1km
+        return cached['data'];
+      }
+    }
+
+    // Fetch fresh data
+    final freshData = await getCurrentWeather(lat, lon);
+    if (freshData != null) {
+      await _saveWeatherData(freshData, lat, lon);
+      // Also save location data
+      final locationName = freshData['name'] ?? 'Unknown Location';
+      await _saveLocationData(locationName, lat, lon);
+    }
+    return freshData;
+  }
+
+  static Future<Map<String, dynamic>?> getWeatherForecastCached(double lat, double lon) async {
+    // First check cache
+    final cached = await _getCachedForecastData();
+    if (cached != null) {
+      // Check if location matches
+      final cachedLat = cached['lat'];
+      final cachedLon = cached['lon'];
+      final distance = _calculateDistance(lat, lon, cachedLat, cachedLon);
+      if (distance < 1000) { // Within 1km
+        return cached['data'];
+      }
+    }
+
+    // Fetch fresh data
+    final freshData = await getWeatherForecast(lat, lon);
+    if (freshData != null) {
+      await _saveForecastData(freshData, lat, lon);
+    }
+    return freshData;
+  }
+
+  static Future<String> getCurrentLocationName(double lat, double lon) async {
+    // First check cache
+    final cached = await _getCachedLocationData();
+    if (cached != null) {
+      final cachedLat = cached['lat'];
+      final cachedLon = cached['lon'];
+      final distance = _calculateDistance(lat, lon, cachedLat, cachedLon);
+      if (distance < 1000) { // Within 1km
+        return cached['name'];
+      }
+    }
+
+    // Fetch fresh data
+    final weatherData = await getCurrentWeather(lat, lon);
+    if (weatherData != null) {
+      final locationName = weatherData['name'] ?? 'Unknown Location';
+      await _saveLocationData(locationName, lat, lon);
+      return locationName;
+    }
+
+    return 'Unknown Location';
+  }
+
+  // Helper method to calculate distance between two points (Haversine formula)
+  static double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+    const double earthRadius = 6371000; // meters
+    final double dLat = _degreesToRadians(lat2 - lat1);
+    final double dLon = _degreesToRadians(lon2 - lon1);
+
+    final double a = sin(dLat / 2) * sin(dLat / 2) +
+        cos(_degreesToRadians(lat1)) * cos(_degreesToRadians(lat2)) * sin(dLon / 2) * sin(dLon / 2);
+    final double c = 2 * atan2(sqrt(a), sqrt(1 - a));
+
+    return earthRadius * c;
+  }
+
+  static double _degreesToRadians(double degrees) {
+    return degrees * (3.141592653589793 / 180);
   }
 }

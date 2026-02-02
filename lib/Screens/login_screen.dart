@@ -306,6 +306,28 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         const SizedBox(height: 20),
 
+                        // Sign up link
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const SignupScreen(),
+                              ),
+                            );
+                          },
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.blue.shade600,
+                          ),
+                          child: const Text(
+                            "Don't have an account? Sign up",
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+
 
                       ],
                     ),

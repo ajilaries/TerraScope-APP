@@ -66,7 +66,7 @@ class _CareDashboardState extends State<CareDashboard> {
     try {
       final position = await LocationService.getCurrentPosition();
       if (position != null) {
-        final weather = await WeatherService.getCurrentWeather(
+        final weather = await WeatherService.getCurrentWeatherCached(
             position.latitude, position.longitude);
         if (weather != null) {
           setState(() {

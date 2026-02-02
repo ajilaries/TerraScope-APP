@@ -79,7 +79,7 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
 
       // 🔥 Fetch current weather
       final currentWeather =
-          await WeatherService.getCurrentWeather(currentLat, currentLon);
+          await WeatherService.getCurrentWeatherCached(currentLat, currentLon);
       final forecastData =
           await WeatherService.getWeatherForecast(currentLat, currentLon);
 

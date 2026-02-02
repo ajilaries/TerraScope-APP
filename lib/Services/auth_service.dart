@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class AuthService {
-  final String baseUrl = "http://10.0.2.2:8000"; // Android emulator -> 10.0.2.2. Use 127.0.0.1 on real device or device IP.
+  final String baseUrl = "http://192.168.120.189:8000"; // Updated for physical device connecting to laptop backend
 
   // Login method using Firebase Auth
   Future<Map<String, dynamic>> login({
@@ -22,6 +22,7 @@ class AuthService {
       print('Firebase Auth login successful for user: ${userCredential.user?.uid}');
 
       // Then, call backend API for additional user data if needed
+      print('Calling backend login at: $baseUrl/auth/login');
       final response = await http.post(
         Uri.parse('$baseUrl/auth/login'),
         headers: {'Content-Type': 'application/json'},
@@ -29,7 +30,7 @@ class AuthService {
           'email': email,
           'password': password,
         }),
-      );
+      ).timeout(Duration(seconds: 10));
 
       final data = jsonDecode(response.body);
       print('Backend login response status: ${response.statusCode}');

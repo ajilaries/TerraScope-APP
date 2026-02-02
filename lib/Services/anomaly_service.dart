@@ -4,7 +4,7 @@ import '../models/weather_model.dart';
 
 class AnomalyService {
   static const String _anomalyUrl =
-      "http://10.0.2.2:8000/get_anomalies";
+      "http://192.168.120.189:8000/get_anomalies";
 
   /// 🌪️ Main anomaly provider (backend → fallback)
   Future<List<Map<String, dynamic>>> getAnomalies({
