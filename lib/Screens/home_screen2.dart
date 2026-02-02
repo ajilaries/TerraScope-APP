@@ -80,8 +80,8 @@ class _HomeScreen2State extends State<HomeScreen2> {
 
       final cityName = await _getCityName(latTemp, lonTemp);
 
-      final weatherData =
-          await WeatherService.getCurrentWeather(latTemp, lonTemp);
+        final weatherData =
+          await WeatherService.getCurrentWeatherCached(latTemp, lonTemp);
 
       setState(() {
         lat = latTemp;
