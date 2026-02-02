@@ -100,8 +100,8 @@ class _FarmerDashboardState extends State<FarmerDashboard>
       final soilType = await SoilService.getSoilType(lat, lon);
 
       // Fetch real weather data
-      final weatherData = await WeatherService.getCurrentWeather(lat, lon);
-      final forecastData = await WeatherService.getWeatherForecast(lat, lon);
+      final weatherData = await WeatherService.getCurrentWeatherCached(lat, lon);
+      final forecastData = await WeatherService.getWeatherForecastCached(lat, lon);
 
       // Parse weather data
       Map<String, dynamic> parsedWeather = {};
