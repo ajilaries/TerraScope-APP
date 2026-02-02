@@ -15,7 +15,8 @@ class TravelerDashboard extends StatefulWidget {
   State<TravelerDashboard> createState() => _TravelerDashboardState();
 }
 
-class _TravelerDashboardState extends State<TravelerDashboard> {
+class _TravelerDashboardState extends State<TravelerDashboard>
+    with SingleTickerProviderStateMixin {
   String currentPlace = "Loading...";
   double temp = 0.0;
   int aqi = 50;
@@ -24,25 +25,60 @@ class _TravelerDashboardState extends State<TravelerDashboard> {
   Map<String, dynamic>? currentWeather;
   int travelerSafety = 75;
   List<Map<String, String>> routeAlerts = [];
+  double? currentLatitude;
+  double? currentLongitude;
+
+  AnimationController? _animationController;
+  Animation<double>? _scaleAnimation;
+
+  void _initAnimations() {
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.2).animate(
+      CurvedAnimation(
+        parent: _animationController!,
+        curve: Curves.elasticOut,
+      ),
+    );
+    _animationController!.repeat(reverse: true);
+  }
 
   @override
   void initState() {
     super.initState();
+    _initAnimations();
     _initTraveler();
+  }
+
+  @override
+  void dispose() {
+    _animationController?.dispose();
+    super.dispose();
   }
 
   Future<void> _initTraveler() async {
     try {
       final pos = await LocationService.getCurrentPosition();
       if (pos != null) {
-        final weatherData =
-            await WeatherService.getCurrentWeatherCached(pos.latitude, pos.longitude);
-        final forecastData = await WeatherService.getWeatherForecastCached(
-            pos.latitude, pos.longitude);
-        final aqiService = AQIService();
-        final aqiData = await aqiService.getAQI(pos.latitude, pos.longitude);
-        final alerts =
-            await WeatherService.getAnomalies(pos.latitude, pos.longitude);
+        setState(() {
+          currentLatitude = pos.latitude;
+          currentLongitude = pos.longitude;
+        });
+
+        // Make API calls in parallel to reduce loading time
+        final futures = await Future.wait([
+          WeatherService.getCurrentWeatherCached(pos.latitude, pos.longitude),
+          WeatherService.getWeatherForecastCached(pos.latitude, pos.longitude),
+          AQIService().getAQI(pos.latitude, pos.longitude).timeout(const Duration(seconds: 5), onTimeout: () => null),
+          WeatherService.getAnomalies(pos.latitude, pos.longitude).timeout(const Duration(seconds: 5), onTimeout: () => []),
+        ]);
+
+        final weatherData = futures[0] as Map<String, dynamic>?;
+        final forecastData = futures[1] as Map<String, dynamic>?;
+        final aqiData = futures[2] as int?;
+        final alerts = futures[3] as List<dynamic>;
 
         if (weatherData != null) {
           setState(() {
@@ -70,20 +106,15 @@ class _TravelerDashboardState extends State<TravelerDashboard> {
         // Calculate traveler safety score
         setState(() {
           travelerSafety = _calculateTravelerSafety();
-          routeAlerts = (alerts is List<dynamic>)
-              ? alerts
-                  .map((alert) => {
-                        'title':
-                            (alert)['event'] ?? 'Alert',
-                        'description':
-                            (alert)['description'] ??
-                                'Description',
-                        'time': 'Now',
-                        'type': 'weather'
-                      })
-                  .cast<Map<String, String>>()
-                  .toList()
-              : [];
+          routeAlerts = alerts
+              .map((alert) => {
+                    'title': (alert)['event'] ?? 'Alert',
+                    'description': (alert)['description'] ?? 'Description',
+                    'time': 'Now',
+                    'type': 'weather'
+                  })
+              .cast<Map<String, String>>()
+              .toList();
         });
       } else {
         setState(() {
@@ -95,7 +126,7 @@ class _TravelerDashboardState extends State<TravelerDashboard> {
       }
     } catch (e) {
       setState(() {
-        currentPlace = "Error loading location";
+        currentPlace = "Location services unavailable. Please enable location services and try again.";
         temp = 25.0;
         aqi = 50;
         travelerSafety = 50;
@@ -173,15 +204,32 @@ class _TravelerDashboardState extends State<TravelerDashboard> {
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
-        title: const Text("Traveler Mode"),
-        centerTitle: true,
         backgroundColor: Colors.green.shade700,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            onPressed: _refreshData,
-          ),
-        ],
+        elevation: 0,
+        centerTitle: true,
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedBuilder(
+              animation: _animationController!,
+              builder: (context, child) {
+                return Transform.scale(
+                  scale: _scaleAnimation!.value,
+                  child: const Icon(
+                    Icons.flight_takeoff,
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                );
+              },
+            ),
+            const SizedBox(width: 8),
+            const Text(
+              "Traveler Mode",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _openQuickActions,
@@ -190,28 +238,35 @@ class _TravelerDashboardState extends State<TravelerDashboard> {
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Current Weather Header
-                  _buildCurrentWeatherHeader(),
-                  const SizedBox(height: 20),
+          : RefreshIndicator(
+              onRefresh: _refreshData,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Current Weather Header
+                    _buildCurrentWeatherHeader(),
+                    const SizedBox(height: 20),
 
-                  // Feature Cards
-                  TravelerSafetyCard(score: travelerSafety),
-                  const SizedBox(height: 16),
-                  _buildTravelRiskAssessment(),
-                  const SizedBox(height: 16),
-                  _buildBestTravelTimes(),
-                  const SizedBox(height: 16),
-                  TravelerHourlyRoute(hourlyRoute: _getHourlyRoute()),
-                  const SizedBox(height: 16),
-                  TravelerAlerts(routeAlerts: routeAlerts),
-                  const SizedBox(height: 16),
-                  _buildTravelTips(),
-                ],
+                    // Feature Cards
+                    TravelerSafetyCard(
+                      score: travelerSafety,
+                      latitude: currentLatitude,
+                      longitude: currentLongitude,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildTravelRiskAssessment(),
+                    const SizedBox(height: 16),
+                    _buildBestTravelTimes(),
+                    const SizedBox(height: 16),
+                    TravelerHourlyRoute(hourlyRoute: _getHourlyRoute()),
+                    const SizedBox(height: 16),
+                    TravelerAlerts(routeAlerts: routeAlerts),
+                    const SizedBox(height: 16),
+                    _buildTravelTips(),
+                  ],
+                ),
               ),
             ),
     );
