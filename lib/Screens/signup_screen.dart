@@ -201,7 +201,6 @@ class _SignupScreenState extends State<SignupScreen> {
       age: int.parse(ageC.text),
       phoneNumber: phoneC.text.trim(),
       address: addressC.text.trim(),
-      emergencyContacts: emergencyContacts,
       deviceToken: deviceToken,
       preferences: {
         'enableNotifications': enableNotifications,
