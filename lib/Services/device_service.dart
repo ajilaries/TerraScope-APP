@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class DeviceService {
-  static const String backendUrl = "http://10.0.2.2:8000/save_device";
+  static const String backendUrl = "http://192.168.120.189:8001/save_device";
   static const String _prefKey = "device_token";
 
   /// ✅ Get or generate a persistent device token
