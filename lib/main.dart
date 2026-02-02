@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:terra_scope_apk/Screens/splash_screen.dart';
 import 'package:terra_scope_apk/Screens/login_screen.dart';
 import 'package:terra_scope_apk/Screens/farmer/farmer_dashboard.dart';
@@ -14,6 +15,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'providers/mode_provider.dart';
 import 'providers/safety_provider.dart';
 import 'providers/emergency_provider.dart';
+import 'Services/auth_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
