@@ -103,7 +103,7 @@ class SafetyProvider extends ChangeNotifier {
       }
 
       // Fetch real weather data
-      final weatherData = await WeatherService.getCurrentWeather(
+      final weatherData = await WeatherService.getCurrentWeatherCached(
           position.latitude, position.longitude);
       if (weatherData == null) {
         throw Exception(
