@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/emergency_contact.dart';
 import '../Services/auth_service.dart';
+import '../Services/emergency_contact_service.dart';
 
 class EmergencyProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
@@ -46,22 +47,52 @@ class EmergencyProvider with ChangeNotifier {
       // Load signup status
       _isSignupCompleted = prefs.getBool(_signupCompletedKey) ?? false;
 
-      // Load contacts
-      final contactsJson = prefs.getString(_contactsKey);
-      if (contactsJson != null) {
-        final contactsList = json.decode(contactsJson) as List;
-        _contacts = contactsList.map((contactJson) {
-          return EmergencyContact(
-            id: contactJson['id'],
-            name: contactJson['name'],
-            phoneNumber: contactJson['phoneNumber'],
-            email: contactJson['email'] ?? '',
-            type: EmergencyContactType.values.firstWhere(
-              (e) => e.toString() == contactJson['type'],
-              orElse: () => EmergencyContactType.custom,
-            ),
-          );
-        }).toList();
+      // Try loading from Firestore first
+      try {
+        final emergencyContactService = EmergencyContactService();
+        final firestoreContacts = await emergencyContactService.loadAllEmergencyContacts();
+        if (firestoreContacts.isNotEmpty) {
+          _contacts = firestoreContacts;
+          // Save to SharedPreferences for offline use
+          await _saveData();
+        } else {
+          // If no contacts in Firestore, try loading from SharedPreferences
+          final contactsJson = prefs.getString(_contactsKey);
+          if (contactsJson != null) {
+            final contactsList = json.decode(contactsJson) as List;
+            _contacts = contactsList.map((contactJson) {
+              return EmergencyContact(
+                id: contactJson['id'],
+                name: contactJson['name'],
+                phoneNumber: contactJson['phoneNumber'],
+                email: contactJson['email'] ?? '',
+                type: EmergencyContactType.values.firstWhere(
+                  (e) => e.toString() == contactJson['type'],
+                  orElse: () => EmergencyContactType.custom,
+                ),
+              );
+            }).toList();
+          }
+        }
+      } catch (e) {
+        debugPrint('Error loading emergency contacts from Firestore: $e');
+        // Fallback to SharedPreferences
+        final contactsJson = prefs.getString(_contactsKey);
+        if (contactsJson != null) {
+          final contactsList = json.decode(contactsJson) as List;
+          _contacts = contactsList.map((contactJson) {
+            return EmergencyContact(
+              id: contactJson['id'],
+              name: contactJson['name'],
+              phoneNumber: contactJson['phoneNumber'],
+              email: contactJson['email'] ?? '',
+              type: EmergencyContactType.values.firstWhere(
+                (e) => e.toString() == contactJson['type'],
+                orElse: () => EmergencyContactType.custom,
+              ),
+            );
+          }).toList();
+        }
       }
 
       notifyListeners();
@@ -99,6 +130,15 @@ class EmergencyProvider with ChangeNotifier {
     _contacts = List.from(initialContacts);
     _isSignupCompleted = true;
     await _saveData();
+
+    // Also save to Firestore
+    try {
+      final emergencyContactService = EmergencyContactService();
+      await emergencyContactService.saveEmergencyContacts(initialContacts);
+    } catch (e) {
+      debugPrint('Error saving initial contacts to Firestore: $e');
+    }
+
     notifyListeners();
   }
 
@@ -111,6 +151,15 @@ class EmergencyProvider with ChangeNotifier {
 
     _contacts.add(contact);
     await _saveData();
+
+    // Also save to Firestore
+    try {
+      final emergencyContactService = EmergencyContactService();
+      await emergencyContactService.addEmergencyContact(contact);
+    } catch (e) {
+      debugPrint('Error saving contact to Firestore: $e');
+    }
+
     notifyListeners();
   }
 
@@ -130,6 +179,15 @@ class EmergencyProvider with ChangeNotifier {
 
     _contacts[index] = updatedContact;
     await _saveData();
+
+    // Also update in Firestore
+    try {
+      final emergencyContactService = EmergencyContactService();
+      await emergencyContactService.updateEmergencyContact(updatedContact);
+    } catch (e) {
+      debugPrint('Error updating contact in Firestore: $e');
+    }
+
     notifyListeners();
   }
 
@@ -137,6 +195,15 @@ class EmergencyProvider with ChangeNotifier {
   Future<void> removeContact(String contactId) async {
     _contacts.removeWhere((c) => c.id == contactId);
     await _saveData();
+
+    // Also remove from Firestore
+    try {
+      final emergencyContactService = EmergencyContactService();
+      await emergencyContactService.removeEmergencyContact(contactId);
+    } catch (e) {
+      debugPrint('Error removing contact from Firestore: $e');
+    }
+
     notifyListeners();
   }
 
@@ -178,19 +245,33 @@ class EmergencyProvider with ChangeNotifier {
     }
   }
 
-  // Send emergency alert to all contacts
+  // Send emergency alert to all contacts (from both sources)
   Future<void> sendEmergencyAlert(String alertMessage) async {
-    if (_contacts.isEmpty) return;
+    // Load all contacts from both signup and additional contacts
+    final allContacts = await loadAllEmergencyContacts();
+    if (allContacts.isEmpty) return;
 
     final emergencyMessage =
         '🚨 EMERGENCY ALERT 🚨\n\n$alertMessage\n\nSent from TerraScope Safety Mode';
 
-    for (final contact in _contacts) {
+    for (final contact in allContacts) {
       try {
         await sendEmergencySMS(contact.id, emergencyMessage);
       } catch (e) {
         debugPrint('Failed to send alert to ${contact.name}: $e');
       }
+    }
+  }
+
+  // Load all emergency contacts from both sources (signup + additional)
+  Future<List<EmergencyContact>> loadAllEmergencyContacts() async {
+    try {
+      // Import the service to use its method
+      final emergencyContactService = EmergencyContactService();
+      return await emergencyContactService.loadAllEmergencyContacts();
+    } catch (e) {
+      debugPrint('Error loading all emergency contacts: $e');
+      return [];
     }
   }
 

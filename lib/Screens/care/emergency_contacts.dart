@@ -25,7 +25,7 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
   Future<void> _loadContacts() async {
     try {
       final service = EmergencyContactService();
-      final contacts = await service.loadEmergencyContacts();
+      final contacts = await service.loadAllEmergencyContacts();
       setState(() {
         _contacts = contacts;
         _isLoading = false;

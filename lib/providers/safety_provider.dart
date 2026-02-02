@@ -202,7 +202,7 @@ class SafetyProvider extends ChangeNotifier {
   Future<void> loadEmergencyContacts() async {
     try {
       // Load from Firestore
-      final contacts = await _emergencyContactService.loadEmergencyContacts();
+      final contacts = await _emergencyContactService.loadAllEmergencyContacts();
 
       if (contacts.isNotEmpty) {
         _emergencyContacts = contacts;
