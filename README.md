@@ -6,6 +6,10 @@
 
 ## 📋 Recent Updates
 
+### 🔗 Navigation Improvements (Latest)
+
+- **Login/Signup Navigation**: Added reciprocal navigation links between login and signup pages for improved user experience, allowing seamless switching between authentication screens
+
 ### 🚜 Farmer Mode Enhancements (Latest)
 
 - **Fixed Frame Overflow Issues**: Resolved bottom overflow problems in the weekly forecast section by optimizing the SizedBox height from 110px to 170px
