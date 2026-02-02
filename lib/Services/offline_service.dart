@@ -26,7 +26,7 @@ class OfflineService {
       final prefs = await SharedPreferences.getInstance();
 
       // Get current weather data
-      final weatherData = await WeatherService.getCurrentWeather(lat, lon);
+      final weatherData = await WeatherService.getCurrentWeatherCached(lat, lon);
 
       if (weatherData != null) {
         final cacheData = {
