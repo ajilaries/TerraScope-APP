@@ -70,12 +70,12 @@ class SafetyProvider extends ChangeNotifier {
     if (value) {
       await checkCurrentSafety();
       _startPeriodicSafetyUpdates();
-      // Send FCM notification when safety mode is enabled
-      await FCMService.sendTestNotification(
-        title: 'Safety Mode Enabled',
-        body: 'Real-time safety monitoring is now active. You will receive alerts for weather hazards.',
-        type: 'safety_mode',
-      );
+      // Send FCM notification when safety mode is enabled (Disabled - FCM notifications are now server-side)
+      // await FCMService.sendTestNotification(
+      //   title: 'Safety Mode Enabled',
+      //   body: 'Real-time safety monitoring is now active. You will receive alerts for weather hazards.',
+      //   type: 'safety_mode',
+      // );
     } else {
       _stopPeriodicSafetyUpdates();
     }
