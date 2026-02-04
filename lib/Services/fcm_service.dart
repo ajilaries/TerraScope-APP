@@ -1,14 +1,10 @@
 import 'dart:convert';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class FCMService {
   static final FirebaseMessaging _firebaseMessaging =
       FirebaseMessaging.instance;
-  static final FlutterLocalNotificationsPlugin _localNotifications =
-      FlutterLocalNotificationsPlugin();
 
   static const String _fcmTokenKey = 'fcm_token';
   static const String _notificationSettingsKey = 'notification_settings';
@@ -19,17 +15,14 @@ class FCMService {
   static bool _emergencyAlertsEnabled = true;
   static bool _safetyModeAlertsEnabled = true;
 
-  // Initialize FCM and local notifications
+  // Initialize FCM
   static Future<void> initialize() async {
     // Request permission for notifications
     await _requestPermission();
 
-    // Initialize local notifications
-    await _initializeLocalNotifications();
-
     // Configure FCM message handlers
     FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
-    FirebaseMessaging.onMessageOpenedApp.listen(_handleBackgroundMessage);
+    FirebaseMessaging.onMessageOpenedApp.listen(_handleMessageOpenedApp);
     FirebaseMessaging.onBackgroundMessage(_handleBackgroundMessageStatic);
 
     // Get and save FCM token
@@ -56,45 +49,20 @@ class FCMService {
     print('User granted permission: ${settings.authorizationStatus}');
   }
 
-  // Initialize local notifications for foreground messages
-  static Future<void> _initializeLocalNotifications() async {
-    const AndroidInitializationSettings androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
-
-    const DarwinInitializationSettings iosSettings =
-        DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
-    );
-
-    const InitializationSettings settings = InitializationSettings(
-      android: androidSettings,
-      iOS: iosSettings,
-    );
-
-    await _localNotifications.initialize(
-      settings,
-      onDidReceiveNotificationResponse: _onNotificationTapped,
-    );
-  }
-
   // Handle foreground messages (app is open)
   static Future<void> _handleForegroundMessage(RemoteMessage message) async {
     print('Received foreground message: ${message.notification?.title}');
 
-    // Show local notification
-    await _showLocalNotification(message);
-
-    // Handle specific message types
+    // FCM does not automatically display notifications in foreground
+    // You can handle data payload or show custom UI here
     await _processMessageData(message.data);
   }
 
-  // Handle background messages (app is closed or in background)
-  static Future<void> _handleBackgroundMessage(RemoteMessage message) async {
-    print('Received background message: ${message.notification?.title}');
+  // Handle when app is opened from notification
+  static Future<void> _handleMessageOpenedApp(RemoteMessage message) async {
+    print('App opened from notification: ${message.notification?.title}');
 
-    // Handle specific message types
+    // Handle navigation or actions when notification is tapped
     await _processMessageData(message.data);
   }
 
@@ -104,44 +72,6 @@ class FCMService {
     print(
         'Received background message (static): ${message.notification?.title}');
     await _processMessageData(message.data);
-  }
-
-  // Show local notification
-  static Future<void> _showLocalNotification(RemoteMessage message) async {
-    const AndroidNotificationDetails androidDetails =
-        AndroidNotificationDetails(
-      'safety_channel',
-      'Safety Alerts',
-      channelDescription: 'Safety and emergency notifications',
-      importance: Importance.high,
-      priority: Priority.high,
-      sound: RawResourceAndroidNotificationSound('notification_sound'),
-      enableVibration: true,
-      enableLights: true,
-      ledColor: Color(0xFFFF0000),
-      ledOnMs: 1000,
-      ledOffMs: 500,
-    );
-
-    const DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
-      sound: 'notification_sound.aiff',
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    );
-
-    const NotificationDetails details = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
-
-    await _localNotifications.show(
-      message.hashCode,
-      message.notification?.title ?? 'Safety Alert',
-      message.notification?.body ?? 'Important safety information',
-      details,
-      payload: json.encode(message.data),
-    );
   }
 
   // Process message data based on type
@@ -218,16 +148,6 @@ class FCMService {
     print('Safety mode alert: $modeStatus (action required: $actionRequired)');
 
     // Could update safety mode status or trigger specific actions
-  }
-
-  // Handle notification tap
-  static void _onNotificationTapped(NotificationResponse response) {
-    final payload = response.payload;
-    if (payload != null) {
-      final data = json.decode(payload) as Map<String, dynamic>;
-      // Navigate to appropriate screen based on notification type
-      print('Notification tapped with payload: $data');
-    }
   }
 
   // Save FCM token for server-side messaging
@@ -351,25 +271,8 @@ class FCMService {
     }
   }
 
-  // Send test notification (for debugging)
-  static Future<void> sendTestNotification({
-    required String title,
-    required String body,
-    String? type,
-  }) async {
-    final testMessage = RemoteMessage(
-      notification: RemoteNotification(
-        title: title,
-        body: body,
-      ),
-      data: {
-        'type': type ?? 'test',
-        'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
-      },
-    );
-
-    await _showLocalNotification(testMessage);
-  }
+  // Note: sendTestNotification removed as FCM handles notifications server-side
+  // Use Firebase Admin SDK or Cloud Functions to send test notifications
 
   // Clean up resources
   static Future<void> dispose() async {
