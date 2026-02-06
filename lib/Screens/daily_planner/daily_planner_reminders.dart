@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:terra_scope_apk/Services/daily_planner_service.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:timezone/timezone.dart' as tz;
 
 class DailyPlannerReminders extends StatefulWidget {
   const DailyPlannerReminders({super.key});
@@ -13,25 +11,16 @@ class DailyPlannerReminders extends StatefulWidget {
 
 class _DailyPlannerRemindersState extends State<DailyPlannerReminders> {
   final DailyPlannerService _service = DailyPlannerService();
-  final FlutterLocalNotificationsPlugin _notificationsPlugin =
-      FlutterLocalNotificationsPlugin();
   List<Map<String, dynamic>> _reminders = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _initializeNotifications();
     _loadReminders();
   }
 
-  Future<void> _initializeNotifications() async {
-    const AndroidInitializationSettings androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
-    const InitializationSettings settings =
-        InitializationSettings(android: androidSettings);
-    await _notificationsPlugin.initialize(settings);
-  }
+
 
   Future<void> _loadReminders() async {
     setState(() => _isLoading = true);
@@ -115,37 +104,11 @@ class _DailyPlannerRemindersState extends State<DailyPlannerReminders> {
         'createdAt': DateTime.now().toIso8601String(),
       });
 
-      _scheduleNotification(
-          titleController.text, descriptionController.text, reminderTime);
       _loadReminders();
     }
   }
 
-  Future<void> _scheduleNotification(
-      String title, String description, DateTime reminderTime) async {
-    const AndroidNotificationDetails androidDetails =
-        AndroidNotificationDetails(
-      'daily_planner_reminders',
-      'Daily Planner Reminders',
-      channelDescription: 'Reminders for daily planner',
-      importance: Importance.high,
-      priority: Priority.high,
-    );
 
-    const NotificationDetails details =
-        NotificationDetails(android: androidDetails);
-
-    await _notificationsPlugin.zonedSchedule(
-      reminderTime.millisecondsSinceEpoch ~/ 1000, // Use timestamp as ID
-      title,
-      description,
-      tz.TZDateTime.from(reminderTime, tz.local),
-      details,
-      androidAllowWhileIdle: true,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-    );
-  }
 
   Future<void> _deleteReminder(String reminderId) async {
     await _service.deleteReminder(reminderId);

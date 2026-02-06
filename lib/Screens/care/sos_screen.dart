@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:geocoding/geocoding.dart';
 import '../../Services/emergency_contact_service.dart';
+import '../../Services/location_service.dart';
 import '../../models/emergency_contact.dart';
 import '../../providers/emergency_provider.dart';
 
@@ -77,6 +80,70 @@ class _SOSScreenState extends State<SOSScreen> with TickerProviderStateMixin {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Could not send SMS: $e')),
+      );
+    }
+  }
+
+  Future<void> _shareLocation() async {
+    try {
+      // Show loading indicator
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Getting your location...')),
+      );
+
+      // Get current location
+      final position = await LocationService.getCurrentPosition();
+      if (position == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not get location. Please check permissions.')),
+        );
+        return;
+      }
+
+      // Get address from coordinates
+      String address = 'Unknown location';
+      try {
+        List<Placemark> placemarks = await placemarkFromCoordinates(
+          position.latitude,
+          position.longitude,
+        );
+        if (placemarks.isNotEmpty) {
+          final place = placemarks.first;
+          address = '${place.street ?? ''} ${place.locality ?? ''} ${place.country ?? ''}'.trim();
+          if (address.isEmpty) {
+            address = '${position.latitude.toStringAsFixed(6)}, ${position.longitude.toStringAsFixed(6)}';
+          }
+        }
+      } catch (e) {
+        address = '${position.latitude.toStringAsFixed(6)}, ${position.longitude.toStringAsFixed(6)}';
+      }
+
+      // Create Google Maps URL
+      final mapsUrl = 'https://www.google.com/maps/search/?api=1&query=${position.latitude},${position.longitude}';
+
+      // Create share message
+      final shareMessage = '''
+EMERGENCY LOCATION SHARE
+
+📍 Current Location: $address
+📍 Coordinates: ${position.latitude.toStringAsFixed(6)}, ${position.longitude.toStringAsFixed(6)}
+📍 Google Maps: $mapsUrl
+
+⚠️ This is an emergency location share from TerraScope app.
+Please respond immediately if you receive this message.
+
+Shared at: ${DateTime.now().toString()}
+''';
+
+      // Share the location
+      await Share.share(
+        shareMessage,
+        subject: 'Emergency Location Share - TerraScope',
+      );
+
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error sharing location: $e')),
       );
     }
   }
@@ -300,14 +367,7 @@ class _SOSScreenState extends State<SOSScreen> with TickerProviderStateMixin {
                                 icon: Icons.location_on,
                                 label: 'Share Location',
                                 color: Colors.blue,
-                                onTap: () {
-                                  // TODO: Implement location sharing
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                        content:
-                                            Text('Location sharing coming soon')),
-                                  );
-                                },
+                                onTap: _shareLocation,
                               ),
                             ],
                           ),

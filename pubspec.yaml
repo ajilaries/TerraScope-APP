@@ -47,6 +47,13 @@ dependencies:
 
   # Notifications
   flutter_local_notifications: ^17.2.2
+  timezone: ^0.9.3
+
+  # Background Tasks
+  workmanager: ^0.6.0
+
+  # Sharing
+  share_plus: ^10.0.2
 
   # ENV
   flutter_dotenv: ^5.1.0

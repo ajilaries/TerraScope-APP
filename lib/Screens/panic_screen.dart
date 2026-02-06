@@ -58,11 +58,11 @@ class _PanicScreenState extends State<PanicScreen> {
       // Send alert to all emergency contacts from both sources
       await emergencyProvider.sendEmergencyAlert(emergencyMessage);
 
-      // 4️⃣ Send local notification
-      await NotificationService.showNotification(
-        title: "Emergency Alert Sent",
-        body: "Emergency alert sent to ${allContacts.length} contact(s). Location: $lat, $lon 🚨",
-      );
+      // 4️⃣ Send local notification (Disabled - notifications now handled by FCM server-side)
+      // await NotificationService.showNotification(
+      //   title: "Emergency Alert Sent",
+      //   body: "Emergency alert sent to ${allContacts.length} contact(s). Location: $lat, $lon 🚨",
+      // );
 
       // 5️⃣ Update status message
       setState(() {

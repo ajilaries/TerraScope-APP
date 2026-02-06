@@ -1,11 +1,8 @@
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'auth_service.dart';
 
 class NotificationService {
-  static final FlutterLocalNotificationsPlugin _localNotifications =
-      FlutterLocalNotificationsPlugin();
   static final FirebaseMessaging _firebaseMessaging =
       FirebaseMessaging.instance;
   static final AuthService _authService = AuthService();
@@ -22,82 +19,44 @@ class NotificationService {
       _currentUserId = null;
     }
 
-    // Initialize local notifications
-    const AndroidInitializationSettings androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
-    const DarwinInitializationSettings iosSettings =
-        DarwinInitializationSettings();
-    const InitializationSettings settings = InitializationSettings(
-      android: androidSettings,
-      iOS: iosSettings,
-    );
-
-    await _localNotifications.initialize(settings);
-
-    // Request permissions
+    // Request permissions for FCM
     await _firebaseMessaging.requestPermission();
-    await _localNotifications
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestNotificationsPermission();
 
     // Handle background messages
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-    // Handle foreground messages
+    // Handle foreground messages (optional: can be removed to let FCM handle display)
     FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
+
+    // Handle when app is opened from notification
+    FirebaseMessaging.onMessageOpenedApp.listen(_handleMessageOpenedApp);
   }
 
   static Future<void> _firebaseMessagingBackgroundHandler(
       RemoteMessage message) async {
     print('Handling background message: ${message.messageId}');
-    await showNotification(
-      title: message.notification?.title ?? 'Safety Alert',
-      body: message.notification?.body ?? 'Weather safety update',
-      payload: message.data.toString(),
-    );
+    // FCM will automatically display the notification on Android
+    // On iOS, you might need to handle it differently
   }
 
   static void _handleForegroundMessage(RemoteMessage message) {
     print('Handling foreground message: ${message.messageId}');
-    showNotification(
-      title: message.notification?.title ?? 'Safety Alert',
-      body: message.notification?.body ?? 'Weather safety update',
-      payload: message.data.toString(),
-    );
+    // For foreground messages, FCM does not display notifications automatically
+    // You can choose to show a local notification here if needed, but since we're removing local notifications,
+    // we can just log or handle data payload
+    _processMessageData(message.data);
   }
 
-  static Future<void> showNotification({
-    required String title,
-    required String body,
-    String? payload,
-  }) async {
-    const AndroidNotificationDetails androidDetails =
-        AndroidNotificationDetails(
-      'safety_channel',
-      'Safety Alerts',
-      channelDescription: 'Weather and safety notifications',
-      importance: Importance.high,
-      priority: Priority.high,
-      showWhen: true,
-      icon: '@mipmap/ic_launcher', // Explicitly set the icon
-      largeIcon: DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
-    );
+  static void _handleMessageOpenedApp(RemoteMessage message) {
+    print('Message opened app: ${message.messageId}');
+    // Handle navigation or actions when notification is tapped
+    _processMessageData(message.data);
+  }
 
-    const DarwinNotificationDetails iosDetails = DarwinNotificationDetails();
-
-    const NotificationDetails details = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
-
-    await _localNotifications.show(
-      DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      title,
-      body,
-      details,
-      payload: payload,
-    );
+  static void _processMessageData(Map<String, dynamic> data) {
+    // Process any data payload from the notification
+    print('Processing message data: $data');
+    // Add logic to handle specific data types if needed
   }
 
   static Future<String?> getFCMToken() async {
@@ -128,15 +87,6 @@ class NotificationService {
     return await getFCMToken();
   }
 
-  static Future<void> sendEmergencyAlert({
-    required String title,
-    required String body,
-    String? payload,
-  }) async {
-    await showNotification(
-      title: title,
-      body: body,
-      payload: payload,
-    );
-  }
+  // Note: Notifications are now handled by FCM server-side
+  // Use Firebase Admin SDK or Cloud Functions to send notifications
 }

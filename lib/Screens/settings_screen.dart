@@ -1,9 +1,49 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../Services/user_settings_service.dart';
+import '../Services/fcm_service.dart';
+import '../Services/anomaly_monitoring_service.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  bool _anomalyMonitoringEnabled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMonitoringStatus();
+  }
+
+  Future<void> _loadMonitoringStatus() async {
+    final enabled = await AnomalyMonitoringService.isMonitoringEnabled();
+    setState(() {
+      _anomalyMonitoringEnabled = enabled;
+    });
+  }
+
+  Future<void> _toggleAnomalyMonitoring(bool value) async {
+    await AnomalyMonitoringService.setMonitoringEnabled(value);
+    setState(() {
+      _anomalyMonitoringEnabled = value;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          value
+              ? 'Weather anomaly monitoring enabled'
+              : 'Weather anomaly monitoring disabled',
+        ),
+        backgroundColor: value ? Colors.green : Colors.orange,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,6 +82,13 @@ class SettingsScreen extends StatelessWidget {
             subtitle: "Manage alert preferences",
             onTap: () {},
           ),
+          _settingsTileWithSwitch(
+            icon: Icons.warning_amber,
+            title: "Weather Anomaly Monitoring",
+            subtitle: "Receive background notifications for weather alerts",
+            value: _anomalyMonitoringEnabled,
+            onChanged: _toggleAnomalyMonitoring,
+          ),
           _settingsTile(
             icon: Icons.privacy_tip_outlined,
             title: "Privacy & Permissions",
@@ -54,6 +101,53 @@ class SettingsScreen extends StatelessWidget {
             subtitle: "Version, developer info",
             onTap: () {},
           ),
+
+          // Test FCM Notification Button (Disabled - FCM notifications are now server-side)
+          // Container(
+          //   margin: const EdgeInsets.only(bottom: 14),
+          //   padding: const EdgeInsets.all(18),
+          //   decoration: BoxDecoration(
+          //     borderRadius: BorderRadius.circular(18),
+          //     color: Colors.blue.shade600.withOpacity(0.1),
+          //     border: Border.all(color: Colors.blue.shade400.withOpacity(0.3)),
+          //     boxShadow: [
+          //       BoxShadow(
+          //         color: Colors.blue.shade900.withOpacity(0.2),
+          //         blurRadius: 15,
+          //         offset: const Offset(0, 8),
+          //       )
+          //     ],
+          //   ),
+          //   child: ElevatedButton.icon(
+          //     onPressed: () async {
+          //       // Note: FCM notifications are now handled server-side
+          //       // Use Firebase Admin SDK or Cloud Functions to send test notifications
+          //       // await FCMService.sendTestNotification(
+          //       //   title: 'Test Notification',
+          //       //   body: 'This is a test FCM notification to verify push notifications are working.',
+          //       //   type: 'test',
+          //       // );
+          //       if (mounted) {
+          //         ScaffoldMessenger.of(context).showSnackBar(
+          //           const SnackBar(
+          //             content: Text('Test notifications are now sent via FCM server. Use Firebase Console or Admin SDK.'),
+          //             backgroundColor: Colors.blue,
+          //           ),
+          //         );
+          //       }
+          //     },
+          //     icon: const Icon(Icons.notifications_active),
+          //     label: const Text("Test FCM Notification"),
+          //     style: ElevatedButton.styleFrom(
+          //       backgroundColor: Colors.blue.shade600,
+          //       foregroundColor: Colors.white,
+          //       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          //       shape: RoundedRectangleBorder(
+          //         borderRadius: BorderRadius.circular(12),
+          //       ),
+          //     ),
+          //   ),
+          // ),
         ],
       ),
     );
@@ -199,6 +293,66 @@ class SettingsScreen extends StatelessWidget {
             )
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _settingsTileWithSwitch({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        color: Colors.white.withOpacity(0.07),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.4),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          )
+        ],
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: Colors.white, size: 30),
+          const SizedBox(width: 18),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.7),
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: value,
+            onChanged: onChanged,
+            activeColor: Colors.blue,
+            activeTrackColor: Colors.blue.withOpacity(0.3),
+          ),
+        ],
       ),
     );
   }
