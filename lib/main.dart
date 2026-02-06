@@ -19,6 +19,7 @@ import 'providers/emergency_provider.dart';
 import 'Services/auth_service.dart';
 import 'Services/fcm_service.dart';
 import 'Services/anomaly_monitoring_service.dart';
+import 'Services/local_notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -42,6 +43,10 @@ void main() async {
 
   // Initialize anomaly monitoring service
   await AnomalyMonitoringService.initialize();
+
+  // Initialize local notification service
+  await LocalNotificationService.initialize();
+
   runApp(
     MultiProvider(
       providers: [
