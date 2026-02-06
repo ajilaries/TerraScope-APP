@@ -2,6 +2,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:terra_scope_apk/Services/auth_service.dart';
+import 'package:terra_scope_apk/Services/local_notification_service.dart';
 
 class DailyPlannerService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -82,6 +83,9 @@ class DailyPlannerService {
   Future<void> deleteSchedule(String scheduleId) async {
     final userId = await _getUserId();
     if (userId == null) return;
+
+    // Cancel any scheduled notifications for this schedule
+    await LocalNotificationService.cancelNotification(scheduleId.hashCode);
 
     await _firestore
         .collection('users')
