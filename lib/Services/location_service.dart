@@ -20,21 +20,36 @@ class LocationService {
 
   static Future<Position?> getCurrentPosition() async {
     try {
+      // First check if location services are enabled
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        print('Location services are disabled');
+        return null;
+      }
+
       final hasPermission = await requestPermission();
-      if (!hasPermission) return null;
+      if (!hasPermission) {
+        print('Location permission denied');
+        return null;
+      }
 
       LocationSettings locationSettings = LocationSettings(
         accuracy: LocationAccuracy.best,
         distanceFilter: 0,
-        timeLimit: const Duration(seconds: 30), // Timeout after 30 seconds
+        timeLimit: const Duration(seconds: 15), // Reduced timeout
       );
 
       // Try to get position with best accuracy first
       try {
-        return await Geolocator.getCurrentPosition(
+        print('Attempting to get location with best accuracy...');
+        final position = await Geolocator.getCurrentPosition(
           locationSettings: locationSettings,
         );
+        print('Location obtained successfully: ${position.latitude}, ${position.longitude}');
+        return position;
       } catch (e) {
+        print('Best accuracy failed, trying fallback methods...');
+
         // Fallback to platform-specific settings based on platform
         try {
           // Try Android settings first (works on both platforms but optimized for Android)
@@ -50,10 +65,14 @@ class LocationService {
               enableWakeLock: true,
             ),
           );
-          return await Geolocator.getCurrentPosition(
+          final position = await Geolocator.getCurrentPosition(
             locationSettings: androidSettings,
           );
+          print('Location obtained with Android settings: ${position.latitude}, ${position.longitude}');
+          return position;
         } catch (androidError) {
+          print('Android settings failed: $androidError');
+
           try {
             // Try Apple settings
             AppleSettings appleSettings = AppleSettings(
@@ -63,17 +82,24 @@ class LocationService {
               pauseLocationUpdatesAutomatically: false,
               showBackgroundLocationIndicator: true,
             );
-            return await Geolocator.getCurrentPosition(
+            final position = await Geolocator.getCurrentPosition(
               locationSettings: appleSettings,
             );
+            print('Location obtained with Apple settings: ${position.latitude}, ${position.longitude}');
+            return position;
           } catch (appleError) {
+            print('Apple settings failed: $appleError');
+
             // Final fallback with updated settings
             LocationSettings fallbackSettings = LocationSettings(
-              accuracy: LocationAccuracy.high,
+              accuracy: LocationAccuracy.medium, // Lower accuracy for better success rate
+              timeLimit: const Duration(seconds: 10),
             );
-            return await Geolocator.getCurrentPosition(
+            final position = await Geolocator.getCurrentPosition(
               locationSettings: fallbackSettings,
             );
+            print('Location obtained with fallback settings: ${position.latitude}, ${position.longitude}');
+            return position;
           }
         }
       }
