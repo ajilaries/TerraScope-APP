@@ -46,7 +46,8 @@ dependencies:
   firebase_auth: ^6.1.2
 
   # Notifications
-  # flutter_local_notifications: ^17.2.2  # Removed in favor of FCM
+  flutter_local_notifications: ^17.2.2
+  timezone: ^0.9.3
 
   # Background Tasks
   workmanager: ^0.6.0
