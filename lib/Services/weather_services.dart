@@ -54,11 +54,11 @@ class WeatherService {
 
   static Map<String, dynamic> parseWeatherData(Map<String, dynamic> data) {
     return {
-      'temperature': data['main']['temp'],
-      'humidity': data['main']['humidity'],
-      'windSpeed': data['wind']['speed'],
-      'visibility': data['visibility'] ?? 10000,
-      'rainMm': data['rain']?['1h'] ?? 0.0,
+      'temperature': (data['main']['temp'] as num).toDouble(),
+      'humidity': (data['main']['humidity'] as num).toDouble(),
+      'windSpeed': (data['wind']['speed'] as num).toDouble(),
+      'visibility': (data['visibility'] as num? ?? 10000).toDouble(),
+      'rainMm': (data['rain']?['1h'] as num? ?? 0.0).toDouble(),
       'description': data['weather'][0]['description'],
       'icon': data['weather'][0]['icon'],
     };
