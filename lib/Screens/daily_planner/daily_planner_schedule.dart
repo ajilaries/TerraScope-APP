@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:terra_scope_apk/Services/daily_planner_service.dart';
+import 'package:terra_scope_apk/Services/local_notification_service.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
 
@@ -118,6 +119,18 @@ class _DailyPlannerScheduleState extends State<DailyPlannerSchedule> {
         'date': dateTime.toIso8601String(),
         'createdAt': DateTime.now().toIso8601String(),
       });
+
+      // Show notification that schedule was added
+      await LocalNotificationService.showScheduleAddedNotification(
+          titleController.text);
+
+      // Schedule a reminder notification 15 minutes before the event
+      await LocalNotificationService.scheduleScheduleReminder(
+        scheduleId: dateTime.millisecondsSinceEpoch, // Use timestamp as ID
+        title: titleController.text,
+        description: descriptionController.text,
+        scheduleDate: dateTime,
+      );
 
       _loadSchedules();
     }
