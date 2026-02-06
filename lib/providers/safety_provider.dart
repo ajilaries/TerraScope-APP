@@ -119,10 +119,10 @@ class SafetyProvider extends ChangeNotifier {
       final actualWindSpeed =
           windSpeed ?? (parsedWeather['windSpeed'] as num).toDouble();
       final actualVisibility =
-          visibility ?? (parsedWeather['visibility'] as int);
+          visibility ?? (parsedWeather['visibility'] as num).toInt();
       final actualTemperature =
           temperature ?? (parsedWeather['temperature'] as num).toDouble();
-      final actualHumidity = humidity ?? (parsedWeather['humidity'] as int);
+      final actualHumidity = humidity ?? (parsedWeather['humidity'] as num).toInt();
 
       // Store current weather data
       _currentRainMm = actualRainMm;
