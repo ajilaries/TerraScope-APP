@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import '../../Services/location_service.dart';
 import '../../Services/weather_services.dart';
 import '../../Services/aqi_service.dart';
@@ -60,6 +61,19 @@ class _TravelerDashboardState extends State<TravelerDashboard>
 
   Future<void> _initTraveler() async {
     try {
+      // First check if location services are enabled
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        setState(() {
+          currentPlace = "Location services are disabled. Please enable location services in your device settings and try again.";
+          temp = 25.0;
+          aqi = 50;
+          travelerSafety = 50;
+          isLoading = false;
+        });
+        return;
+      }
+
       final pos = await LocationService.getCurrentPosition();
       if (pos != null) {
         setState(() {
@@ -118,15 +132,16 @@ class _TravelerDashboardState extends State<TravelerDashboard>
         });
       } else {
         setState(() {
-          currentPlace = "Location unavailable";
+          currentPlace = "Unable to get your location. Please check your location permissions and try again.";
           temp = 25.0;
           aqi = 50;
           travelerSafety = 50;
         });
       }
     } catch (e) {
+      print('Error initializing traveler dashboard: $e');
       setState(() {
-        currentPlace = "Location services unavailable. Please enable location services and try again.";
+        currentPlace = "Error loading location data. Please check your internet connection and try again.";
         temp = 25.0;
         aqi = 50;
         travelerSafety = 50;
