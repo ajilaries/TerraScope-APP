@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:provider/provider.dart';
-import 'dart:async';
+// import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:terra_scope_apk/Screens/farmer/farmer_result_screen.dart';
 import 'package:terra_scope_apk/popups/farmer_intro_popup.dart';
-import 'package:terra_scope_apk/Screens/traveler/traveler_dashboard.dart';
-import 'package:terra_scope_apk/Screens/care/care_dashboard.dart';
-import 'package:terra_scope_apk/Screens/daily_planner/daily_planner_dashboard.dart';
+// import 'package:terra_scope_apk/Screens/traveler/traveler_dashboard.dart';
+// import 'package:terra_scope_apk/Screens/care/care_dashboard.dart';
+// import 'package:terra_scope_apk/Screens/daily_planner/daily_planner_dashboard.dart';
 import 'package:terra_scope_apk/providers/mode_provider.dart';
 import 'package:terra_scope_apk/Services/auth_service.dart';
 import 'package:terra_scope_apk/Screens/signup_screen.dart';
-import 'Saftey/saftey_mode_screen.dart';
+// import 'Saftey/saftey_mode_screen.dart';
 
 class HomeScreen0 extends StatefulWidget {
   final Function(String) onModeSelected;
