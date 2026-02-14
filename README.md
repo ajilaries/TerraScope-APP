@@ -444,3 +444,109 @@ For issues, suggestions, or feedback, please open an [issue](https://github.com/
 - OpenWeatherMap and weather data providers
 - Google Maps for location services
 - Contributors and testers
+
+---
+
+## 📚 References & Bibliography
+
+### 📱 Front-End Technologies & Frameworks
+
+- **Flutter Framework**
+  - Official Documentation: [flutter.dev](https://flutter.dev/docs)
+  - API Reference: [api.flutter.dev](https://api.flutter.dev)
+  - Flutter Community: [flutter.dev/community](https://flutter.dev/community)
+
+- **Dart Programming Language**
+  - Official Documentation: [dart.dev](https://dart.dev/guides)
+  - Language Tour: [dart.dev/guides/language/language-tour](https://dart.dev/guides/language/language-tour)
+  - Effective Dart: [dart.dev/guides/language/effective-dart](https://dart.dev/guides/language/effective-dart)
+
+- **Provider State Management**
+  - Package: [pub.dev/packages/provider](https://pub.dev/packages/provider)
+  - Documentation: [pub.dev/documentation/provider](https://pub.dev/documentation/provider)
+
+### ☁️ Backend & Cloud Services
+
+- **Firebase**
+  - Official Documentation: [firebase.google.com/docs](https://firebase.google.com/docs)
+  - FlutterFire: [firebase.google.com/docs/flutter](https://firebase.google.com/docs/flutter)
+
+- **Firestore Database**
+  - Documentation: [firebase.google.com/docs/firestore](https://firebase.google.com/docs/firestore)
+  - Flutter Integration: [firebase.google.com/docs/firestore/quickstart](https://firebase.google.com/docs/firestore/quickstart)
+
+- **Firebase Authentication**
+  - Documentation: [firebase.google.com/docs/auth](https://firebase.google.com/docs/auth)
+  - Flutter Auth: [firebase.google.com/docs/auth/flutter/start](https://firebase.google.com/docs/auth/flutter/start)
+
+- **Firebase Cloud Messaging (FCM)**
+  - Documentation: [firebase.google.com/docs/cloud-messaging](https://firebase.google.com/docs/cloud-messaging)
+  - Flutter FCM: [firebase.google.com/docs/cloud-messaging/flutter/client](https://firebase.google.com/docs/cloud-messaging/flutter/client)
+
+### 🗺️ Maps & Location Services
+
+- **Google Maps for Flutter**
+  - Package: [pub.dev/packages/google_maps_flutter](https://pub.dev/packages/google_maps_flutter)
+  - Documentation: [developers.google.com/maps/documentation](https://developers.google.com/maps/documentation)
+
+- **Flutter Map**
+  - Package: [pub.dev/packages/flutter_map](https://pub.dev/packages/flutter_map)
+  - Documentation: [pub.dev/documentation/flutter_map](https://pub.dev/documentation/flutter_map)
+
+- **Geolocator**
+  - Package: [pub.dev/packages/geolocator](https://pub.dev/packages/geolocator)
+  - Documentation: [pub.dev/documentation/geolocator](https://pub.dev/documentation/geolocator)
+
+- **Geocoding**
+  - Package: [pub.dev/packages/geocoding](https://pub.dev/packages/geocoding)
+  - Documentation: [pub.dev/documentation/geocoding](https://pub.dev/documentation/geocoding)
+
+### 📊 Charts & Visualization
+
+- **FL Chart**
+  - Package: [pub.dev/packages/fl_chart](https://pub.dev/packages/fl_chart)
+  - Documentation: [pub.dev/documentation/fl_chart](https://pub.dev/documentation/fl_chart)
+
+### 💾 Storage & Persistence
+
+- **SharedPreferences**
+  - Package: [pub.dev/packages/shared_preferences](https://pub.dev/packages/shared_preferences)
+  - Documentation: [pub.dev/documentation/shared_preferences](https://pub.dev/documentation/shared_preferences)
+
+- **Firebase Storage**
+  - Documentation: [firebase.google.com/docs/storage](https://firebase.google.com/docs/storage)
+  - Flutter Storage: [firebase.google.com/docs/storage/flutter/start](https://firebase.google.com/docs/storage/flutter/start)
+
+### 🌐 APIs & External Services
+
+- **OpenWeatherMap API**
+  - Documentation: [openweathermap.org/api](https://openweathermap.org/api)
+  - Current Weather: [openweathermap.org/current](https://openweathermap.org/current)
+
+- **ISRIC SoilGrids API**
+  - Documentation: [soilgrids.org](https://soilgrids.org)
+  - REST API: [rest.isric.org](https://rest.isric.org)
+
+### 🔔 Notifications
+
+- **Flutter Local Notifications**
+  - Package: [pub.dev/packages/flutter_local_notifications](https://pub.dev/packages/flutter_local_notifications)
+  - Documentation: [pub.dev/documentation/flutter_local_notifications](https://pub.dev/documentation/flutter_local_notifications)
+
+### 🛠️ Development Tools  
+
+- **Android Studio**
+  - Documentation: [developer.android.com/studio](https://developer.android.com/studio)
+
+- **Visual Studio Code**
+  - Documentation: [code.visualstudio.com/docs](https://code.visualstudio.com/docs)
+
+- **Flutter DevTools**
+  - Documentation: [flutter.dev/docs/development/tools/devtools](https://flutter.dev/docs/development/tools/devtools)
+
+### 📚 Additional Resources
+
+- **Flutter Cookbook**: [flutter.dev/docs/cookbook](https://flutter.dev/docs/cookbook)
+- **Material Design Guidelines**: [material.io/design](https://material.io/design)
+- **Flutter Community Packages**: [pub.dev](https://pub.dev)
+- **Stack Overflow - Flutter Tag**: [stackoverflow.com/questions/tagged/flutter](https://stackoverflow.com/questions/tagged/flutter)
