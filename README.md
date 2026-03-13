@@ -110,19 +110,19 @@
 
 ## 🛠 Tech Stack
 
-| Component            | Technology                          |
-| -------------------- | ----------------------------------- |
-| **Framework**        | Flutter                             |
-| **Language**         | Dart (3.0+)                         |
-| **State Management** | Provider                            |
-| **Backend**          | Custom REST API + Firebase          |
-| **Database**         | Firestore (Cloud)                   |
-| **Authentication**   | Firebase Auth                       |
-| **Notifications**    | Firebase Cloud Messaging            |
-| **Maps**             | Google Maps, Flutter Map            |
-| **Location**         | Geolocator, Geocoding               |
-| **Charts**           | FL Chart                            |
-| **Storage**          | Firebase Storage, SharedPreferences |
+| Component            | Technology                                         |
+| -------------------- | -------------------------------------------------- |
+| **Framework**        | Flutter                                            |
+| **Language**         | Dart (3.0+)                                        |
+| **State Management** | Provider                                           |
+| **Backend**          | Custom REST API + Firebase                         |
+| **Database**         | Firestore (8 Collections: see FIRESTORE_SCHEMA.md) |
+| **Authentication**   | Firebase Auth                                      |
+| **Notifications**    | Firebase Cloud Messaging                           |
+| **Maps**             | Google Maps, Flutter Map                           |
+| **Location**         | Geolocator, Geocoding                              |
+| **Charts**           | FL Chart                                           |
+| **Storage**          | Firebase Storage, SharedPreferences                |
 
 <div align="center">
 
@@ -533,7 +533,7 @@ For issues, suggestions, or feedback, please open an [issue](https://github.com/
   - Package: [pub.dev/packages/flutter_local_notifications](https://pub.dev/packages/flutter_local_notifications)
   - Documentation: [pub.dev/documentation/flutter_local_notifications](https://pub.dev/documentation/flutter_local_notifications)
 
-### 🛠️ Development Tools  
+### 🛠️ Development Tools
 
 - **Android Studio**
   - Documentation: [developer.android.com/studio](https://developer.android.com/studio)
