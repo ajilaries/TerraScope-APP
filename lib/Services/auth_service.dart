@@ -1,12 +1,10 @@
-
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class AuthService {
-  final String baseUrl = "http://192.168.120.189:8000"; // Updated for physical device connecting to laptop backend
-
+  final String baseUrl = "http://192.168.49.189:8000"; // Updated for emulator
   // Login method using Firebase Auth
   Future<Map<String, dynamic>> login({
     required String email,
@@ -14,23 +12,27 @@ class AuthService {
   }) async {
     try {
       // First, authenticate with Firebase Auth
-      final userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+      final userCredential =
+          await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
 
-      print('Firebase Auth login successful for user: ${userCredential.user?.uid}');
+      print(
+          'Firebase Auth login successful for user: ${userCredential.user?.uid}');
 
       // Then, call backend API for additional user data if needed
       print('Calling backend login at: $baseUrl/auth/login');
-      final response = await http.post(
-        Uri.parse('$baseUrl/auth/login'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'email': email,
-          'password': password,
-        }),
-      ).timeout(Duration(seconds: 10));
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/auth/login'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'email': email,
+              'password': password,
+            }),
+          )
+          .timeout(Duration(seconds: 10));
 
       final data = jsonDecode(response.body);
       print('Backend login response status: ${response.statusCode}');
@@ -53,7 +55,11 @@ class AuthService {
         await prefs.setString('user_data', jsonEncode(data['user']));
         await prefs.setBool('has_completed_signup', true);
 
-        return {'ok': true, 'message': 'Login successful', 'user': data['user']};
+        return {
+          'ok': true,
+          'message': 'Login successful',
+          'user': data['user']
+        };
       } else {
         // Firebase auth succeeded but backend failed - sign out from Firebase
         await FirebaseAuth.instance.signOut();
@@ -65,10 +71,12 @@ class AuthService {
   }
 
   // Send verification link for email verification
-  Future<Map<String, dynamic>> sendVerificationLink({required String email}) async {
+  Future<Map<String, dynamic>> sendVerificationLink(
+      {required String email}) async {
     final startTime = DateTime.now();
     try {
-      print('Sending verification link request to: $baseUrl/auth/send-verification-link');
+      print(
+          'Sending verification link request to: $baseUrl/auth/send-verification-link');
       final response = await http.post(
         Uri.parse('$baseUrl/auth/send-verification-link'),
         headers: {'Content-Type': 'application/json'},
@@ -77,7 +85,8 @@ class AuthService {
 
       final endTime = DateTime.now();
       final duration = endTime.difference(startTime);
-      print('Verification link send response time: ${duration.inMilliseconds}ms, Status: ${response.statusCode}');
+      print(
+          'Verification link send response time: ${duration.inMilliseconds}ms, Status: ${response.statusCode}');
 
       return {
         'statusCode': response.statusCode,
@@ -86,37 +95,35 @@ class AuthService {
     } catch (e) {
       final endTime = DateTime.now();
       final duration = endTime.difference(startTime);
-      print('Verification link send failed after ${duration.inMilliseconds}ms: $e');
+      print(
+          'Verification link send failed after ${duration.inMilliseconds}ms: $e');
       return {'statusCode': 500, 'body': 'Network error: $e'};
     }
   }
 
   // Send reset link for password reset
-  Future<Map<String, dynamic>> sendResetLink({required String email}) async {
-    final startTime = DateTime.now();
-    try {
-      print('Sending reset link request to: $baseUrl/auth/send-reset-link');
-      final response = await http.post(
-        Uri.parse('$baseUrl/auth/send-reset-link'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'email': email}),
-      );
+Future<Map<String, dynamic>> sendResetLink({required String email}) async {
+  try {
+    final response = await http.post(
+      Uri.parse('$baseUrl/auth/send-reset-link'), // ✅ FIXED
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email}),
+    );
 
-      final endTime = DateTime.now();
-      final duration = endTime.difference(startTime);
-      print('Reset link send response time: ${duration.inMilliseconds}ms, Status: ${response.statusCode}');
+    final data = jsonDecode(response.body);
 
+    if (response.statusCode == 200 && data['success'] == true) {
+      return {'ok': true, 'message': data['message']};
+    } else {
       return {
-        'statusCode': response.statusCode,
-        'body': response.body.isNotEmpty ? jsonDecode(response.body) : null,
+        'ok': false,
+        'message': data['message'] ?? 'Failed to send reset link'
       };
-    } catch (e) {
-      final endTime = DateTime.now();
-      final duration = endTime.difference(startTime);
-      print('Reset link send failed after ${duration.inMilliseconds}ms: $e');
-      return {'statusCode': 500, 'body': 'Network error: $e'};
     }
+  } catch (e) {
+    return {'ok': false, 'message': 'Network error: $e'};
   }
+}
 
   // Signup method using Firebase Auth
   Future<Map<String, dynamic>> signup({
@@ -133,12 +140,14 @@ class AuthService {
   }) async {
     try {
       // First, create user account with Firebase Auth
-      final userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+      final userCredential =
+          await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
 
-      print('Firebase Auth signup successful for user: ${userCredential.user?.uid}');
+      print(
+          'Firebase Auth signup successful for user: ${userCredential.user?.uid}');
 
       // Get ID token for verification
       final idToken = await userCredential.user?.getIdToken();
@@ -156,6 +165,7 @@ class AuthService {
           'userMode': userMode,
           'age': age,
           'phoneNumber': phoneNumber,
+        
           'address': address,
           'device_token': deviceToken ?? '',
           'preferences': preferences,
@@ -198,11 +208,14 @@ class AuthService {
 
       final data = jsonDecode(response.body);
 
-      if (response.statusCode == 200 && data['success'] == true) {
-        return {'ok': true, 'message': 'OTP sent successfully'};
-      } else {
-        return {'ok': false, 'message': data['message'] ?? 'Failed to send OTP'};
-      }
+    if (response.statusCode == 200 && data['success'] == true) {
+      return {'success': true, 'message': data['message']};
+    } else {
+      return {
+        'success': false,
+        'message': data['detail'] ?? 'Failed to send OTP'
+      };
+    }
     } catch (e) {
       return {'ok': false, 'message': 'Network error: $e'};
     }
@@ -225,44 +238,20 @@ class AuthService {
 
       final data = jsonDecode(response.body);
 
-      if (response.statusCode == 200 && data['success'] == true) {
-        return {'ok': true, 'message': 'OTP verified successfully'};
-      } else {
-        return {'ok': false, 'message': data['message'] ?? 'Invalid OTP'};
-      }
+if (response.statusCode == 200 && data['success'] == true) {
+  return {'success': true, 'message': data['message']};
+} else {
+  return {
+    'success': false,
+    'message': data['detail'] ?? 'Invalid OTP'
+  };
+}
     } catch (e) {
       return {'ok': false, 'message': 'Network error: $e'};
     }
   }
 
-  // Reset password with OTP
-  Future<Map<String, dynamic>> resetPassword({
-    required String email,
-    required String otp,
-    required String newPassword,
-  }) async {
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/auth/reset-password'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'email': email,
-          'otp': otp,
-          'newPassword': newPassword,
-        }),
-      );
 
-      final data = jsonDecode(response.body);
-
-      if (response.statusCode == 200 && data['success'] == true) {
-        return {'ok': true, 'message': 'Password reset successful'};
-      } else {
-        return {'ok': false, 'message': data['message'] ?? 'Password reset failed'};
-      }
-    } catch (e) {
-      return {'ok': false, 'message': 'Network error: $e'};
-    }
-  }
 
   // Get saved user ID
   Future<String?> getSavedUserId() async {
@@ -305,6 +294,20 @@ class AuthService {
     final userId = prefs.getString('user_id');
     return token != null && userId != null;
   }
-
-
+  Future<Map<String, dynamic>> resetPasswordWithOtp({
+  required String email,
+  required String otp,
+  required String newPassword,
+}) async {
+  final res = await http.post(
+    Uri.parse('$baseUrl/auth/reset-password-with-otp'),
+    headers: {"Content-Type": "application/json"},
+    body: jsonEncode({
+      "email": email,
+      "otp": otp,
+      "newPassword": newPassword
+    }),
+  );
+  return jsonDecode(res.body);
+}
 }

@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import '../Services/weather_services.dart';
 import '../Services/nearby_cache_service.dart';
-import '../Services/auth_service.dart';
+// import '../Services/auth_service.dart';
 import 'main_page.dart';
-import 'login_screen.dart';
+// import 'login_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});

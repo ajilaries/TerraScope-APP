@@ -1,0 +1,14 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Launch Android Emulator (Pixel 5)",
+      "type": "shell",
+      "command": "flutter emulators --launch Pixel_5",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always"
+      }
+    }
+  ]
+}

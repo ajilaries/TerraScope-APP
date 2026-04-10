@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
 import 'weather_services.dart';
-import 'fcm_service.dart';
-import '../utils/safety_utils.dart';
+// import 'fcm_service.dart';
+// import '../utils/safety_utils.dart';
 
 class AnomalyMonitoringService {
   static const String _taskName = 'anomaly_monitoring_task';
