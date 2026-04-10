@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import 'otp_screen.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -15,30 +16,38 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   bool resetLinkSent = false;
   final AuthService _auth = AuthService();
 
-  void sendResetLink() async {
-    if (!emailC.text.contains('@')) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Enter valid email")),
-      );
-      return;
-    }
-    setState(() => loading = true);
-
-    final res = await _auth.sendResetLink(email: emailC.text.trim());
-
-    if (res['statusCode'] == 200) {
-      setState(() => resetLinkSent = true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Reset link sent to your email")),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(res['body'] ?? 'Failed to send reset link')),
-      );
-    }
-
-    setState(() => loading = false);
+void sendOtp() async {
+  if (!emailC.text.contains('@')) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Enter valid email")),
+    );
+    return;
   }
+
+  setState(() => loading = true);
+
+  final res = await _auth.sendOtp(email: emailC.text.trim());
+
+  if (res['success'] == true) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("OTP sent to your email")),
+    );
+
+    // 👉 Move to OTP screen
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => OtpScreen(email: emailC.text.trim()),
+      ),
+    );
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(res['detail'] ?? 'Failed to send OTP')),
+    );
+  }
+
+  setState(() => loading = false);
+}
 
   @override
   Widget build(BuildContext context) {
@@ -63,16 +72,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               ),
               const SizedBox(height: 20),
               ElevatedButton(
-                onPressed: loading ? null : sendResetLink,
+                onPressed: loading ? null : sendOtp,
                 child: loading
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text("Send Reset Link"),
+                    : const Text("Send OTP"),
               ),
-              if (resetLinkSent) ...[
-                const SizedBox(height: 10),
-                const Text("Reset link sent to your email. Please check your email and click the link to reset your password.",
-                    style: TextStyle(color: Colors.blue)),
-              ],
             ],
           ),
         ),
