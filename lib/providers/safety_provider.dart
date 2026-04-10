@@ -7,7 +7,7 @@ import '../Services/weather_services.dart';
 import '../Services/location_service.dart';
 import '../Services/emergency_contact_service.dart';
 import '../Services/safety_history_service.dart';
-import '../Services/fcm_service.dart';
+// import '../Services/fcm_service.dart';
 import '../utils/safety_notification_manager.dart';
 import 'dart:async';
 
@@ -122,7 +122,8 @@ class SafetyProvider extends ChangeNotifier {
           visibility ?? (parsedWeather['visibility'] as num).toInt();
       final actualTemperature =
           temperature ?? (parsedWeather['temperature'] as num).toDouble();
-      final actualHumidity = humidity ?? (parsedWeather['humidity'] as num).toInt();
+      final actualHumidity =
+          humidity ?? (parsedWeather['humidity'] as num).toInt();
 
       // Store current weather data
       _currentRainMm = actualRainMm;
@@ -202,16 +203,19 @@ class SafetyProvider extends ChangeNotifier {
   Future<void> loadEmergencyContacts() async {
     try {
       // Load from Firestore
-      final contacts = await _emergencyContactService.loadAllEmergencyContacts();
+      final contacts =
+          await _emergencyContactService.loadAllEmergencyContacts();
 
       if (contacts.isNotEmpty) {
         _emergencyContacts = contacts;
-        debugPrint('Loaded ${contacts.length} emergency contacts from Firestore');
+        debugPrint(
+            'Loaded ${contacts.length} emergency contacts from Firestore');
       } else {
         // No contacts saved, load default ones
         _emergencyContacts = EmergencyContactService.getDefaultContacts();
         // Save the default contacts to Firestore
-        await _emergencyContactService.saveEmergencyContacts(_emergencyContacts);
+        await _emergencyContactService
+            .saveEmergencyContacts(_emergencyContacts);
         debugPrint('No saved contacts found, loaded default contacts');
       }
     } catch (e) {
@@ -221,15 +225,14 @@ class SafetyProvider extends ChangeNotifier {
     }
   }
 
-
-
   // Load safety history
   Future<void> loadSafetyHistory() async {
     try {
       // Load from Firestore
       final history = await _safetyHistoryService.loadSafetyHistory();
       _safetyHistory = history;
-      debugPrint('Loaded ${history.length} safety history records from Firestore');
+      debugPrint(
+          'Loaded ${history.length} safety history records from Firestore');
     } catch (e) {
       // Fallback to empty list if loading fails
       _safetyHistory = [];

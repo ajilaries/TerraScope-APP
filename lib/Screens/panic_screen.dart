@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../Services/notification_service.dart'; // For sending push alerts
+// import '../Services/notification_service.dart'; // For sending push alerts
 import '../Services/location_service.dart'; // For current location
 import '../providers/emergency_provider.dart'; // For emergency contacts
 

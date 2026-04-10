@@ -172,7 +172,7 @@ class _CommuteDashboardState extends State<CommuteDashboard> {
       final aqiData =
           await WeatherService.getAQIData(pos.latitude, pos.longitude);
       final safetyScore = await CommuteService.calculateSafetyScore(
-          pos.latitude, pos.longitude);
+          pos.latitude, pos.longitude, pos.latitude, pos.longitude);
       final realAlerts =
           await CommuteService.getRealAlerts(pos.latitude, pos.longitude);
 
@@ -212,7 +212,7 @@ class _CommuteDashboardState extends State<CommuteDashboard> {
       final aqiData =
           await WeatherService.getAQIData(pos.latitude, pos.longitude);
       final safetyScore = await CommuteService.calculateSafetyScore(
-          pos.latitude, pos.longitude);
+          pos.latitude, pos.longitude, pos.latitude, pos.longitude);
       final realAlerts =
           await CommuteService.getRealAlerts(pos.latitude, pos.longitude);
 

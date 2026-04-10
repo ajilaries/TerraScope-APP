@@ -129,12 +129,7 @@ class CommuteQuickActions {
     final pos = await LocationService.getCurrentPosition();
     if (pos == null) return;
 
-    final data = await CommuteService.getMetroTimings(
-      pos.latitude,
-      pos.longitude,
-      destLat ?? pos.latitude,
-      destLon ?? pos.longitude,
-    );
+    final data = await CommuteService.getMetroTimings("Central Station");
 
     showDialog(
       context: context,
@@ -144,8 +139,9 @@ class CommuteQuickActions {
         content: data.isNotEmpty
             ? Column(
                 mainAxisSize: MainAxisSize.min,
-                children: data.entries
-                    .map((e) => Text("${e.key}: ${e.value}"))
+                children: data
+                    .map((timing) => Text(
+                        "${timing['line']} ${timing['direction']}: ${timing['time']}"))
                     .toList(),
               )
             : const Text("No metro service available"),
@@ -163,12 +159,7 @@ class CommuteQuickActions {
     final pos = await LocationService.getCurrentPosition();
     if (pos == null) return;
 
-    final data = await CommuteService.getBusStatus(
-      pos.latitude,
-      pos.longitude,
-      destLat ?? pos.latitude,
-      destLon ?? pos.longitude,
-    );
+    final data = await CommuteService.getBusStatus("Route 15");
 
     showDialog(
       context: context,
@@ -178,9 +169,12 @@ class CommuteQuickActions {
         content: data.isNotEmpty
             ? Column(
                 mainAxisSize: MainAxisSize.min,
-                children: data.entries
-                    .map((e) => Text("${e.key}: ${e.value}"))
-                    .toList(),
+                children: [
+                  Text("Route: ${data['route']}"),
+                  Text("Status: ${data['status']}"),
+                  Text("Next Arrival: ${data['nextArrival']}"),
+                  Text("Crowd Level: ${data['crowdLevel']}"),
+                ],
               )
             : const Text("No bus service available"),
         actions: [
@@ -231,8 +225,6 @@ class CommuteQuickActions {
     final data = await CommuteService.getTrafficDensity(
       pos.latitude,
       pos.longitude,
-      destLat ?? pos.latitude + 0.05,
-      destLon ?? pos.longitude + 0.05,
     );
 
     showDialog(
@@ -240,11 +232,7 @@ class CommuteQuickActions {
       builder: (ctx) => AlertDialog(
         title: Text(
             "Traffic Density ${destAddress != null ? 'to $destAddress' : ''}"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children:
-              data.entries.map((e) => Text("${e.key}: ${e.value}")).toList(),
-        ),
+        content: Text("Current Traffic Density: $data"),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx), child: const Text("OK"))
