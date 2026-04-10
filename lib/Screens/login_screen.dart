@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+// import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
-import '../providers/mode_provider.dart';
+// import '../providers/mode_provider.dart';
 import 'signup_screen.dart';
 import 'forgot_password_screen.dart';
 
