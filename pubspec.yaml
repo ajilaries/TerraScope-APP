@@ -47,7 +47,8 @@ dependencies:
 
   # Notifications
   flutter_local_notifications: ^17.2.2
-  timezone: ^0.9.3
+  flutter_timezone: ^1.0.7
+  
 
   # Background Tasks
   workmanager: ^0.6.0
