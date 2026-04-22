@@ -1,46 +1,84 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../Services/nearby_services.dart';
+import '../../Services/location_service.dart';
+import '../../Services/nearby_cache_service.dart';
 import 'travel_map_preview.dart';
 import 'package:latlong2/latlong.dart';
 
 class TravelerNearbyServicesScreen extends StatefulWidget {
-  final double latitude;
-  final double longitude;
+  final double? latitude;
+  final double? longitude;
 
   const TravelerNearbyServicesScreen({
     super.key,
-    required this.latitude,
-    required this.longitude,
+    this.latitude,
+    this.longitude,
   });
 
   @override
-  State<TravelerNearbyServicesScreen> createState() => _TravelerNearbyServicesScreenState();
+  State<TravelerNearbyServicesScreen> createState() =>
+      _TravelerNearbyServicesScreenState();
 }
 
-class _TravelerNearbyServicesScreenState extends State<TravelerNearbyServicesScreen> {
+class _TravelerNearbyServicesScreenState
+    extends State<TravelerNearbyServicesScreen> {
   List<Map<String, dynamic>> _services = [];
   bool _isLoading = true;
   String _selectedServiceType = 'hospital';
-  final List<String> _serviceTypes = ['hospital', 'pharmacy', 'clinic', 'police'];
+  final List<String> _serviceTypes = [
+    'hospital',
+    'pharmacy',
+    'clinic',
+    'police'
+  ];
 
   @override
   void initState() {
     super.initState();
-    _loadNearbyServices();
+    _initializeScreen();
   }
 
-  Future<void> _loadNearbyServices() async {
+  Future<void> _initializeScreen() async {
+    await NearbyCacheService.initializeCache();
+    await _getLocationAndLoad();
+  }
+
+  Future<void> _getLocationAndLoad() async {
+    double lat, lng;
+
+    if (widget.latitude != null && widget.longitude != null) {
+      lat = widget.latitude!;
+      lng = widget.longitude!;
+    } else {
+      final position = await LocationService.getCurrentPosition();
+      if (position == null) return;
+      lat = position.latitude;
+      lng = position.longitude;
+    }
+
+    await NearbyCacheService.preloadNearbyServices(lat, lng);
+    await _loadNearbyServices(lat, lng);
+  }
+
+  Future<void> _loadNearbyServices(double lat, double lng) async {
     setState(() {
       _isLoading = true;
     });
 
     try {
-      final services = await NearbyServices.searchNearbyServices(
-        _selectedServiceType,
-        widget.latitude,
-        widget.longitude,
-        5000, // 5km radius
-      );
+      List<Map<String, dynamic>> services =
+          NearbyCacheService.getCachedServices(_selectedServiceType);
+
+      if (services.isEmpty) {
+        services = await NearbyServices.searchNearbyServices(
+          _selectedServiceType,
+          lat,
+          lng,
+          1500,
+        );
+      }
 
       setState(() {
         _services = services;
@@ -52,7 +90,7 @@ class _TravelerNearbyServicesScreenState extends State<TravelerNearbyServicesScr
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error loading services: $e")),
+          SnackBar(content: Text("Error: $e")),
         );
       }
     }
@@ -63,7 +101,7 @@ class _TravelerNearbyServicesScreenState extends State<TravelerNearbyServicesScr
       setState(() {
         _selectedServiceType = newType;
       });
-      _loadNearbyServices();
+      _getLocationAndLoad();
     }
   }
 
@@ -76,7 +114,7 @@ class _TravelerNearbyServicesScreenState extends State<TravelerNearbyServicesScr
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _loadNearbyServices,
+            onPressed: _getLocationAndLoad,
           ),
         ],
       ),
@@ -115,7 +153,8 @@ class _TravelerNearbyServicesScreenState extends State<TravelerNearbyServicesScr
             height: 150,
             padding: const EdgeInsets.all(8),
             child: TravelMapPreview(
-              location: LatLng(widget.latitude, widget.longitude),
+              location: LatLng(widget.latitude ?? 12.9716,
+                  widget.longitude ?? 77.5946), // Bangalore default
             ),
           ),
 
@@ -135,10 +174,12 @@ class _TravelerNearbyServicesScreenState extends State<TravelerNearbyServicesScr
                         itemBuilder: (context, index) {
                           final service = _services[index];
                           return Card(
-                            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                            margin: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 4),
                             child: ListTile(
                               leading: CircleAvatar(
-                                backgroundColor: _getServiceColor(_selectedServiceType),
+                                backgroundColor:
+                                    _getServiceColor(_selectedServiceType),
                                 child: Icon(
                                   _getServiceIcon(_selectedServiceType),
                                   color: Colors.white,
@@ -148,7 +189,8 @@ class _TravelerNearbyServicesScreenState extends State<TravelerNearbyServicesScr
                               subtitle: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(service['address'] ?? 'Address not available'),
+                                  Text(service['address'] ??
+                                      'Address not available'),
                                   Text(
                                     service['distance'] ?? 'Distance unknown',
                                     style: const TextStyle(
@@ -158,13 +200,18 @@ class _TravelerNearbyServicesScreenState extends State<TravelerNearbyServicesScr
                                   ),
                                 ],
                               ),
-                              trailing: service['phone'] != null && service['phone'] != 'Not available'
+                              trailing: service['phone'] != null &&
+                                      service['phone'] != 'Not available'
                                   ? IconButton(
-                                      icon: const Icon(Icons.phone, color: Colors.green),
+                                      icon: const Icon(Icons.phone,
+                                          color: Colors.green),
                                       onPressed: () {
                                         // In a real app, this would launch the phone dialer
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(content: Text("Call: ${service['phone']}")),
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                              content: Text(
+                                                  "Call: ${service['phone']}")),
                                         );
                                       },
                                     )
