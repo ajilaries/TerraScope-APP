@@ -44,12 +44,10 @@ dependencies:
   firebase_messaging: ^16.0.4
   firebase_storage: ^13.0.4
   firebase_auth: ^6.1.2
-  shared_preferences: ^2.2.3
+  # shared_preferences: ^2.2.3
 
   # Notifications
   flutter_local_notifications: ^17.2.2
-  flutter_timezone: ^1.0.7
-  
 
   # Background Tasks
   workmanager: ^0.6.0
