@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../Services/location_service.dart';
 import '../../Services/nearby_services.dart';
-// import '../../Services/nearby_cache_service.dart';
+import '../../Services/nearby_cache_service.dart';
 
 class NearbyServicesScreen extends StatefulWidget {
   const NearbyServicesScreen({super.key});
@@ -58,7 +58,17 @@ class _NearbyServicesScreenState extends State<NearbyServicesScreen> {
   @override
   void initState() {
     super.initState();
+    _initializeCache();
     _getCurrentLocation();
+  }
+
+  Future<void> _initializeCache() async {
+    await NearbyCacheService.initializeCache();
+    final position = await LocationService.getCurrentPosition();
+    if (position != null) {
+      await NearbyCacheService.preloadNearbyServices(
+          position.latitude, position.longitude);
+    }
   }
 
   Future<void> _getCurrentLocation() async {
@@ -94,13 +104,21 @@ class _NearbyServicesScreenState extends State<NearbyServicesScreen> {
         throw Exception('Unable to get current location');
       }
 
-      // Search for nearby services using OpenStreetMap Overpass API
-      final services = await NearbyServices.searchNearbyServices(
-        query,
-        position.latitude,
-        position.longitude,
-        5000, // 5km radius
-      );
+      // Try cache first, then API
+      List<Map<String, dynamic>> services =
+          NearbyCacheService.getCachedServices(query);
+      if (services.isEmpty) {
+        services = await NearbyServices.searchNearbyServices(
+          query,
+          position.latitude,
+          position.longitude,
+          1500,
+        );
+        // Preload cache
+        NearbyCacheService.preloadNearbyServices(
+                position.latitude, position.longitude)
+            .catchError((e) => print('Cache preload failed: $e'));
+      }
 
       setState(() {
         _services = services;
@@ -111,13 +129,13 @@ class _NearbyServicesScreenState extends State<NearbyServicesScreen> {
         _isLoading = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error searching services: $e')),
+        SnackBar(content: Text('Error: $e')),
       );
     }
   }
 
   Future<void> _makeCall(String phoneNumber) async {
-    if (phoneNumber == 'Not available' || phoneNumber.isEmpty) {
+    if (phoneNumber == 'N/A' || phoneNumber.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Phone number not available')),
       );
@@ -141,11 +159,9 @@ class _NearbyServicesScreenState extends State<NearbyServicesScreen> {
 
     String url;
     if (latitude != null && longitude != null) {
-      // Use OpenStreetMap for directions with coordinates
       url =
-          'https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=$latitude,$longitude';
+          'https://www.openstreetmap.org/?mlat=$latitude&mlon=$longitude#map=17/$latitude/$longitude';
     } else {
-      // Fallback to address search on OpenStreetMap
       final query = Uri.encodeComponent(address);
       url = 'https://www.openstreetmap.org/search?query=$query';
     }
@@ -165,6 +181,13 @@ class _NearbyServicesScreenState extends State<NearbyServicesScreen> {
       appBar: AppBar(
         title: const Text('Nearby Services'),
         backgroundColor: Colors.deepPurple.shade700,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () =>
+                _searchNearbyServices(_serviceTypes.first['query'] as String),
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -222,7 +245,7 @@ class _NearbyServicesScreenState extends State<NearbyServicesScreen> {
 
   Widget _serviceTypeButton(Map<String, dynamic> service) {
     return GestureDetector(
-      onTap: () => _searchNearbyServices(service['query']),
+      onTap: () => _searchNearbyServices(service['query'] as String),
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
@@ -241,13 +264,13 @@ class _NearbyServicesScreenState extends State<NearbyServicesScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              service['icon'],
+              service['icon'] as IconData,
               size: 32,
-              color: service['color'],
+              color: service['color'] as Color,
             ),
             const SizedBox(height: 8),
             Text(
-              service['name'],
+              service['name'] as String,
               style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
@@ -260,28 +283,35 @@ class _NearbyServicesScreenState extends State<NearbyServicesScreen> {
     );
   }
 
-  Widget _buildEmptyState() {
+  _buildEmptyState() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            Icons.search,
+            Icons.search_off,
             size: 80,
             color: Colors.grey.shade400,
           ),
           const SizedBox(height: 16),
-          Text(
-            'Search for Nearby Services',
+          const Text(
+            'No services found within 1.5km',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.grey.shade600,
+              color: Colors.grey,
             ),
           ),
           const SizedBox(height: 8),
+          ElevatedButton.icon(
+            onPressed: () =>
+                _searchNearbyServices(_serviceTypes.first['query'] as String),
+            icon: const Icon(Icons.refresh),
+            label: const Text('Retry Search'),
+          ),
+          const SizedBox(height: 8),
           Text(
-            'Tap on a service type above to find nearby locations',
+            '$_currentLocation',
             style: TextStyle(color: Colors.grey.shade500),
             textAlign: TextAlign.center,
           ),
@@ -291,152 +321,132 @@ class _NearbyServicesScreenState extends State<NearbyServicesScreen> {
   }
 
   Widget _buildServicesList() {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: _services.length,
-      itemBuilder: (context, index) {
-        final service = _services[index];
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade200),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return RefreshIndicator(
+      onRefresh: () =>
+          _searchNearbyServices(_serviceTypes.first['query'] as String),
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: _services.length,
+        itemBuilder: (context, index) {
+          final service = _services[index];
+          final isOpen = service['isOpen'] as bool? ?? false;
+          return Card(
+            margin: const EdgeInsets.only(bottom: 12),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Text(
-                      service['name'],
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          service['name'] as String,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
-                    ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: isOpen
+                              ? Colors.green.shade100
+                              : Colors.red.shade100,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          isOpen ? 'Open' : 'Closed',
+                          style: TextStyle(
+                            color: isOpen
+                                ? Colors.green.shade700
+                                : Colors.red.shade700,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: service['isOpen']
-                          ? Colors.green.shade100
-                          : Colors.red.shade100,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      service['isOpen'] ? 'Open' : 'Closed',
-                      style: TextStyle(
-                        color: service['isOpen']
-                            ? Colors.green.shade700
-                            : Colors.red.shade700,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Icon(Icons.location_on,
+                          size: 16, color: Colors.grey),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          service['address'] as String,
+                          style: const TextStyle(color: Colors.grey),
+                        ),
                       ),
-                    ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(Icons.phone, size: 16, color: Colors.grey),
+                      const SizedBox(width: 4),
+                      Text(
+                        service['phone'] as String,
+                        style: const TextStyle(color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      const Icon(Icons.star, size: 16, color: Colors.amber),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${service['rating']}',
+                        style: const TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                      const Spacer(),
+                      Text(
+                        service['distance'] as String,
+                        style: TextStyle(
+                            color: Colors.green.shade600,
+                            fontWeight: FontWeight.w500),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () =>
+                              _makeCall(service['phone'] as String),
+                          icon: const Icon(Icons.call, size: 16),
+                          label: const Text('Call'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () => _openInMaps(service),
+                          icon: const Icon(Icons.directions, size: 16),
+                          label: const Text('Directions'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Icon(Icons.location_on,
-                      size: 16, color: Colors.grey.shade600),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      service['address'],
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  Icon(Icons.phone, size: 16, color: Colors.grey.shade600),
-                  const SizedBox(width: 4),
-                  Text(
-                    service['phone'],
-                    style: TextStyle(
-                      color: Colors.grey.shade600,
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Icon(Icons.star, size: 16, color: Colors.amber),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${service['rating']}',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Icon(Icons.directions, size: 16, color: Colors.grey.shade600),
-                  const SizedBox(width: 4),
-                  Text(
-                    service['distance'],
-                    style: TextStyle(
-                      color: Colors.grey.shade600,
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () => _makeCall(service['phone']),
-                      icon: const Icon(Icons.call, size: 16),
-                      label: const Text('Call'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () => _openInMaps(service),
-                      icon: const Icon(Icons.directions, size: 16),
-                      label: const Text('Directions'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
+            ),
+          );
+        },
+      ),
     );
   }
 }
