@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class AuthService {
-  final String baseUrl = "http://192.168.49.189:8000"; // Updated for emulator
+  final String baseUrl = "http://192.168.5.189:8000"; // Updated for emulator
   // Login method using Firebase Auth
   Future<Map<String, dynamic>> login({
     required String email,

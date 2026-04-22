@@ -8,6 +8,7 @@ import 'traveler_alerts.dart';
 import 'traveler_saftey_card.dart';
 import 'traveler_hourly_route.dart';
 import 'traveler_map_preview.dart';
+import 'traveler_nearby_services_screen.dart';
 
 class TravelerDashboard extends StatefulWidget {
   const TravelerDashboard({super.key});
@@ -65,7 +66,8 @@ class _TravelerDashboardState extends State<TravelerDashboard>
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         setState(() {
-          currentPlace = "Location services are disabled. Please enable location services in your device settings and try again.";
+          currentPlace =
+              "Location services are disabled. Please enable location services in your device settings and try again.";
           temp = 25.0;
           aqi = 50;
           travelerSafety = 50;
@@ -85,8 +87,11 @@ class _TravelerDashboardState extends State<TravelerDashboard>
         final futures = await Future.wait([
           WeatherService.getCurrentWeatherCached(pos.latitude, pos.longitude),
           WeatherService.getWeatherForecastCached(pos.latitude, pos.longitude),
-          AQIService().getAQI(pos.latitude, pos.longitude).timeout(const Duration(seconds: 5), onTimeout: () => null),
-          WeatherService.getAnomalies(pos.latitude, pos.longitude).timeout(const Duration(seconds: 5), onTimeout: () => []),
+          AQIService()
+              .getAQI(pos.latitude, pos.longitude)
+              .timeout(const Duration(seconds: 5), onTimeout: () => null),
+          WeatherService.getAnomalies(pos.latitude, pos.longitude)
+              .timeout(const Duration(seconds: 5), onTimeout: () => []),
         ]);
 
         final weatherData = futures[0] as Map<String, dynamic>?;
@@ -132,7 +137,8 @@ class _TravelerDashboardState extends State<TravelerDashboard>
         });
       } else {
         setState(() {
-          currentPlace = "Unable to get your location. Please check your location permissions and try again.";
+          currentPlace =
+              "Unable to get your location. Please check your location permissions and try again.";
           temp = 25.0;
           aqi = 50;
           travelerSafety = 50;
@@ -141,7 +147,8 @@ class _TravelerDashboardState extends State<TravelerDashboard>
     } catch (e) {
       print('Error initializing traveler dashboard: $e');
       setState(() {
-        currentPlace = "Error loading location data. Please check your internet connection and try again.";
+        currentPlace =
+            "Error loading location data. Please check your internet connection and try again.";
         temp = 25.0;
         aqi = 50;
         travelerSafety = 50;
@@ -250,6 +257,29 @@ class _TravelerDashboardState extends State<TravelerDashboard>
         onPressed: _openQuickActions,
         backgroundColor: Colors.green.shade700,
         child: const Icon(Icons.flash_on_rounded, size: 28),
+      ),
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.all(16),
+        child: ElevatedButton.icon(
+          onPressed: currentLatitude != null && currentLongitude != null
+              ? () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => TravelerNearbyServicesScreen(
+                        latitude: currentLatitude!,
+                        longitude: currentLongitude!,
+                      ),
+                    ),
+                  )
+              : null,
+          icon: const Icon(Icons.local_hospital),
+          label: const Text('Nearby Services'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.red.shade600,
+            foregroundColor: Colors.white,
+            minimumSize: const Size(double.infinity, 56),
+          ),
+        ),
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
