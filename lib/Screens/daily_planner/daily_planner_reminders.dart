@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:terra_scope_apk/Services/daily_planner_service.dart';
 import 'package:intl/intl.dart';
+import '../../Services/local_notification_service.dart';
 
 class DailyPlannerReminders extends StatefulWidget {
   const DailyPlannerReminders({super.key});
@@ -19,8 +20,6 @@ class _DailyPlannerRemindersState extends State<DailyPlannerReminders> {
     super.initState();
     _loadReminders();
   }
-
-
 
   Future<void> _loadReminders() async {
     setState(() => _isLoading = true);
@@ -107,8 +106,6 @@ class _DailyPlannerRemindersState extends State<DailyPlannerReminders> {
       _loadReminders();
     }
   }
-
-
 
   Future<void> _deleteReminder(String reminderId) async {
     await _service.deleteReminder(reminderId);
