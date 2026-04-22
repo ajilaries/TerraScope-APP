@@ -1,31 +1,21 @@
-# Daily Planner Notifications Implementation
+# Nearby Services Implementation Plan
 
-## Completed Tasks
+## Status: ✅ In Progress
 
-- [x] Add flutter_local_notifications and timezone dependencies to pubspec.yaml
-- [x] Create LocalNotificationService for handling local notifications
-- [x] Initialize LocalNotificationService in main.dart
-- [x] Integrate notifications in DailyPlannerService (deleteSchedule cancels notifications)
-- [x] Add notification when schedule is added in daily_planner_schedule.dart
-- [x] Schedule reminder notifications 15 minutes before scheduled events
-- [x] Run flutter pub get to install dependencies
+### Steps:
 
-## Features Implemented
+- [x] 1. Created this TODO.md
+- [ ] 2. Add iOS location permissions (Info.plist)
+- [✅] 3. Optimize lib/Services/nearby_services.dart (406 fix)
+- [✅] 4. Update lib/Screens/care/nearby_services.dart (cache preload)
+- [✅] 5. Add navigation button to lib/Screens/traveler/traveler_dashboard.dart
+- [✅] 6. Complete lib/Screens/traveler/traveler_nearby_services_screen.dart (auto-location + cache + UI)
+- [✅] 7. Initialize cache in lib/Screens/splash_screen.dart
+- [ ] 8. Test: flutter run → Care/Traveler → Nearby Services
+- [ ] 9. Clean up TODOs + attempt_completion
 
-- **Immediate Notification**: Shows a notification on the app when a schedule is successfully added
-- **Reminder Notifications**: Automatically schedules a reminder notification 15 minutes before each scheduled event
-- **Notification Cleanup**: Cancels scheduled notifications when schedules are deleted
+**Notes:**
 
-## Testing Required
-
-- [ ] Test adding a schedule and verify immediate notification appears
-- [ ] Test reminder notifications fire 15 minutes before scheduled time
-- [ ] Test that deleting a schedule cancels its reminder notification
-- [ ] Test notification permissions are requested properly on Android 13+
-- [x] Test the build to confirm no errors - Build completed successfully
-
-## Notes
-
-- FCM handles server-side push notifications for anomalies and safety alerts
-- Local notifications handle schedules, reminders, and in-app notifications
-- Notifications use unique IDs based on schedule timestamps to avoid conflicts
+- Using OSM Overpass (no API key needed, user confirmed)
+- Test in urban area (Bangalore) first
+- Priority: police/hospital/clinic as requested

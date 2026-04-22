@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import '../Services/weather_services.dart';
 import '../Services/nearby_cache_service.dart';
+import '../Services/location_service.dart';
 // import '../Services/auth_service.dart';
 import 'main_page.dart';
 // import 'login_screen.dart';
@@ -27,7 +28,12 @@ class _SplashScreenState extends State<SplashScreen> {
     try {
       // Quick initialization - skip heavy preloading for snappy start
       // Initialize cache in background if needed, but don't wait
-      NearbyCacheService.initializeCache().catchError((e) => print('Cache init error: $e'));
+      await NearbyCacheService.initializeCache();
+      final position = await LocationService.getCurrentPosition();
+      if (position != null) {
+        await NearbyCacheService.preloadNearbyServices(
+            position.latitude, position.longitude);
+      }
 
       // Schedule navigation after the current frame is built
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -51,7 +57,8 @@ class _SplashScreenState extends State<SplashScreen> {
         if (!mounted) return;
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const MainPage(initialPage: 1)),
+          MaterialPageRoute(
+              builder: (context) => const MainPage(initialPage: 1)),
         );
       });
     }
@@ -66,15 +73,17 @@ class _SplashScreenState extends State<SplashScreen> {
         Position position = await Geolocator.getCurrentPosition(
           desiredAccuracy: LocationAccuracy.high,
         );
-        print('Location fetched in background: ${position.latitude}, ${position.longitude}');
+        print(
+            'Location fetched in background: ${position.latitude}, ${position.longitude}');
 
         // Load weather data in background
-    final weatherData = await WeatherService.getCurrentWeatherCached(
-      position.latitude,
-      position.longitude,
-    );
+        final weatherData = await WeatherService.getCurrentWeatherCached(
+          position.latitude,
+          position.longitude,
+        );
         if (weatherData != null) {
-          print('Weather data loaded in background: ${weatherData['weather'][0]['description']}');
+          print(
+              'Weather data loaded in background: ${weatherData['weather'][0]['description']}');
         }
       }
     } catch (e) {
